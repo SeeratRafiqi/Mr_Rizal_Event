@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Event Assistant</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f0f0f;
+      color: #e5e5e5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .wrap {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 24px;
+      width: 100%;
+    }
+    h1 {
+      font-size: 1.25rem;
+      color: #a78bfa;
+      margin-bottom: 8px;
+    }
+    p.sub {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 20px;
+    }
+    #log {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #2a2a4a;
+      border-radius: 12px;
+      padding: 16px;
+      background: #111;
+      margin-bottom: 16px;
+      min-height: 200px;
+      max-height: min(50vh, 400px);
+      white-space: pre-wrap;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    .msg-user { color: #93c5fd; margin-bottom: 12px; }
+    .msg-bot { color: #d4d4d4; margin-bottom: 12px; }
+    .cards-wrap {
+      margin-top: 14px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .cards-title {
+      color: #a78bfa;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 12px;
+    }
+    .card {
+      background: #171717;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .card img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+      background: #222;
+    }
+    .no-img {
+      height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #222;
+      color: #aaa;
+      font-size: 28px;
+    }
+    .card-body { padding: 10px; }
+    .card-title {
+      font-size: 13px;
+      color: #f3f3f3;
+      margin-bottom: 6px;
+      font-weight: 600;
+      line-height: 1.4;
+    }
+    .card-meta {
+      font-size: 12px;
+      color: #a8a8a8;
+      margin-bottom: 4px;
+    }
+    .card-link {
+      display: inline-block;
+      margin-top: 8px;
+      color: #a78bfa;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    textarea {
+      flex: 1;
+      min-width: 200px;
+      min-height: 80px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 14px;
+      resize: vertical;
+      outline: none;
+    }
+    textarea:focus { border-color: #a78bfa; }
+    button {
+      padding: 12px 20px;
+      border-radius: 10px;
+      border: none;
+      background: #a78bfa;
+      color: #0f0f0f;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    button:hover:not(:disabled) { filter: brightness(1.08); }
+    .err { color: #f87171; font-size: 13px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🤖 AI event recommendations</h1>
+    <p class="sub">Describe your mood, budget, or music taste — we’ll suggest events from your scraped data.</p>
+    <div id="log" aria-live="polite"></div>
+    <div id="cardsWrap" class="cards-wrap">
+      <p class="cards-title">Suggested events</p>
+      <div id="cardsGrid" class="cards-grid"></div>
+    </div>
+    <div class="row">
+      <textarea id="message" placeholder="e.g. I want something energetic this weekend under RM200…"></textarea>
+      <button type="button" id="send">Send</button>
+    </div>
+    <p id="err" class="err" role="alert"></p>
+  </div>
+  <script>
+    const logEl = document.getElementById('log');
+    const messageEl = document.getElementById('message');
+    const sendBtn = document.getElementById('send');
+    const errEl = document.getElementById('err');
+    const cardsWrap = document.getElementById('cardsWrap');
+    const cardsGrid = document.getElementById('cardsGrid');
+    const CHAT_HISTORY_KEY = 'ticket_scraper_chat_history_v1';
+    /** Prior turns only; current message sent separately so the API can replay full DashScope context. */
+    const chatHistory = [];
+
+    function persistChatHistory() {
+      try {
+        window.localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chatHistory.slice(-24)));
+      } catch (_) {
+        // Ignore storage quota or privacy mode errors.
+      }
+    }
+
+    function restoreChatHistory() {
+      try {
+        const raw = window.localStorage.getItem(CHAT_HISTORY_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return;
+        for (const item of parsed) {
+          if (!item || (item.role !== 'user' && item.role !== 'assistant')) continue;
+          if (typeof item.content !== 'string') continue;
+          chatHistory.push({ role: item.role, content: item.content });
+          append(item.role, item.content);
+        }
+      } catch (_) {
+        // Ignore malformed storage data.
+      }
+    }
+
+    function append(role, text) {
+      const div = document.createElement('div');
+      div.className = role === 'user' ? 'msg-user' : 'msg-bot';
+      div.textContent = (role === 'user' ? 'You: ' : 'Assistant: ') + text;
+      logEl.appendChild(div);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function cardHtml(e) {
+      return `
+        <div class="card">
+          ${e.image
+            ? `<img src="${e.image}" alt="${e.title}" width="400" height="240" loading="lazy" decoding="async" fetchpriority="low" onerror="this.outerHTML='<div class=\\'no-img\\'>🎟️</div>'" />`
+            : `<div class="no-img">🎟️</div>`}
+          <div class="card-body">
+            <div class="card-title">${e.title || 'Untitled Event'}</div>
+            <div class="card-meta">📅 ${e.date ? new Date(e.date).toDateString() : 'Date TBA'}</div>
+            <div class="card-meta">📍 ${e.venue || 'Unknown Venue'}</div>
+            <div class="card-meta">💰 ${e.price || 'Paid'} • ${e.source || 'Unknown'}</div>
+            ${e.url ? `<a class="card-link" href="${e.url}" target="_blank" rel="noopener noreferrer">Open source link →</a>` : ''}
+          </div>
+        </div>`;
+    }
+
+    async function send() {
+      const message = (messageEl.value || '').trim();
+      if (!message) return;
+      errEl.textContent = '';
+      cardsWrap.style.display = 'none';
+      cardsGrid.innerHTML = '';
+      const historyPrior = chatHistory.map(function (h) {
+        return { role: h.role, content: h.content };
+      });
+      append('user', message);
+      messageEl.value = '';
+      chatHistory.push({ role: 'user', content: message });
+      persistChatHistory();
+      sendBtn.disabled = true;
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, history: historyPrior }),
+        });
+        const data = await res.json().catch(() => ({}));
+        const reply = data.reply || (res.ok ? '' : 'Request failed');
+        if (!res.ok && !data.reply) {
+          append('bot', data.error || 'Something went wrong (' + res.status + ')');
+          chatHistory.pop();
+        } else {
+          append('bot', reply);
+          chatHistory.push({ role: 'assistant', content: reply || '' });
+          while (chatHistory.length > 24) chatHistory.shift();
+          persistChatHistory();
+          if (Array.isArray(data.events) && data.events.length > 0) {
+            cardsGrid.innerHTML = data.events.map((e) => cardHtml(e)).join('');
+            cardsWrap.style.display = 'block';
+          }
+        }
+      } catch (e) {
+        append('bot', 'Network error: ' + (e.message || 'unknown'));
+        chatHistory.pop();
+        persistChatHistory();
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    sendBtn.addEventListener('click', send);
+    messageEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        send();
+      }
+    });
+
+    restoreChatHistory();
+  </script>
+</body>
+</html>

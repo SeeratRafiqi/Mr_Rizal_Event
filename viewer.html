@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🎟️ Scraped Events Viewer</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f0f;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #1a1a2e;
+      padding: 24px 32px;
+      border-bottom: 1px solid #2a2a4a;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 { font-size: 22px; color: #a78bfa; }
+    header span { font-size: 14px; color: #888; }
+
+    .controls {
+      padding: 20px 32px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      background: #111;
+      border-bottom: 1px solid #222;
+    }
+
+    input, select {
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #333;
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+    }
+
+    input { width: 280px; }
+    input:focus, select:focus { border-color: #a78bfa; }
+
+    .stats {
+      padding: 16px 32px;
+      font-size: 13px;
+      color: #888;
+    }
+
+    .stats span { color: #a78bfa; font-weight: 600; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      padding: 20px 32px 40px;
+    }
+
+    .card {
+      background: #1a1a1a;
+      border-radius: 12px;
+      border: 1px solid #2a2a2a;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: #a78bfa;
+    }
+
+    .card img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+      background: #222;
+    }
+
+    .card-body { padding: 16px; }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #fff;
+      line-height: 1.4;
+    }
+
+    .card-meta {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 10px;
+      margin-right: 6px;
+    }
+
+    .badge-free { background: #064e3b; color: #34d399; }
+    .badge-paid { background: #1e1b4b; color: #a78bfa; }
+    .badge-category { background: #1c1917; color: #d97706; }
+
+    .card-summary {
+      font-size: 12px;
+      color: #666;
+      margin-top: 10px;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-link {
+      display: block;
+      margin-top: 14px;
+      text-align: center;
+      padding: 8px;
+      background: #2a2a4a;
+      border-radius: 8px;
+      color: #a78bfa;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    .card-link:hover { background: #3a3a6a; }
+
+    .empty {
+      grid-column: 1/-1;
+      text-align: center;
+      padding: 60px;
+      color: #555;
+      font-size: 15px;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: #555;
+      font-size: 15px;
+      grid-column: 1/-1;
+    }
+
+    .no-img {
+      width: 100%;
+      height: 160px;
+      background: linear-gradient(135deg, #1a1a2e, #2a2a4a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+    }
+
+    #chatbotView {
+      display: none;
+      flex: 1;
+      min-height: 0;
+      flex-direction: column;
+      padding: 0 32px 32px;
+      max-width: 760px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    #chatbotView.is-visible {
+      display: flex;
+    }
+
+    .chat-title {
+      font-size: 1.1rem;
+      color: #a78bfa;
+      margin-bottom: 6px;
+    }
+
+    .chat-sub {
+      font-size: 13px;
+      color: #888;
+      margin-bottom: 16px;
+    }
+
+    #chat-log {
+      flex: 1;
+      min-height: 220px;
+      max-height: min(45vh, 420px);
+      overflow-y: auto;
+      border: 1px solid #2a2a4a;
+      border-radius: 12px;
+      padding: 16px;
+      background: #111;
+      margin-bottom: 14px;
+      white-space: pre-wrap;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .msg-user { color: #93c5fd; margin-bottom: 12px; }
+    .msg-bot { color: #d4d4d4; margin-bottom: 12px; }
+
+    .chat-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+
+    #chat-message {
+      flex: 1;
+      min-width: 200px;
+      min-height: 80px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      background: #1a1a1a;
+      color: #fff;
+      font-size: 14px;
+      resize: vertical;
+      outline: none;
+      font-family: inherit;
+    }
+
+    #chat-message:focus { border-color: #a78bfa; }
+
+    #chat-send {
+      padding: 12px 20px;
+      border-radius: 10px;
+      border: none;
+      background: #a78bfa;
+      color: #0f0f0f;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    #chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    #chat-err {
+      color: #f87171;
+      font-size: 13px;
+      margin-top: 8px;
+    }
+
+    .chat-cards-section {
+      margin: 16px 0 20px;
+    }
+
+    .chat-cards-label {
+      font-size: 14px;
+      color: #a78bfa;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    #chat-cards-grid {
+      padding: 0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div style="display: flex; gap: 20px; align-items: center;">
+    <h1>🎟️ Event Explorer</h1>
+    <div style="display: flex; gap: 12px;">
+      <button id="eventsTab" type="button" style="padding: 8px 16px; background: #a78bfa; border: none; border-radius: 8px; color: #fff; cursor: pointer; font-weight: 500;" onclick="switchTab('events')">Events</button>
+      <button id="chatbotTab" type="button" style="padding: 8px 16px; background: transparent; border: 1px solid #a78bfa; color: #a78bfa; border-radius: 8px; cursor: pointer; font-weight: 500;" onclick="switchTab('chatbot')">AI Chatbot</button>
+    </div>
+  </div>
+  <span id="last-updated">Loading...</span>
+</header>
+
+<div id="eventsView" style="flex: 1;">
+
+<div class="controls">
+  <input type="text" id="search" placeholder="🔍 Search events..." oninput="filterEvents()" />
+  <select id="filter-free" onchange="filterEvents()">
+    <option value="all">All Events</option>
+    <option value="free">Free Only</option>
+    <option value="paid">Paid Only</option>
+  </select>
+  <select id="filter-source" onchange="filterEvents()">
+    <option value="all">All Sites</option>
+    <option value="eventbrite">Eventbrite</option>
+    <option value="ticket2u">Ticket2U</option>
+    <option value="goliveasia">GoLive Asia</option>
+    <option value="ticketmelon">Ticketmelon</option>
+  </select>
+  <select id="sort" onchange="filterEvents()">
+    <option value="default">Sort: Default</option>
+    <option value="title">Sort: Title A-Z</option>
+    <option value="date">Sort: Date</option>
+  </select>
+</div>
+
+<div class="stats" id="stats">Loading events...</div>
+
+<div class="grid" id="grid">
+  <div class="loading">⏳ Fetching scraped events...</div>
+</div>
+
+</div>
+
+<div id="chatbotView" aria-hidden="true">
+  <h2 class="chat-title">🤖 AI event recommendations</h2>
+  <p class="chat-sub">Describe your mood, budget, or taste — we’ll suggest events from your scraped data. Set <code style="color:#a78bfa;">DASHSCOPE_API_KEY</code> (Alibaba) in <code style="color:#a78bfa;">.env</code>, run <code style="color:#a78bfa;">npm run server</code>, then restart after changes.</p>
+  <div id="chat-log" aria-live="polite"></div>
+  <div id="chat-cards-section" class="chat-cards-section" style="display: none;">
+    <p class="chat-cards-label">Suggested events</p>
+    <div id="chat-cards-grid" class="grid"></div>
+  </div>
+  <div class="chat-row">
+    <textarea id="chat-message" placeholder="e.g. Something fun this weekend under RM200…"></textarea>
+    <button type="button" id="chat-send">Send</button>
+  </div>
+  <p id="chat-err" role="alert"></p>
+</div>
+
+<script>
+  function switchTab(tab) {
+    const eventsView = document.getElementById('eventsView');
+    const chatbotView = document.getElementById('chatbotView');
+    const eventsTab = document.getElementById('eventsTab');
+    const chatbotTab = document.getElementById('chatbotTab');
+
+    if (tab === 'events') {
+      eventsView.style.display = 'block';
+      chatbotView.classList.remove('is-visible');
+      chatbotView.setAttribute('aria-hidden', 'true');
+      eventsTab.style.background = '#a78bfa';
+      eventsTab.style.border = 'none';
+      eventsTab.style.color = '#fff';
+      chatbotTab.style.background = 'transparent';
+      chatbotTab.style.border = '1px solid #a78bfa';
+      chatbotTab.style.color = '#a78bfa';
+    } else {
+      eventsView.style.display = 'none';
+      chatbotView.classList.add('is-visible');
+      chatbotView.setAttribute('aria-hidden', 'false');
+      eventsTab.style.background = 'transparent';
+      eventsTab.style.border = '1px solid #a78bfa';
+      eventsTab.style.color = '#a78bfa';
+      chatbotTab.style.background = '#a78bfa';
+      chatbotTab.style.border = 'none';
+      chatbotTab.style.color = '#fff';
+    }
+  }
+</script>
+
+<script>
+  let allEvents = [];
+
+  function eventCardHtml(e) {
+    return `
+      <div class="card">
+        ${e.image
+          ? `<img src="${e.image}" alt="${e.title}" width="400" height="240" loading="lazy" decoding="async" fetchpriority="low" onerror="this.outerHTML='<div class=\\'no-img\\'>🎟️</div>'" />`
+          : `<div class="no-img">🎟️</div>`
+        }
+        <div class="card-body">
+          <div class="card-title">${e.title || 'Untitled Event'}</div>
+          <div class="card-meta">📍 ${e.venue || 'Unknown Venue'}, ${e.city || 'KL'}</div>
+          <div class="card-meta">📅 ${e.date ? new Date(e.date).toDateString() : 'Date TBA'}</div>
+          <div>
+            ${getEventSource(e) !== 'unknown' ? `<span class="badge badge-category">${sourceLabel(getEventSource(e))}</span>` : ''}
+            <span class="badge ${e.isFree ? 'badge-free' : 'badge-paid'}">
+              ${e.isFree ? '✅ Free' : `💰 ${e.price || 'Paid'}`}
+            </span>
+            ${e.category ? `<span class="badge badge-category">${e.category}</span>` : ''}
+          </div>
+          ${e.summary ? `<div class="card-summary">${e.summary}</div>` : ''}
+          ${e.url ? `<a class="card-link" href="${e.url}" target="_blank">View Event →</a>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  async function loadEvents() {
+    try {
+      const res = await fetch('/api/events');
+      const data = await res.json();
+      allEvents = Array.isArray(data) ? data : (data.events || []);
+      const counts = countBySource(allEvents);
+
+      document.getElementById('last-updated').textContent =
+        `Eventbrite: ${counts.eventbrite || 0} • Ticket2U: ${counts.ticket2u || 0} • GoLive Asia: ${counts.goliveasia || 0} • Ticketmelon: ${counts.ticketmelon || 0}`;
+
+      filterEvents();
+    } catch (err) {
+      document.getElementById('grid').innerHTML =
+        '<div class="empty">❌ Could not load events. Make sure server.js is running.</div>';
+    }
+  }
+
+  function filterEvents() {
+    const search = document.getElementById('search').value.toLowerCase();
+    const freeFilter = document.getElementById('filter-free').value;
+    const sourceFilter = document.getElementById('filter-source').value;
+    const sort = document.getElementById('sort').value;
+
+    let filtered = allEvents.filter(e => {
+      const source = getEventSource(e);
+      const matchSearch =
+        (e.title || '').toLowerCase().includes(search) ||
+        (e.venue || '').toLowerCase().includes(search) ||
+        (e.summary || '').toLowerCase().includes(search);
+
+      const matchFree =
+        freeFilter === 'all' ? true :
+        freeFilter === 'free' ? e.isFree :
+        !e.isFree;
+
+      const matchSource =
+        sourceFilter === 'all' ? true : source === sourceFilter;
+
+      return matchSearch && matchFree && matchSource;
+    });
+
+    if (sort === 'title') {
+      filtered.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    } else if (sort === 'date') {
+      filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+    }
+
+    document.getElementById('stats').innerHTML =
+      `Showing <span>${filtered.length}</span> of <span>${allEvents.length}</span> events`;
+
+    renderCards(filtered);
+  }
+
+  function getEventSource(event) {
+    if (event._source) {
+      if (event._source === 'golive') return 'goliveasia';
+      return event._source;
+    }
+    const url = (event.url || '').toLowerCase();
+    if (url.includes('ticket2u.com.my')) return 'ticket2u';
+    if (url.includes('eventbrite.com')) return 'eventbrite';
+    if (url.includes('golive-asia.com')) return 'goliveasia';
+    if (url.includes('ticketmelon.com')) return 'ticketmelon';
+    if (url.includes('peatix.com')) return 'peatix';
+    return 'unknown';
+  }
+
+  function sourceLabel(source) {
+    if (source === 'eventbrite') return 'Eventbrite';
+    if (source === 'ticket2u') return 'Ticket2U';
+    if (source === 'goliveasia') return 'GoLive Asia';
+    if (source === 'ticketmelon') return 'Ticketmelon';
+    if (source === 'peatix') return 'Peatix';
+    return source || 'Unknown';
+  }
+
+  function countBySource(events) {
+    const counts = {};
+    for (const event of events) {
+      const source = getEventSource(event);
+      counts[source] = (counts[source] || 0) + 1;
+    }
+    return counts;
+  }
+
+  function renderCards(events) {
+    const grid = document.getElementById('grid');
+
+    if (events.length === 0) {
+      grid.innerHTML = '<div class="empty">😕 No events match your search.</div>';
+      return;
+    }
+
+    grid.innerHTML = events.map((e) => eventCardHtml(e)).join('');
+  }
+
+  (function initChatEmbed() {
+    const logEl = document.getElementById('chat-log');
+    const messageEl = document.getElementById('chat-message');
+    const sendBtn = document.getElementById('chat-send');
+    const errEl = document.getElementById('chat-err');
+    const cardsSection = document.getElementById('chat-cards-section');
+    const cardsGrid = document.getElementById('chat-cards-grid');
+    if (!logEl || !messageEl || !sendBtn) return;
+
+    const chatHistory = [];
+
+    function append(role, text) {
+      const div = document.createElement('div');
+      div.className = role === 'user' ? 'msg-user' : 'msg-bot';
+      div.textContent = (role === 'user' ? 'You: ' : 'Assistant: ') + text;
+      logEl.appendChild(div);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    async function sendChat() {
+      const message = (messageEl.value || '').trim();
+      if (!message) return;
+      errEl.textContent = '';
+      if (cardsSection) cardsSection.style.display = 'none';
+      if (cardsGrid) cardsGrid.innerHTML = '';
+      const historyPrior = chatHistory.map(function (h) {
+        return { role: h.role, content: h.content };
+      });
+      append('user', message);
+      messageEl.value = '';
+      chatHistory.push({ role: 'user', content: message });
+      sendBtn.disabled = true;
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message, history: historyPrior }),
+        });
+        const data = await res.json().catch(() => ({}));
+        const reply = data.reply || '';
+        if (!res.ok && !reply) {
+          append('bot', data.error || 'Request failed (' + res.status + ')');
+          chatHistory.pop();
+        } else {
+          append('bot', reply || 'No reply');
+          chatHistory.push({ role: 'assistant', content: reply || 'No reply' });
+          while (chatHistory.length > 24) chatHistory.shift();
+          if (data.events && data.events.length && cardsGrid && cardsSection) {
+            cardsGrid.innerHTML = data.events.map((ev) => eventCardHtml(ev)).join('');
+            cardsSection.style.display = 'block';
+          }
+        }
+      } catch (e) {
+        append('bot', 'Cannot reach the server. Open this app via http://localhost (run npm run server), not as a file.');
+        chatHistory.pop();
+      } finally {
+        sendBtn.disabled = false;
+      }
+    }
+
+    sendBtn.addEventListener('click', sendChat);
+    messageEl.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChat();
+      }
+    });
+  })();
+
+  loadEvents();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://peatix.com/sitemap2/main-pages.xml</loc>
+    <lastmod>2026-04-19</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://peatix.com/sitemap2/2026-04-19/events-1.xml.gz</loc>
+    <lastmod>2026-04-19</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://peatix.com/sitemap2/2026-04-19/events-2.xml.gz</loc>
+    <lastmod>2026-04-19</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://peatix.com/sitemap2/2026-04-19/events-3.xml.gz</loc>
+    <lastmod>2026-04-19</lastmod>
+  </sitemap>
+</sitemapindex>
