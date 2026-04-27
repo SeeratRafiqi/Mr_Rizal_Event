@@ -1,3 +1,4 @@
+require('dotenv').config();
 const cron = require('node-cron');
 const { scrapeEventbrite } = require('./eventbrite-scraper');
 const { scrapeTicket2U } = require('./ticket2u-scraper');
@@ -6,7 +7,19 @@ const { scrapeTicketmelon } = require('./ticketmelon-scraper');
 const { uploadToSupabase } = require('./upload-to-supabase');
 const { createEmbeddings } = require('./create-embeddings');
 
-const SCHEDULE = process.env.SCRAPER_CRON || '0 */6 * * *';
+/**
+ * Cron schedule: SCRAPER_CRON wins if set (standard 5-field cron, UTC).
+ * Else SCRAPER_EVERY_HOURS=N runs at minute 0 every N hours (1–23), default 6.
+ */
+function resolveSchedule() {
+  const raw = (process.env.SCRAPER_CRON || '').trim();
+  if (raw) return raw;
+  const n = Number(process.env.SCRAPER_EVERY_HOURS);
+  if (Number.isFinite(n) && n >= 1 && n <= 23) return `0 */${Math.floor(n)} * * *`;
+  return '0 */6 * * *';
+}
+
+const SCHEDULE = resolveSchedule();
 const RUN_ON_STARTUP = process.env.SCRAPER_RUN_ON_STARTUP !== '0';
 let isRunning = false;
 
@@ -75,14 +88,24 @@ async function runPipeline(trigger) {
   }
 }
 
-cron.schedule(SCHEDULE, async () => {
-  await runPipeline('scheduled');
-});
-
-console.log(`📅 Scheduler started — cron: "${SCHEDULE}"`);
-console.log('   Pipeline: scrape -> upload -> create embeddings');
-if (RUN_ON_STARTUP) {
-  runPipeline('startup').catch((err) => {
-    console.error('[scheduler] Startup pipeline failed:', err.message || err);
+if (!global.__ticketScraperCronScheduled) {
+  global.__ticketScraperCronScheduled = true;
+  cron.schedule(SCHEDULE, async () => {
+    await runPipeline('scheduled');
   });
+} else {
+  console.warn('[scheduler] Duplicate load — cron not registered again');
+}
+
+console.log(`📅 Scheduler — cron (UTC): "${SCHEDULE}"`);
+console.log('   Pipeline: scrape → upload → embeddings');
+console.log('   Tip: set SCRAPER_EVERY_HOURS=3 or SCRAPER_CRON="0 */4 * * *" in .env to change interval.');
+if (RUN_ON_STARTUP) {
+  const delayMs = Math.max(0, Number(process.env.SCHEDULER_STARTUP_DELAY_MS) || 10000);
+  console.log(`[scheduler] Startup pipeline delayed ${delayMs}ms so the web server stays responsive first`);
+  setTimeout(() => {
+    runPipeline('startup').catch((err) => {
+      console.error('[scheduler] Startup pipeline failed:', err.message || err);
+    });
+  }, delayMs);
 }

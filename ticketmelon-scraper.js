@@ -19,6 +19,12 @@ const UA =
 
 const OUTPUT = path.join(__dirname, 'data', 'ticketmelon-events.json');
 const DETAIL_API_BASE = 'https://api-frontend.ticketmelon.com/v1/buyer/event-page';
+const MY_GEO_BOUNDS = {
+  minLat: 0.8,
+  maxLat: 7.8,
+  minLng: 99.5,
+  maxLng: 119.5,
+};
 
 function toDateParts(ts) {
   const n = Number(ts);
@@ -31,12 +37,82 @@ function toDateParts(ts) {
   };
 }
 
+function inferCityFromVenueAndUrl(venueName, urlPath) {
+  const blob = `${venueName || ''} ${urlPath || ''}`.toLowerCase();
+  if (/\b(singapore|marina bay|orchard|raffles|tanjong pagar|little india|sentosa|sg expo)\b/.test(blob)) {
+    return 'Singapore';
+  }
+  if (/\b(bangkok|thailand|bkk|phuket|chiang mai)\b/.test(blob)) return 'Thailand';
+  if (/\b(jakarta|bali|indonesia|surabaya)\b/.test(blob)) return 'Indonesia';
+  if (/\b(manila|philippines|cebu|makati)\b/.test(blob)) return 'Philippines';
+  if (/\b(ho chi minh|hanoi|vietnam)\b/.test(blob)) return 'Vietnam';
+  if (/\b(kuala lumpur|petaling|selangor|johor|penang|malacca|melaka)\b/.test(blob)) return 'Malaysia';
+  return '';
+}
+
+function isPlaceholderVenue(name) {
+  const v = String(name || '').trim().toLowerCase();
+  if (!v) return true;
+  if (/^(tba|tbd|tbh|n\/a|none|[?])$/i.test(v)) return true;
+  if (/^(to be announced|to be confirmed|venue tba|location tba)\b/i.test(v)) return true;
+  if (/\b(tba|tbd|tbh)\b$/i.test(v)) return true;
+  return false;
+}
+
+/** IANA zones used by Ticketmelon for Malaysia-only events (API uses these, not e.g. Asia/Singapore). */
+const MY_TICKETMELON_TIMEZONES = new Set(['Asia/Kuala_Lumpur', 'Asia/Kuching']);
+
+const MALAYSIA_KEYWORDS_RE =
+  /\b(malaysia|kuala lumpur|\bkl\b|selangor|petaling|johor|penang|melaka|malacca|sarawak|sabah|putrajaya|cyberjaya|genting|kuching|kota kinabalu|shah alam|puchong|subang)\b/i;
+
+const NON_MY_GEO_RE =
+  /\b(singapore|bangkok|jakarta|manila|cebu|hanoi|ho chi minh|phnom|bali|thailand|indonesia|philippines|vietnam|tokyo|seoul|taipei|hong kong|macau)\b/i;
+
+function inMalaysiaBounds(lat, lng) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false;
+  return lat >= MY_GEO_BOUNDS.minLat &&
+    lat <= MY_GEO_BOUNDS.maxLat &&
+    lng >= MY_GEO_BOUNDS.minLng &&
+    lng <= MY_GEO_BOUNDS.maxLng;
+}
+
+/**
+ * Strict: Malaysian Ringgit only + Malaysia timezone from API + real venue name.
+ * Homepage mixes THB/SGD/PHP/… — those are excluded. Set TICKETMELON_MY_ONLY=0 to disable.
+ */
+function isMalaysiaTicketmelonEvent(row, ev) {
+  if (process.env.TICKETMELON_MY_ONLY === '0') return true;
+
+  const code = String(row?.currency?.code || '').trim().toUpperCase();
+  if (code !== 'MYR') return false;
+
+  const tz = String(row?.timezone?.country || '').trim();
+  if (!MY_TICKETMELON_TIMEZONES.has(tz)) return false;
+
+  if (isPlaceholderVenue(ev.venue)) return false;
+
+  const venueAddress = String(row?.venue?.address || '');
+  const venueName = String(row?.venue?.name || '');
+  const blob = `${ev.title || ''} ${ev.url || ''} ${ev.city || ''} ${venueName} ${venueAddress}`.toLowerCase();
+  if (NON_MY_GEO_RE.test(blob)) return false;
+
+  const hasMyKeyword = MALAYSIA_KEYWORDS_RE.test(blob);
+  const lat = Number(row?.venue?.latitude);
+  const lng = Number(row?.venue?.longitude);
+  const hasMyCoords = inMalaysiaBounds(lat, lng);
+  if (!hasMyKeyword && !hasMyCoords) return false;
+
+  return true;
+}
+
 function normalizeEvent(row) {
   const id = String(row.event_id || row.slug || '').trim();
   if (!id) return null;
 
   const { date, time } = toDateParts(row.show_starttime);
   const categories = Array.isArray(row.categories) ? row.categories : [];
+  const venueName = row.venue?.name || 'TBA';
+  const webPath = row.eo_slug && row.slug ? `${row.eo_slug}/${row.slug}` : '';
 
   return {
     id,
@@ -44,8 +120,8 @@ function normalizeEvent(row) {
     url: row.eo_slug && row.slug ? `${BASE_WEB}/${row.eo_slug}/${row.slug}` : BASE_WEB,
     date,
     time,
-    venue: row.venue?.name || 'TBA',
-    city: '',
+    venue: venueName,
+    city: inferCityFromVenueAndUrl(venueName, webPath),
     image: row.img_poster || row.img_banner || '',
     isFree: Boolean(row.is_free),
     price: '',
@@ -64,11 +140,10 @@ function appHeaders() {
   };
 }
 
-function formatPrice(minPrice, currencyCode) {
+function formatPrice(minPrice) {
   if (!Number.isFinite(minPrice)) return '';
   if (minPrice <= 0) return 'Free';
-  const code = currencyCode || 'MYR';
-  return `${minPrice.toFixed(2)} ${code}`;
+  return `${minPrice.toFixed(2)} MYR`;
 }
 
 async function fetchEventMinPrice(eventId) {
@@ -108,16 +183,25 @@ async function scrapeTicketmelon() {
 
   const rows = await fetchTicketmelonEvents();
   const byId = new Map();
+  let skippedNonMy = 0;
 
   let i = 0;
   for (const row of rows) {
     i += 1;
     const ev = normalizeEvent(row);
     if (!ev) continue;
+    if (!isMalaysiaTicketmelonEvent(row, ev)) {
+      skippedNonMy += 1;
+      continue;
+    }
 
     const minPrice = await fetchEventMinPrice(ev.id);
     ev.isFree = Number.isFinite(minPrice) ? minPrice <= 0 : ev.isFree;
-    ev.price = formatPrice(minPrice, row.currency?.code);
+    ev.price = Number.isFinite(minPrice)
+      ? formatPrice(minPrice)
+      : ev.isFree
+        ? 'Free'
+        : 'MYR';
 
     byId.set(ev.id, ev);
     if (i % 25 === 0) {
@@ -129,6 +213,11 @@ async function scrapeTicketmelon() {
   await fs.ensureDir(path.join(__dirname, 'data'));
   await fs.writeJson(OUTPUT, events, { spaces: 2 });
 
+  if (skippedNonMy) {
+    console.log(
+      `   Skipped ${skippedNonMy} rows (not MYR, not Malaysia timezone, or TBA venue — set TICKETMELON_MY_ONLY=0 for homepage mix)`,
+    );
+  }
   console.log(`💾 Saved ${events.length} events → ${OUTPUT}`);
   return events;
 }

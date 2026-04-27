@@ -21,6 +21,30 @@ const SOURCES = [
 ];
 
 const CHUNK_SIZE = 200;
+const ID_PAGE_SIZE = 1000;
+
+/**
+ * All `events_chatbot.id` values for a source (paginated — a plain .select() caps at ~1000 rows).
+ */
+async function fetchEventIdsForSource(supabase, source) {
+  const ids = [];
+  let offset = 0;
+  for (;;) {
+    const { data, error } = await supabase
+      .from('events_chatbot')
+      .select('id')
+      .eq('source', source)
+      .range(offset, offset + ID_PAGE_SIZE - 1);
+    if (error) throw new Error(`events_chatbot select ids (${source}): ${error.message}`);
+    if (!data?.length) break;
+    for (const r of data) {
+      if (r.id != null) ids.push(r.id);
+    }
+    if (data.length < ID_PAGE_SIZE) break;
+    offset += ID_PAGE_SIZE;
+  }
+  return ids;
+}
 
 function mapEventToRow(event, source) {
   return {
@@ -55,6 +79,30 @@ async function insertRows(supabase, rows) {
   }
 }
 
+const DELETE_CHUNK = 500;
+
+/**
+ * Replace all rows for one source so scheduled re-uploads do not duplicate events.
+ * Removes matching embedding rows first (if FK does not cascade).
+ */
+async function replaceSourceRows(supabase, source, rows) {
+  const ids = await fetchEventIdsForSource(supabase, source);
+  for (let i = 0; i < ids.length; i += DELETE_CHUNK) {
+    const slice = ids.slice(i, i + DELETE_CHUNK);
+    if (!slice.length) continue;
+    const { error: embErr } = await supabase.from('event_embeddings_chatbot').delete().in('event_id', slice);
+    if (embErr) {
+      throw new Error(
+        `event_embeddings_chatbot delete (${source}): ${embErr.message}. ` +
+          `Fix DB policies or FK so embeddings can be removed before replacing events.`,
+      );
+    }
+  }
+  const { error: delErr } = await supabase.from('events_chatbot').delete().eq('source', source);
+  if (delErr) throw new Error(`events_chatbot delete (${source}): ${delErr.message}`);
+  if (rows.length) await insertRows(supabase, rows);
+}
+
 async function uploadToSupabase() {
   const supabaseUrl = process.env.SUPABASE_URL;
   /** Service role bypasses RLS; publishable/anon keys need matching INSERT policies. */
@@ -84,7 +132,7 @@ async function uploadToSupabase() {
     }
 
     const rows = raw.map((e) => mapEventToRow(e, source));
-    await insertRows(supabase, rows);
+    await replaceSourceRows(supabase, source, rows);
     const n = rows.length;
     total += n;
     console.log(`Uploaded ${n} events from ${label}`);
