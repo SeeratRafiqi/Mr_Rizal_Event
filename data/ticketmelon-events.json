@@ -1,47 +1,5 @@
 [
   {
-    "id": "ad94330ae54e11f0990801117567899b",
-    "title": "Metalverse Rock Festival",
-    "url": "https://www.ticketmelon.com/voxnationlive/MetalverseRockFestival",
-    "date": "2026-04-30",
-    "time": "06:00",
-    "venue": "Odeum @ JioSpace, Petaling Jaya",
-    "city": "Malaysia",
-    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/ad94330ae54e11f0990801117567899b/poster/e4dfd434e54f11f0967801117567899b.png",
-    "isFree": true,
-    "price": "Free",
-    "category": "Music",
-    "summary": ""
-  },
-  {
-    "id": "e770d9e138cc11f1922201117567899b",
-    "title": "Lane 23 presents YAO",
-    "url": "https://www.ticketmelon.com/lane23/YAO",
-    "date": "2026-04-30",
-    "time": "14:00",
-    "venue": "Lane 23 Club - The Exchange TRX",
-    "city": "",
-    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/e770d9e138cc11f1922201117567899b/poster/d39f8ea038cd11f1967801117567899b.png",
-    "isFree": false,
-    "price": "68.00 MYR",
-    "category": "Music",
-    "summary": ""
-  },
-  {
-    "id": "88b97706287e11f1967801117567899b",
-    "title": "Ohrwurm pres Deas (CLR, ARTS, Planet Rhythm)",
-    "url": "https://www.ticketmelon.com/ohrwurmkl/deas",
-    "date": "2026-04-30",
-    "time": "14:00",
-    "venue": "Pisco Bar",
-    "city": "",
-    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/88b97706287e11f1967801117567899b/poster/d26827da288411f1943101117567899b.png",
-    "isFree": false,
-    "price": "40.00 MYR",
-    "category": "Music",
-    "summary": ""
-  },
-  {
     "id": "0622740b122a11f1923401117567899b",
     "title": "CTOS SME BIZ DAY 2026 - JOHOR BAHRU",
     "url": "https://www.ticketmelon.com/ctos/smebizday2026jhb",
@@ -56,17 +14,17 @@
     "summary": ""
   },
   {
-    "id": "27d4dff6328d11f1943101117567899b",
-    "title": "EMO VS POP party Featuring An Honest Mistake & Friends by Run For Cover Fest & Whos Ur Party",
-    "url": "https://www.ticketmelon.com/runforcover/emovspop",
-    "date": "2026-05-01",
-    "time": "12:00",
-    "venue": "Ms Cassie",
+    "id": "701fc2be2a8611f1923401117567899b",
+    "title": "Simple Plan Live in Malaysia",
+    "url": "https://www.ticketmelon.com/rklive/SimplePlanLiveinMY",
+    "date": "2026-11-21",
+    "time": "10:30",
+    "venue": "idea Live Arena",
     "city": "",
-    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/27d4dff6328d11f1943101117567899b/poster/521ea911328f11f1915501117567899b.png",
+    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/701fc2be2a8611f1923401117567899b/poster/1a8f37f9475311f1923401117567899b.png",
     "isFree": false,
-    "price": "40.00 MYR",
-    "category": "Nightlife",
+    "price": "288.00 MYR",
+    "category": "Music",
     "summary": ""
   },
   {
@@ -77,23 +35,23 @@
     "time": "12:00",
     "venue": "Zepp Kuala Lumpur",
     "city": "Malaysia",
-    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/fd9645e7fdc011f0990801117567899b/poster/16735ffdfdc111f0922201117567899b.png",
+    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/fd9645e7fdc011f0990801117567899b/poster/e8ed067542ce11f1922201117567899b.png",
     "isFree": false,
     "price": "188.00 MYR",
     "category": "Music",
     "summary": ""
   },
   {
-    "id": "20f206dd272611f1911101117567899b",
-    "title": "R&B Takeover Malaysia - KK",
-    "url": "https://www.ticketmelon.com/jmyent/rnbtakeoverkk",
-    "date": "2026-05-01",
-    "time": "06:00",
-    "venue": "Aruna.KK",
+    "id": "b9e389f246fc11f1943101117567899b",
+    "title": "Spill the Tea: S.E.A. Tea",
+    "url": "https://www.ticketmelon.com/togetherinsounds/spillthetea",
+    "date": "2026-05-23",
+    "time": "01:00",
+    "venue": "KoepiiLoft @ SYLK",
     "city": "",
-    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/20f206dd272611f1911101117567899b/poster/5d5db49f272611f1943101117567899b.png",
+    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/b9e389f246fc11f1943101117567899b/poster/373182ec470111f1923401117567899b.png",
     "isFree": false,
-    "price": "49.00 MYR",
+    "price": "40.00 MYR",
     "category": "Music",
     "summary": ""
   },
@@ -123,6 +81,20 @@
     "isFree": false,
     "price": "60.00 MYR",
     "category": "Nightlife",
+    "summary": ""
+  },
+  {
+    "id": "91552bda47ad11f1967801117567899b",
+    "title": "FENG!",
+    "url": "https://www.ticketmelon.com/JUPITER/FENG",
+    "date": "2026-05-16",
+    "time": "14:00",
+    "venue": "Jump In Sdn Bhd",
+    "city": "",
+    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/91552bda47ad11f1967801117567899b/poster/bba0b15c47ae11f1943101117567899b.png",
+    "isFree": false,
+    "price": "35.00 MYR",
+    "category": "Arts",
     "summary": ""
   },
   {
@@ -168,20 +140,6 @@
     "summary": ""
   },
   {
-    "id": "55972f8629bb11f1915501117567899b",
-    "title": "INTERNET FRIENDS ft KATAYANAGI TWINS",
-    "url": "https://www.ticketmelon.com/kyokl/internerfriendsftkatayanagitwins",
-    "date": "2026-04-30",
-    "time": "14:00",
-    "venue": "kyō kuala lumpur",
-    "city": "Malaysia",
-    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/55972f8629bb11f1915501117567899b/poster/9889b57729bb11f1967801117567899b.png",
-    "isFree": false,
-    "price": "68.00 MYR",
-    "category": "Music",
-    "summary": ""
-  },
-  {
     "id": "6889857c028911f1943101117567899b",
     "title": "Verknipt Malaysia 2026",
     "url": "https://www.ticketmelon.com/verkniptmy/verkniptmalaysia2026",
@@ -196,30 +154,16 @@
     "summary": ""
   },
   {
-    "id": "60f636bd37f311f1990801117567899b",
-    "title": "PLASMA 3.0: AFTERHOURS FREQUENCY",
-    "url": "https://www.ticketmelon.com/plasmamusic/plasma3afterhours",
-    "date": "2026-05-01",
-    "time": "14:00",
-    "venue": "LUUMA DINING",
-    "city": "",
-    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/60f636bd37f311f1990801117567899b/poster/5687b0603c6e11f1923401117567899b.png",
-    "isFree": false,
-    "price": "68.00 MYR",
-    "category": "Music",
-    "summary": ""
-  },
-  {
     "id": "c0d4adab1a1811f1915501117567899b",
     "title": "POST Presents: Luv(sic) Hexalogy - Kuala Lumpur",
     "url": "https://www.ticketmelon.com/POST/luvsic-hex-kl",
     "date": "2026-06-21",
     "time": "12:00",
-    "venue": "Vox Live Kuala Lumpur",
-    "city": "Malaysia",
-    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/c0d4adab1a1811f1915501117567899b/poster/85001beb1e9311f1990801117567899b.png",
+    "venue": "Pavilion Arena",
+    "city": "",
+    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/c0d4adab1a1811f1915501117567899b/poster/cb7036b544f411f1923401117567899b.png",
     "isFree": false,
-    "price": "208.00 MYR",
+    "price": "188.00 MYR",
     "category": "Music",
     "summary": ""
   },
@@ -252,20 +196,6 @@
     "summary": ""
   },
   {
-    "id": "f57c813620e611f1943101117567899b",
-    "title": "R&B Sundays Malaysia - KL",
-    "url": "https://www.ticketmelon.com/rnbsundaysmy/rnbsundayskl",
-    "date": "2026-05-03",
-    "time": "06:00",
-    "venue": "Sol Level 40 • The Met",
-    "city": "",
-    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/f57c813620e611f1943101117567899b/poster/3de00c8220e711f1915501117567899b.png",
-    "isFree": false,
-    "price": "49.00 MYR",
-    "category": "Hobbies",
-    "summary": ""
-  },
-  {
     "id": "91bb3b43113c11f1911101117567899b",
     "title": "CTOS SME BIZ DAY 2026 - PETALING JAYA",
     "url": "https://www.ticketmelon.com/ctos/smebizday2026pj",
@@ -277,20 +207,6 @@
     "isFree": false,
     "price": "79.00 MYR",
     "category": "Business",
-    "summary": ""
-  },
-  {
-    "id": "a823b5643bd511f1990801117567899b",
-    "title": "OBLIVION CODE : ALL LOCAL ALL POWER",
-    "url": "https://www.ticketmelon.com/oblivioncode/alllocalallpower",
-    "date": "2026-05-02",
-    "time": "10:00",
-    "venue": "Vox Live Kuala Lumpur",
-    "city": "Malaysia",
-    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/a823b5643bd511f1990801117567899b/poster/415e508c3bea11f1911101117567899b.png",
-    "isFree": false,
-    "price": "38.00 MYR",
-    "category": "Nightlife",
     "summary": ""
   },
   {
@@ -319,6 +235,20 @@
     "isFree": false,
     "price": "168.00 MYR",
     "category": "Music",
+    "summary": ""
+  },
+  {
+    "id": "b7a67828485511f1911101117567899b",
+    "title": "Aura KL presents MARI FERRARI",
+    "url": "https://www.ticketmelon.com/aurakl/mariferrari",
+    "date": "2026-06-21",
+    "time": "14:00",
+    "venue": "AURA KL , STAR BOULEVARD ",
+    "city": "",
+    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/b7a67828485511f1911101117567899b/poster/dca21cec485511f1943101117567899b.png",
+    "isFree": false,
+    "price": "58.00 MYR",
+    "category": "Nightlife",
     "summary": ""
   },
   {
@@ -406,6 +336,20 @@
     "summary": ""
   },
   {
+    "id": "0d8c4e09487611f1915501117567899b",
+    "title": "PRE PARTY FRACTAL OFFSITE",
+    "url": "https://www.ticketmelon.com/serioussociety/prepartyfractaloffsite",
+    "date": "2026-05-16",
+    "time": "14:00",
+    "venue": "Bagunan Ming",
+    "city": "",
+    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/0d8c4e09487611f1915501117567899b/poster/c4e30e5e487611f1943101117567899b.png",
+    "isFree": false,
+    "price": "50.00 MYR",
+    "category": "Music",
+    "summary": ""
+  },
+  {
     "id": "da2d9713fc0011f0967801117567899b",
     "title": "Sunset by NEON: Upperground",
     "url": "https://www.ticketmelon.com/sunsetbyneon/sbn26ch1",
@@ -463,13 +407,13 @@
   },
   {
     "id": "306e2ef13e3a11f1922201117567899b",
-    "title": "NeuNoize featuring Zamna Artists - Hugo Cantarra & TBA",
+    "title": "NeuNoize featuring Zamna Artists - Hugo Cantarra & The Element",
     "url": "https://www.ticketmelon.com/NeuNoize/zamnaseries",
     "date": "2026-05-02",
     "time": "13:00",
     "venue": "Müro KL (Dance Club)",
     "city": "",
-    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/306e2ef13e3a11f1922201117567899b/poster/5c4f88bb3e3a11f1915501117567899b.png",
+    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/306e2ef13e3a11f1922201117567899b/poster/94c0e3fd470611f1922201117567899b.png",
     "isFree": false,
     "price": "120.00 MYR",
     "category": "Nightlife",
@@ -490,6 +434,20 @@
     "summary": ""
   },
   {
+    "id": "5a9fef9d420c11f1911101117567899b",
+    "title": "KL Tigers Fest 2026",
+    "url": "https://www.ticketmelon.com/kltigersrfc/kltigersfest2026",
+    "date": "2026-08-29",
+    "time": "00:00",
+    "venue": "Bukit Kiara Equestrian and Resort",
+    "city": "",
+    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/5a9fef9d420c11f1911101117567899b/poster/1280184b423111f1967801117567899b.png",
+    "isFree": false,
+    "price": "35.00 MYR",
+    "category": "Sports & Fitness",
+    "summary": ""
+  },
+  {
     "id": "8109f9bd9d1311f0911101117567899b",
     "title": "J.I.D. – God Does Like World Tours KUALA LUMPUR",
     "url": "https://www.ticketmelon.com/fsa/JID-god-does-like-world-tours-MY",
@@ -504,17 +462,17 @@
     "summary": ""
   },
   {
-    "id": "338a028c28c811f1923401117567899b",
-    "title": "Radeo Affair",
-    "url": "https://www.ticketmelon.com/Thegathering_groove/Thegatheringgrooveradeoaffar",
-    "date": "2026-05-02",
-    "time": "14:00",
-    "venue": "DeJaVu Club KL",
-    "city": "",
-    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/338a028c28c811f1923401117567899b/poster/36a985752b1e11f1967801117567899b.png",
+    "id": "c2ad60ea488911f1911101117567899b",
+    "title": "THE FAB FOUR LIVE IN PENANG",
+    "url": "https://www.ticketmelon.com/ecotoursasia/thefabfourliveinpenang",
+    "date": "2026-05-15",
+    "time": "12:00",
+    "venue": "Fifth Avenue Hotel, Penang",
+    "city": "Malaysia",
+    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/c2ad60ea488911f1911101117567899b/poster/f94edbda488911f1915501117567899b.png",
     "isFree": false,
-    "price": "45.00 MYR",
-    "category": "Nightlife",
+    "price": "188.00 MYR",
+    "category": "Music",
     "summary": ""
   },
   {
@@ -529,6 +487,20 @@
     "isFree": false,
     "price": "60.00 MYR",
     "category": "Music",
+    "summary": ""
+  },
+  {
+    "id": "83d1929d447311f1990801117567899b",
+    "title": "GIORGIA ANGUILI at KYŌ",
+    "url": "https://www.ticketmelon.com/kyokl/giorgiaanguili",
+    "date": "2026-05-21",
+    "time": "14:00",
+    "venue": "kyō kuala lumpur",
+    "city": "Malaysia",
+    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/83d1929d447311f1990801117567899b/poster/c72d8073447311f1967801117567899b.png",
+    "isFree": false,
+    "price": "48.00 MYR",
+    "category": "Nightlife",
     "summary": ""
   },
   {
@@ -557,6 +529,20 @@
     "isFree": false,
     "price": "35.00 MYR",
     "category": "Music",
+    "summary": ""
+  },
+  {
+    "id": "a4ecf2d9482a11f1922201117567899b",
+    "title": "HEAL Mother's Day 2026: Mom's Morning Out",
+    "url": "https://www.ticketmelon.com/healnutrition/momsmorningout",
+    "date": "2026-05-09",
+    "time": "00:30",
+    "venue": "PJ Collective",
+    "city": "",
+    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/a4ecf2d9482a11f1922201117567899b/poster/43f67242484f11f1923401117567899b.png",
+    "isFree": false,
+    "price": "70.00 MYR",
+    "category": "Sports & Fitness",
     "summary": ""
   },
   {
@@ -616,20 +602,6 @@
     "summary": ""
   },
   {
-    "id": "1cf28b5f19e111f1923401117567899b",
-    "title": "Rockiss RockOn Festival '26 Ft. Saosin, Hawthorne Heights",
-    "url": "https://www.ticketmelon.com/skeshentertainment/rockissrockonfestival26",
-    "date": "2026-05-02",
-    "time": "06:00",
-    "venue": "JioSpace",
-    "city": "",
-    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/1cf28b5f19e111f1923401117567899b/poster/b26bb15b19e111f1911101117567899b.png",
-    "isFree": false,
-    "price": "99.00 MYR",
-    "category": "Music",
-    "summary": ""
-  },
-  {
     "id": "1cd13181345f11f1911101117567899b",
     "title": "RAMPAGE3.0",
     "url": "https://www.ticketmelon.com/TF-rampage3kuna_rooftop/TF_rampage",
@@ -639,8 +611,22 @@
     "city": "Malaysia",
     "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/1cd13181345f11f1911101117567899b/poster/1bb48ef8351211f1922201117567899b.png",
     "isFree": false,
-    "price": "19.90 MYR",
+    "price": "40.00 MYR",
     "category": "Nightlife",
+    "summary": ""
+  },
+  {
+    "id": "2036b053398c11f1915501117567899b",
+    "title": "PERPLEXITY",
+    "url": "https://www.ticketmelon.com/boomfear-entertainment/perplexity",
+    "date": "2026-05-22",
+    "time": "02:00",
+    "venue": "TREC Kuala Lumpur",
+    "city": "Malaysia",
+    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/2036b053398c11f1915501117567899b/poster/62734e12413b11f1923401117567899b.png",
+    "isFree": false,
+    "price": "38.00 MYR",
+    "category": "Music",
     "summary": ""
   },
   {
@@ -682,6 +668,34 @@
     "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/297902f13c2811f1911101117567899b/poster/2273c5f13c4411f1911101117567899b.png",
     "isFree": false,
     "price": "40.00 MYR",
+    "category": "Nightlife",
+    "summary": ""
+  },
+  {
+    "id": "56dec845491a11f1911101117567899b",
+    "title": "Frisson Vol 2",
+    "url": "https://www.ticketmelon.com/evenifyoubuy/frisson2",
+    "date": "2026-05-16",
+    "time": "06:00",
+    "venue": "JOLOKO",
+    "city": "",
+    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/56dec845491a11f1911101117567899b/poster/61bd039a491b11f1922201117567899b.png",
+    "isFree": false,
+    "price": "35.00 MYR",
+    "category": "Arts",
+    "summary": ""
+  },
+  {
+    "id": "14c5862b491c11f1911101117567899b",
+    "title": "THE SECOND DROP",
+    "url": "https://www.ticketmelon.com/gracefam/theseconddrop",
+    "date": "2026-06-04",
+    "time": "14:00",
+    "venue": "Over and Above",
+    "city": "",
+    "image": "https://tm-prod-event-files-v3.s3.ap-southeast-1.amazonaws.com/14c5862b491c11f1911101117567899b/poster/bbef558b491d11f1990801117567899b.png",
+    "isFree": false,
+    "price": "109.00 MYR",
     "category": "Nightlife",
     "summary": ""
   },

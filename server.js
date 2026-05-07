@@ -38,6 +38,8 @@ const {
   mergeRagPoolForSourceDiversity,
   poolNeedsSourceBlend,
   selectDiverseRecommendations,
+  parseBareOrdinal,
+  extractKeywords,
 } = require('./chatbot-utils');
 
 const app = express();
@@ -48,9 +50,11 @@ const HF_EMBEDDING_MODEL = 'sentence-transformers/all-MiniLM-L6-v2';
 const RAG_SYSTEM_PROMPT = `You are a warm, fun, friendly friend helping someone discover events in Malaysia.
 - Sound human: short-ish, punchy, natural emojis — not robotic or salesy.
 - You only ever recommend from the event list the user message includes (JSON). Never invent venues, dates, or prices.
-- If the event list is empty, say you could not find matches and set show_events to false.
+- CRITICAL: If the event list contains one or more events, you MUST acknowledge them warmly. NEVER say "no events", "nothing found", "I couldn't find any", or any similar negative phrase when the list is non-empty. The events have already been verified to match — trust the list.
+- If the event list is empty (length 0), only then say you could not find matches and set show_events to false.
 - Only recommend UPCOMING events (date is today or later). Never hype or feature events whose dates are before today unless the user clearly asked about the past or a specific past day.
 - If every event in the JSON is in the past and the user did not ask about past events, say there are no good upcoming matches and set show_events to false.
+- The user message includes a CALENDAR block with TODAY in Malaysia (Asia/Kuala_Lumpur). Treat it as the source of truth for phrases like "this year", "this month", "next month", and "next year". Never assume 2025 or any other year unless that block says so.
 - This app does not sell tickets — point people to the event link on the source site for booking.
 - Reply must be ONLY one JSON object, no markdown code fences, no text before or after:
 {"reply":"<warm recommendation>","show_events":true|false}
@@ -59,8 +63,91 @@ show_events: true only when you are actually recommending specific events from t
 const CASUAL_SYSTEM_PROMPT = `You are a warm, friendly assistant for discovering events in Malaysia.
 The user is only greeting you or making small talk — they did NOT ask to see event listings or recommendations yet.
 Reply in one short message (light emoji ok). Do NOT list events, venues, dates, or prices.
+If the user message includes a CALENDAR line with TODAY in Malaysia, treat it as authoritative for the current year/month when you mention time casually.
 Reply must be ONLY one JSON object:
 {"reply":"<message>","show_events":false}`;
+
+const INTENT_EXTRACTION_SYSTEM_PROMPT = `You are a date and intent extraction system for an event chatbot in Malaysia.
+
+Your only job: read the user's message and return ONE JSON object describing what they want. NO markdown, NO commentary, NO code fences.
+
+Output schema:
+{
+  "dateRange": {
+    "from": "YYYY-MM-DD" or null,
+    "to":   "YYYY-MM-DD" or null,
+    "label": "human-readable description"
+  },
+  "keywords": ["specific topic words from the message"],
+  "isEventRequest": true or false
+}
+
+DATE RULES (use TODAY from the user message as reference; never assume any other year):
+- "before X"          → from = today,    to = X minus 1 day        (X excluded)
+- "after X"           → from = X plus 1, to = today + 12 months    (X excluded)
+- "by X" / "until X" / "no later than X" / "on or before X" → from = today, to = X (X included)
+- "since X" / "starting X" / "on or after X" / "not before X" → from = X, to = today + 12 months (X included)
+- "between X and Y" / "from X to Y"                          → from = X, to = Y (both included)
+- Compound ("before X but after Y") → return the intersection range
+- "tomorrow" / "today" / "tonight" → that single day
+- "this weekend" / "weekend" → upcoming Saturday and Sunday
+- "next weekend" → the weekend AFTER this weekend
+- "next week"  → next Monday through Sunday
+- "this month" / "next month" → 1st to last day of that month
+- "in <Month>" → 1st to last day of the upcoming <Month>
+- "the weekend after <date>" / "X days from <date>" → compute literally
+- For relative phrases that depend on personal data ("the day after my birthday"), set from=null, to=null and note it in label.
+- If no date constraint at all, set from=null, to=null.
+- Always interpret naked months/days/weekdays as the upcoming occurrence, not the past.
+
+KEYWORD RULES (used for SQL keyword search alongside vector search):
+- Extract ONLY specific topic words: "cancer", "jazz", "BBC mandarin", "K-pop", "vegan", "jiu-jitsu", "anime", "trading"
+- DO NOT include generic words: "events", "shows", "things", "fun", "happening", "stuff", "concert", "festival"
+- DO NOT include date words: "today", "tomorrow", "weekend", "august", "this", "next"
+- DO NOT include place words: city/area names like "KL", "Penang", "near me"
+- DO NOT include budget words: "free", "cheap", "RM50"
+- Return [] if nothing specific.
+
+isEventRequest:
+- true if user is asking for/about events, shows, things to do, plans, ideas
+- false for greetings ("hi", "thanks") or unrelated chatter
+
+EXAMPLES (assume today is 2026-05-06):
+"events tomorrow"
+→ {"dateRange":{"from":"2026-05-07","to":"2026-05-07","label":"tomorrow"},"keywords":[],"isEventRequest":true}
+
+"any cancer events before 31 august but after 1 august"
+→ {"dateRange":{"from":"2026-08-02","to":"2026-08-30","label":"between Aug 1 and Aug 31"},"keywords":["cancer"],"isEventRequest":true}
+
+"events in the second half of august"
+→ {"dateRange":{"from":"2026-08-16","to":"2026-08-31","label":"second half of August"},"keywords":[],"isEventRequest":true}
+
+"the weekend after my birthday"
+→ {"dateRange":{"from":null,"to":null,"label":"the weekend after the user's birthday (unknown)"},"keywords":[],"isEventRequest":true}
+
+"hi"
+→ {"dateRange":{"from":null,"to":null,"label":"any time"},"keywords":[],"isEventRequest":false}`;
+
+const MALAYSIA_TZ = 'Asia/Kuala_Lumpur';
+
+/** Authoritative "today" for the LLM so relative time (this year / next month) matches real Malaysia time, not model cutoff. */
+function malaysiaCalendarBlock(now = new Date()) {
+  const tz = MALAYSIA_TZ;
+  const isoDate = now.toLocaleDateString('en-CA', { timeZone: tz });
+  const longHuman = new Intl.DateTimeFormat('en-GB', {
+    timeZone: tz,
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(now);
+  const yearNum = Number(new Intl.DateTimeFormat('en', { timeZone: tz, year: 'numeric' }).format(now));
+  return (
+    `CALENDAR (authoritative — use for "this year"/"this month"/"next month"/"next year"):\n` +
+    `Today in Malaysia (${tz}): ${longHuman} (ISO date ${isoDate}).\n` +
+    `"This year" means ${yearNum}. Event dates in any JSON below use the same calendar; if a date shows ${yearNum} it is in ${yearNum}. Never contradict this block or claim a listed year is "wrong" vs an older training year.`
+  );
+}
 
 const SUPABASE_TABLE_PAGE = Math.max(1, Number(process.env.SUPABASE_PAGE_SIZE) || 1000);
 
@@ -68,6 +155,16 @@ app.use(express.json({ limit: '2mb' }));
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'viewer.html'));
+});
+
+app.get('/flight-search.js', (req, res) => {
+  res.type('application/javascript');
+  res.sendFile(path.join(__dirname, 'flight-search.js'));
+});
+
+app.get('/hotel-search.js', (req, res) => {
+  res.type('application/javascript');
+  res.sendFile(path.join(__dirname, 'hotel-search.js'));
 });
 
 app.get('/chatbot', (req, res) => {
@@ -241,313 +338,6 @@ function parseLlmJson(text) {
   return null;
 }
 
-function normalizeText(s) {
-  return String(s || '')
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function looksMalaysiaEvent(e) {
-  const source = String(e?._source || e?.source || '').toLowerCase();
-  if (source === 'ticket2u' || source === 'goliveasia' || source === 'ticketmelon') return true;
-  const blob = `${e?.title || ''} ${e?.venue || ''} ${e?.city || ''} ${e?.url || ''}`.toLowerCase();
-  return /\b(malaysia|kuala lumpur|\bkl\b|selangor|penang|johor|putrajaya|sarawak|sabah|melaka|malacca|cyberjaya|petaling)\b/.test(
-    blob,
-  );
-}
-
-function getItineraryEventPool() {
-  const merged = getCachedMergedScrapedEvents();
-  const future = filterFutureEvents(merged);
-  const onlyMy = future.filter(looksMalaysiaEvent);
-  return dedupeEventsForRecommendations(onlyMy).slice(0, 2000);
-}
-
-function eventOptionFromRow(e) {
-  const source = e._source || e.source || 'unknown';
-  const safeId = `${source}:${e.id != null ? String(e.id) : normalizeText(e.title).slice(0, 50)}`;
-  return {
-    key: safeId,
-    id: e.id != null ? String(e.id) : '',
-    source,
-    title: e.title || 'Untitled Event',
-    date: e.date || '',
-    venue: e.venue || '',
-    city: e.city || '',
-    url: e.url || '',
-    image: e.image || '',
-  };
-}
-
-function findEventForItinerary(pool, body) {
-  const eventKey = String(body?.eventKey || '').trim();
-  const eventId = String(body?.eventId || '').trim();
-  const source = String(body?.source || '').trim().toLowerCase();
-  const title = String(body?.eventTitle || '').trim();
-
-  if (eventKey) {
-    const m = pool.find((e) => `${e._source || e.source}:${String(e.id || '')}` === eventKey);
-    if (m) return m;
-  }
-  if (eventId) {
-    const m = pool.find((e) => String(e.id || '') === eventId && (!source || String(e._source || e.source).toLowerCase() === source));
-    if (m) return m;
-  }
-  if (title) {
-    const q = normalizeText(title);
-    let m = pool.find((e) => normalizeText(e.title) === q);
-    if (m) return m;
-    m = pool.find((e) => normalizeText(e.title).includes(q) || q.includes(normalizeText(e.title)));
-    if (m) return m;
-  }
-  return null;
-}
-
-async function generateItineraryWithDashScope(payload) {
-  const apiKey = process.env.DASHSCOPE_API_KEY;
-  if (!apiKey) throw new Error('DASHSCOPE_API_KEY not configured');
-  const base = process.env.DASHSCOPE_BASE_URL || 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1';
-  const model = process.env.DASHSCOPE_MODEL || 'qwen-plus';
-  const url = `${base.replace(/\/$/, '')}/chat/completions`;
-
-  const systemPrompt = [
-    'You are an expert Malaysia travel planner.',
-    'Build practical itinerary suggestions around one selected event.',
-    'Country MUST be Malaysia only.',
-    'Do not suggest non-Malaysia cities/countries.',
-    'Return ONLY JSON.',
-    'JSON schema:',
-    '{',
-    '  "summary": "short paragraph",',
-    '  "event_context": {"title":"","date":"","venue":"","city":""},',
-    '  "days":[{"day":1,"theme":"","places":[{"name":"","time":"","description":"","fun_fact":"","map_query":"","image_query":""}]}],',
-    '  "hotels":[{"name":"","area":"","why":"","booking_url":""}],',
-    '  "flights":[{"route":"","notes":"","booking_url":""}]',
-    '}',
-    'For booking_url use generic, safe links only (Google Flights/Hotels or Booking search links).',
-  ].join('\n');
-
-  const userBlock = JSON.stringify(payload);
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userBlock },
-      ],
-      max_tokens: 1400,
-      temperature: 0.5,
-    }),
-  });
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    const errMsg = data.error?.message || data.message || data.code || `DashScope error (${response.status})`;
-    throw new Error(errMsg);
-  }
-  const text = data.choices?.[0]?.message?.content;
-  if (!text) throw new Error('Empty itinerary response from DashScope');
-  const parsed = parseLlmJson(String(text));
-  if (parsed && typeof parsed === 'object') return parsed;
-
-  // Repair pass: ask model to output strict JSON only.
-  const repairPrompt = [
-    'Convert this into strict valid JSON only (no markdown).',
-    'Keep Malaysia-only places/cities.',
-    'Required keys: summary, event_context, days, hotels, flights.',
-    String(text),
-  ].join('\n');
-  const repairResponse = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [
-        { role: 'system', content: 'Return ONLY valid JSON. No commentary.' },
-        { role: 'user', content: repairPrompt },
-      ],
-      max_tokens: 1200,
-      temperature: 0.1,
-    }),
-  });
-  const repairData = await repairResponse.json().catch(() => ({}));
-  if (repairResponse.ok) {
-    const repaired = parseLlmJson(String(repairData.choices?.[0]?.message?.content || ''));
-    if (repaired && typeof repaired === 'object') return repaired;
-  }
-  throw new Error('Could not parse itinerary JSON');
-}
-
-const MALAYSIA_GUIDE_PLACES = {
-  'kuala lumpur': [
-    { name: 'Petronas Twin Towers & KLCC Park', tags: ['balanced', 'culture', 'chill'], best_time: 'Morning', ticket_info: 'Skybridge/Observation Deck ticket required', map_query: 'Petronas Twin Towers Kuala Lumpur', image_query: 'Petronas Twin Towers Kuala Lumpur', description: 'Start with the city icon, then walk KLCC Park for skyline views.', fun_fact: 'The twin towers were the world’s tallest buildings from 1998 to 2004.' },
-    { name: 'Bukit Bintang & Jalan Alor Food Street', tags: ['foodie', 'balanced', 'night'], best_time: 'Evening', ticket_info: 'No entry fee', map_query: 'Jalan Alor Kuala Lumpur', image_query: 'Jalan Alor food street', description: 'Street food trail and shopping district with nightlife energy.', fun_fact: 'Jalan Alor is one of Kuala Lumpur’s best-known late-night food streets.' },
-    { name: 'Batu Caves', tags: ['culture', 'adventurous'], best_time: 'Morning', ticket_info: 'Cave temples are generally free; some attractions paid', map_query: 'Batu Caves Selangor', image_query: 'Batu Caves golden statue', description: 'Temple cave complex with steep stairs and panoramic viewpoints.', fun_fact: 'The colorful staircase has 272 steps to the main cave temple.' },
-    { name: 'KL Forest Eco Park Canopy Walk', tags: ['adventurous', 'chill'], best_time: 'Morning', ticket_info: 'Small entrance fee may apply', map_query: 'KL Forest Eco Park canopy walk', image_query: 'KL Forest Eco Park canopy walk', description: 'Urban rainforest trail near city center for easy nature immersion.', fun_fact: 'It is one of the oldest permanent forest reserves in Malaysia.' },
-    { name: 'Merdeka Square & Sultan Abdul Samad Building', tags: ['culture', 'balanced'], best_time: 'Afternoon', ticket_info: 'Public area, free', map_query: 'Merdeka Square Kuala Lumpur', image_query: 'Merdeka Square Kuala Lumpur', description: 'Historic core of Kuala Lumpur with colonial-era architecture.', fun_fact: 'Malaysia’s independence flag-raising took place at Merdeka Square in 1957.' },
-  ],
-  penang: [
-    { name: 'George Town Street Art Trail', tags: ['culture', 'foodie', 'balanced'], best_time: 'Morning', ticket_info: 'Public streets, free', map_query: 'George Town street art Penang', image_query: 'George Town street art murals', description: 'Walk through UNESCO streets, murals, and heritage shophouses.', fun_fact: 'George Town is a UNESCO World Heritage Site known for its living culture.' },
-    { name: 'Penang Hill & The Habitat', tags: ['chill', 'adventurous'], best_time: 'Morning', ticket_info: 'Funicular + attraction tickets', map_query: 'Penang Hill The Habitat', image_query: 'Penang Hill view', description: 'Cooler hilltop air, rainforest views, and canopy experiences.', fun_fact: 'Penang Hill funicular has served visitors for over a century.' },
-    { name: 'Chew Jetty', tags: ['culture', 'chill'], best_time: 'Sunset', ticket_info: 'Free', map_query: 'Chew Jetty Penang', image_query: 'Chew Jetty sunset', description: 'Clan jetty village over water with photogenic boardwalks.', fun_fact: 'The jetties were historically home to Chinese clan communities.' },
-    { name: 'Penang Food Trail (Gurney / Chulia)', tags: ['foodie', 'night'], best_time: 'Evening', ticket_info: 'Pay per food item', map_query: 'Gurney Drive hawker centre', image_query: 'Penang hawker food', description: 'Try assam laksa, char kway teow, and local desserts.', fun_fact: 'Penang is often called Malaysia’s food capital.' },
-  ],
-  johor: [
-    { name: 'Johor Bahru Heritage Walk', tags: ['culture', 'balanced'], best_time: 'Morning', ticket_info: 'Mostly free', map_query: 'Johor Bahru old town heritage walk', image_query: 'Johor Bahru old town', description: 'Explore old quarters, murals, and cultural landmarks.', fun_fact: 'Johor Bahru sits at the southern gateway of Peninsular Malaysia.' },
-    { name: 'Danga Bay Waterfront', tags: ['chill', 'night'], best_time: 'Evening', ticket_info: 'Free public area', map_query: 'Danga Bay Johor Bahru', image_query: 'Danga Bay waterfront', description: 'Waterfront promenade for sunset and casual dining.', fun_fact: 'Danga Bay is one of the largest recreational waterfronts in Johor.' },
-    { name: 'Desaru Coast Adventure', tags: ['adventurous', 'chill'], best_time: 'Day trip', ticket_info: 'Varies by attraction', map_query: 'Desaru Coast Johor', image_query: 'Desaru Coast beach', description: 'Beachside escape with water and resort activities.', fun_fact: 'Desaru coastline stretches across scenic east Johor shores.' },
-  ],
-  melaka: [
-    { name: 'Jonker Street Night Market', tags: ['foodie', 'culture', 'night'], best_time: 'Evening', ticket_info: 'Free entry', map_query: 'Jonker Street Melaka', image_query: 'Jonker Street night market', description: 'Night market for snacks, souvenirs, and heritage vibes.', fun_fact: 'Melaka’s historic center is recognized as a UNESCO site.' },
-    { name: 'A Famosa & Stadthuys Area', tags: ['culture', 'balanced'], best_time: 'Morning', ticket_info: 'Mostly free / museum tickets optional', map_query: 'A Famosa Melaka', image_query: 'A Famosa Melaka', description: 'Core colonial landmarks telling Melaka’s maritime past.', fun_fact: 'A Famosa is one of the oldest surviving European structures in Asia.' },
-    { name: 'Melaka River Cruise', tags: ['chill', 'night'], best_time: 'Sunset/Evening', ticket_info: 'Cruise ticket required', map_query: 'Melaka River Cruise', image_query: 'Melaka river cruise', description: 'Boat route through murals, bridges, and lit riverside scenes.', fun_fact: 'The river was once a major trading artery of the Melaka Sultanate.' },
-  ],
-  'kota kinabalu': [
-    { name: 'Tanjung Aru Beach Sunset', tags: ['chill', 'night'], best_time: 'Sunset', ticket_info: 'Free', map_query: 'Tanjung Aru Beach Kota Kinabalu', image_query: 'Tanjung Aru sunset', description: 'Iconic Sabah sunset point with food stalls nearby.', fun_fact: 'Tanjung Aru sunsets are often ranked among Malaysia’s best.' },
-    { name: 'Kota Kinabalu Waterfront', tags: ['foodie', 'night', 'balanced'], best_time: 'Evening', ticket_info: 'Free public area', map_query: 'Kota Kinabalu Waterfront', image_query: 'Kota Kinabalu Waterfront', description: 'Dining, sea views, and live atmosphere in city center.', fun_fact: 'The waterfront is a social hub for locals and travelers alike.' },
-    { name: 'Kinabalu Park Day Trip', tags: ['adventurous', 'culture'], best_time: 'Day trip', ticket_info: 'Park entrance fee', map_query: 'Kinabalu Park Sabah', image_query: 'Mount Kinabalu park', description: 'Highland nature trails and botanical biodiversity.', fun_fact: 'Kinabalu Park is Malaysia’s first UNESCO World Heritage Site.' },
-  ],
-  kuching: [
-    { name: 'Kuching Waterfront', tags: ['chill', 'culture', 'night'], best_time: 'Evening', ticket_info: 'Free', map_query: 'Kuching Waterfront', image_query: 'Kuching waterfront sunset', description: 'Scenic river promenade with landmarks and performers.', fun_fact: 'Kuching means “cat” in Malay, reflected in city mascots and monuments.' },
-    { name: 'Sarawak Cultural Village', tags: ['culture', 'balanced'], best_time: 'Morning', ticket_info: 'Entrance ticket', map_query: 'Sarawak Cultural Village', image_query: 'Sarawak Cultural Village', description: 'Interactive living museum of Sarawak ethnic heritage.', fun_fact: 'The village showcases traditional houses from major Sarawak communities.' },
-    { name: 'Bako National Park', tags: ['adventurous', 'nature'], best_time: 'Day trip', ticket_info: 'Park + boat transfer fees', map_query: 'Bako National Park', image_query: 'Bako National Park proboscis monkey', description: 'Mangrove and coastal trails with wildlife spotting.', fun_fact: 'Bako is one of the best places to spot proboscis monkeys in the wild.' },
-  ],
-};
-
-function detectMalaysiaCityHint(event) {
-  const blob = normalizeText(`${event?.city || ''} ${event?.venue || ''} ${event?.title || ''}`);
-  if (blob.includes('kota kinabalu')) return 'kota kinabalu';
-  if (blob.includes('kuching')) return 'kuching';
-  if (blob.includes('melaka') || blob.includes('malacca')) return 'melaka';
-  if (blob.includes('johor') || blob.includes('johor bahru')) return 'johor';
-  if (blob.includes('penang') || blob.includes('george town')) return 'penang';
-  if (blob.includes('kuala lumpur') || blob.includes('selangor') || blob.includes('petaling') || blob.includes('kl')) return 'kuala lumpur';
-  return 'kuala lumpur';
-}
-
-function pickPlacesForPreference(allPlaces, travelStyle, adventureLevel) {
-  const style = String(travelStyle || 'balanced').toLowerCase();
-  const adv = String(adventureLevel || 'medium').toLowerCase();
-  const score = (p) => {
-    let s = 0;
-    const tags = Array.isArray(p.tags) ? p.tags : [];
-    if (tags.includes(style)) s += 4;
-    if (style === 'balanced') s += 2;
-    if (adv === 'high' && tags.includes('adventurous')) s += 4;
-    if (adv === 'low' && (tags.includes('chill') || tags.includes('culture'))) s += 3;
-    if (adv === 'medium' && (tags.includes('balanced') || tags.includes('culture'))) s += 2;
-    return s;
-  };
-  return [...allPlaces].sort((a, b) => score(b) - score(a));
-}
-
-function buildFallbackItinerary(event, prefs) {
-  const cityKey = detectMalaysiaCityHint(event);
-  const cityPlaces = MALAYSIA_GUIDE_PLACES[cityKey] || MALAYSIA_GUIDE_PLACES['kuala lumpur'];
-  const style = String(prefs?.travelStyle || 'balanced');
-  const adventure = String(prefs?.adventureLevel || 'medium');
-  const days = Math.min(5, Math.max(1, Number(prefs?.days) || 2));
-  const ranked = pickPlacesForPreference(cityPlaces, style, adventure);
-
-  const dayEntries = [];
-  for (let i = 1; i <= days; i += 1) {
-    const p1 = ranked[(i - 1) % ranked.length];
-    const p2 = ranked[(i + 1) % ranked.length];
-    const p3 = ranked[(i + 2) % ranked.length];
-    dayEntries.push({
-      day: i,
-      theme: i === 1 ? 'Arrival, Orientation & Event' : `Discover ${cityKey.toUpperCase()} Like a Local`,
-      route_map_url: `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.venue || event.city || cityKey + ' malaysia')}&travelmode=driving`,
-      places: [
-        {
-          ...p1,
-          time: '09:30',
-          estimated_duration: '1.5-2h',
-          journal_prompt: `What surprised you most about ${p1.name}?`,
-        },
-        {
-          ...p2,
-          time: '13:30',
-          estimated_duration: '2-3h',
-          journal_prompt: `Describe one local interaction or food memory from ${p2.name}.`,
-        },
-        {
-          name: i === 1 ? (event.title || 'Event Night') : p3.name,
-          time: '19:00',
-          description:
-            i === 1
-              ? `Attend ${event.title || 'your event'} at ${event.venue || event.city || 'the venue'} and plan dinner nearby.`
-              : p3.description,
-          fun_fact:
-            i === 1
-              ? 'Event venues in Malaysia are often close to dining and transit hubs.'
-              : p3.fun_fact,
-          map_query: i === 1 ? `${event.venue || event.city || cityKey} malaysia` : p3.map_query,
-          image_query: i === 1 ? `${event.title || cityKey} malaysia event` : p3.image_query,
-          best_time: i === 1 ? 'Evening' : p3.best_time,
-          ticket_info: i === 1 ? 'Event ticket required' : p3.ticket_info,
-          estimated_duration: i === 1 ? '3-4h' : '2h',
-          journal_prompt:
-            i === 1
-              ? 'What was the highlight of tonight’s event experience?'
-              : `What would you recommend to another traveler about ${p3.name}?`,
-        },
-      ],
-    });
-  }
-
-  const cityLabel = cityKey
-    .split(' ')
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join(' ');
-
-  return {
-    summary: `Detailed Malaysia guide itinerary for ${cityLabel}, centered around "${event.title}". Includes map-friendly stops, practical tips, and journal prompts for each day.`,
-    event_context: {
-      title: event.title || '',
-      date: event.date || '',
-      venue: event.venue || '',
-      city: event.city || cityLabel,
-    },
-    days: dayEntries,
-    journal: {
-      mood_check: ['Energy level this morning?', 'Top memory of the day?', 'What to adjust tomorrow?'],
-      packing_notes: ['Hydration + umbrella', 'Comfortable shoes', 'Power bank', 'Light rain layer'],
-      prompts: dayEntries.flatMap((d) => (d.places || []).map((p) => p.journal_prompt).filter(Boolean)),
-    },
-    hotels: [
-      {
-        name: `${cityLabel} Transit-Friendly Stay`,
-        area: cityLabel,
-        why: 'Near event + food + transport, ideal for short city itineraries.',
-        booking_url: `https://www.google.com/travel/hotels/${encodeURIComponent(`${cityLabel} Malaysia`)}`,
-      },
-      {
-        name: `${cityLabel} Culture District Stay`,
-        area: `${cityLabel} heritage / central area`,
-        why: 'Best for walkable sightseeing and local dining.',
-        booking_url: `https://www.booking.com/searchresults.html?ss=${encodeURIComponent(`${cityLabel} Malaysia`)}`,
-      },
-    ],
-    flights: [
-      {
-        route: `Fly into ${cityLabel}, Malaysia`,
-        notes: 'Compare flights arriving one day before event for lower stress.',
-        booking_url: 'https://www.google.com/travel/flights',
-      },
-    ],
-  };
-}
-
 function formatEventCard(event) {
   const withImg = rewriteGoLiveImageForClient({
     ...event,
@@ -598,6 +388,74 @@ async function fetchAllEventsChatbotRows(supabase) {
     offset += SUPABASE_TABLE_PAGE;
   }
   return rows;
+}
+
+/**
+ * SQL keyword search — runs in parallel with vector search to catch events whose
+ * embedding either doesn't exist yet or ranks too low for the vector model
+ * (e.g. rare proper-noun keywords like "cancer", "BBC Mandarin", "I Ching").
+ *
+ * For each keyword we OR-match across title / description / category / venue using ILIKE.
+ * Returns up to `perKeyword * keywords.length` rows (deduped by id).
+ */
+async function keywordSearchEvents(supabase, keywords, perKeyword = 25) {
+  if (!Array.isArray(keywords) || keywords.length === 0) return [];
+  const seen = new Map();
+  for (const kw of keywords) {
+    const safe = String(kw).replace(/[%_\\]/g, ' ').trim();
+    if (!safe) continue;
+    const pattern = `%${safe}%`;
+    const orFilter = [
+      `title.ilike.${pattern}`,
+      `description.ilike.${pattern}`,
+      `category.ilike.${pattern}`,
+      `venue.ilike.${pattern}`,
+    ].join(',');
+    const { data, error } = await supabase
+      .from('events_chatbot')
+      .select('id, title, description, venue, city, date, price, image_url, event_url, source, category, is_free')
+      .or(orFilter)
+      .order('date', { ascending: true })
+      .limit(perKeyword);
+    if (error) {
+      console.warn(`Keyword search for "${kw}" failed:`, error.message);
+      continue;
+    }
+    for (const row of data || []) {
+      if (!seen.has(row.id)) seen.set(row.id, row);
+    }
+  }
+  return [...seen.values()];
+}
+
+/**
+ * Hard keyword filter: keep only events whose text contains at least one of
+ * the given keywords (OR semantics). Prevents vector-search bleed-through
+ * where semantically related (but topically wrong) events pollute results.
+ *
+ * Example: query "any cancer events" → keywords ["cancer"] → only events
+ * with "cancer" in title/description/category/venue/city pass.
+ *
+ * If keywords is empty, returns events unchanged.
+ * If filter would leave 0 events, returns 0 — that's the correct answer
+ * (better to say "no matches" than show irrelevant ones).
+ */
+function applyKeywordFilter(events, keywords) {
+  if (!Array.isArray(keywords) || keywords.length === 0) return events;
+  if (!Array.isArray(events) || events.length === 0) return events;
+  const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ');
+  const lowerKw = keywords
+    .map((k) => norm(k).trim())
+    .filter((k) => k.length >= 2);
+  if (lowerKw.length === 0) return events;
+  return events.filter((event) => {
+    const haystack = norm(
+      [event.title, event.description, event.summary, event.category, event.venue, event.city]
+        .filter(Boolean)
+        .join(' '),
+    );
+    return lowerKw.some((k) => haystack.includes(k));
+  });
 }
 
 async function chatRagDashScope(userBlock, systemPrompt = RAG_SYSTEM_PROMPT) {
@@ -670,12 +528,20 @@ async function generateRagRecommendation(message, history, slimEvents) {
     .map((h) => `${h.role}: ${String(h.content).slice(0, 1500)}`)
     .join('\n');
 
+  const eventCountLine = slimEvents.length > 0
+    ? `IMPORTANT: The system found ${slimEvents.length} matching event(s) for this request. You MUST mention them — do NOT say no events were found.`
+    : `IMPORTANT: No matching events were found. Tell the user politely and set show_events to false.`;
+
   const userBlock = [
+    `${malaysiaCalendarBlock()}\n`,
     histText ? `Prior chat:\n${histText}\n` : '',
     `User question:\n${message}\n`,
+    `${eventCountLine}\n`,
     `Here are ${slimEvents.length} relevant events from Malaysia (JSON):\n${JSON.stringify(slimEvents)}\n`,
-    `Generate a warm, friendly recommendation. Tell the user which events match their request and why.\n`,
-    `Return ONLY JSON: {"reply":"...","show_events":true|false}`,
+    slimEvents.length > 0
+      ? `Generate a warm, friendly recommendation. Mention the events above by name and why they match the request.`
+      : `Generate a warm, friendly apology that no events matched.`,
+    `Return ONLY JSON: {"reply":"...","show_events":${slimEvents.length > 0 ? 'true' : 'false'}}`,
   ]
     .filter(Boolean)
     .join('\n');
@@ -703,6 +569,7 @@ async function generateCasualRecommendation(message, history) {
     .join('\n');
 
   const userBlock = [
+    `${malaysiaCalendarBlock()}\n`,
     histText ? `Prior chat:\n${histText}\n` : '',
     `Latest user message:\n${message}\n`,
     `Respond briefly. Invite them to ask for event ideas when ready (by date, city, vibe, or budget).`,
@@ -723,6 +590,167 @@ async function generateCasualRecommendation(message, history) {
   }
   if (hasAnthropic) return await chatRagAnthropic(userBlock, CASUAL_SYSTEM_PROMPT);
   throw new Error('Configure DASHSCOPE_API_KEY or ANTHROPIC_API_KEY for RAG replies');
+}
+
+// ---------------------------------------------------------------------------
+// Hybrid intent extraction: rule-based first, LLM only for "complex" queries
+// ---------------------------------------------------------------------------
+
+/**
+ * Heuristic that decides whether the rule-based parser is likely to be wrong
+ * for the given message, and we should ask the LLM to extract intent instead.
+ *
+ * The goal: keep simple queries on the fast (free, instant) rule path, and
+ * only spend an LLM call when the message contains operators/negation/compound
+ * phrases that the regex parser cannot reliably handle.
+ */
+function needsLlmIntent(message, ruleIntent) {
+  if (!message) return false;
+  const msg = String(message);
+  const dayType = ruleIntent && ruleIntent.day && ruleIntent.day.type;
+
+  // 1. Operator / range words present, but rule parser failed to produce a date_range
+  //    (it returned 'any', 'specific_date', 'month', etc.) — likely a miss.
+  const hasOperatorWord =
+    /\b(?:before|after|until|till|by|since|between|from)\b/i.test(msg) ||
+    /\b(?:earlier than|later than|prior to|no later than|on or (?:before|after)|not (?:before|after))\b/i.test(msg);
+  if (hasOperatorWord && dayType !== 'date_range') return true;
+
+  // 2. Compound relative phrases ("the weekend after X", "3 days from now",
+  //    "month after next") — beyond the regex parser's vocabulary.
+  if (/\b(?:weekend|day|days|month|months|week|weeks|year|years)\s+after\b/i.test(msg)) return true;
+  if (/\bafter\s+(?:that|this|next)\b/i.test(msg)) return true;
+  if (/\b\d+\s+(?:days?|weeks?|months?)\s+(?:from|after)\s+now\b/i.test(msg)) return true;
+  if (/\bmonth\s+after\s+next\b/i.test(msg)) return true;
+  if (/\b(?:first|second|third|last|early|mid|late|end of|beginning of)\s+(?:half\s+of\s+|part\s+of\s+)?(?:january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|oct|nov|dec|month|week)\b/i.test(msg)) return true;
+
+  // 3. Negation / exclusion with date context ("not on weekends", "except sunday")
+  if (/\bnot\s+(?:on|in|during|at|this|next|the)\b/i.test(msg)) return true;
+  if (/\bexcept\b/i.test(msg)) return true;
+  if (/\bother than\b/i.test(msg)) return true;
+  if (/\bavoid\b/i.test(msg)) return true;
+
+  // 4. Personal / contextual references the regex can never resolve
+  if (/\bmy\s+(?:birthday|anniversary|graduation|wedding|holiday|trip|leave)\b/i.test(msg)) return true;
+
+  return false;
+}
+
+/**
+ * Ask the LLM to extract structured intent (dateRange + keywords) from the
+ * user's message. Returns null on any failure so the caller falls back to the
+ * rule-based result. Strict JSON output expected.
+ */
+async function extractIntentViaLlm(message, history) {
+  const hist = Array.isArray(history) ? history : [];
+  // Only the last few user turns help; assistant turns rarely carry useful date
+  // anchors and can mislead the model.
+  const histText = hist
+    .filter((h) => h && h.role === 'user' && h.content)
+    .slice(-3)
+    .map((h, i) => `previous_user_${i + 1}: ${String(h.content).slice(0, 300)}`)
+    .join('\n');
+
+  const userBlock = [
+    `${malaysiaCalendarBlock()}\n`,
+    histText ? `Recent context:\n${histText}\n` : '',
+    `User message: "${String(message).slice(0, 600)}"`,
+    `Return ONLY the JSON object described in the system prompt. No markdown.`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const hasDash = Boolean(process.env.DASHSCOPE_API_KEY);
+  const hasAnthropic = Boolean(process.env.ANTHROPIC_API_KEY);
+  let raw;
+  try {
+    if (hasDash) {
+      raw = await chatRagDashScope(userBlock, INTENT_EXTRACTION_SYSTEM_PROMPT);
+    } else if (hasAnthropic) {
+      raw = await chatRagAnthropic(userBlock, INTENT_EXTRACTION_SYSTEM_PROMPT);
+    } else {
+      return null;
+    }
+  } catch (err) {
+    console.warn('LLM intent extraction failed:', err.message);
+    return null;
+  }
+
+  const parsed = parseLlmJson(raw);
+  if (!parsed || typeof parsed !== 'object') {
+    console.warn('LLM intent JSON parse failed. Raw:', String(raw).slice(0, 200));
+    return null;
+  }
+
+  // Normalize and sanity-check
+  const dr = parsed.dateRange && typeof parsed.dateRange === 'object' ? parsed.dateRange : {};
+  const isoRe = /^\d{4}-\d{2}-\d{2}$/;
+  const from = typeof dr.from === 'string' && isoRe.test(dr.from) ? dr.from : null;
+  const to = typeof dr.to === 'string' && isoRe.test(dr.to) ? dr.to : null;
+  const label = typeof dr.label === 'string' ? dr.label.slice(0, 120) : '';
+
+  let keywords = [];
+  if (Array.isArray(parsed.keywords)) {
+    keywords = parsed.keywords
+      .filter((k) => typeof k === 'string')
+      .map((k) => k.trim().toLowerCase())
+      .filter((k) => k.length >= 2 && k.length <= 40)
+      .slice(0, 6);
+  }
+
+  const isEventRequest = parsed.isEventRequest !== false; // default true unless explicitly false
+
+  return { from, to, label, keywords, isEventRequest };
+}
+
+/**
+ * Materialize an LLM-extracted dateRange into the same `day` object shape the
+ * rest of the pipeline already understands (dates: [...] for filtering).
+ */
+function llmIntentToDayObject(llmIntent) {
+  if (!llmIntent || (!llmIntent.from && !llmIntent.to)) return { type: 'any' };
+  const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: MALAYSIA_TZ });
+  const from = llmIntent.from || todayStr;
+  // Cap at +12 months if no upper bound
+  const fallbackTo = (() => {
+    const [y, m, d] = todayStr.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    dt.setUTCMonth(dt.getUTCMonth() + 12);
+    return dt.toISOString().slice(0, 10);
+  })();
+  const to = llmIntent.to || fallbackTo;
+
+  // BUG-FIX (timezone): build the date list with UTC arithmetic. Previously
+  // `new Date('2026-05-18T00:00:00')` was parsed in LOCAL time (Malaysia +8),
+  // then .toISOString() shifted back 8 h, yielding "2026-05-17" — so every
+  // date in the range was off by one day and events from the day BEFORE the
+  // intended window leaked through the filter.
+  const parseISO = (s) => {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(s || '').trim());
+    if (!m) return null;
+    return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  };
+  const start = parseISO(from);
+  const end = parseISO(to);
+  if (!start || !end || end < start) return { type: 'any' };
+
+  const dates = [];
+  const cursor = new Date(start);
+  let safety = 0;
+  while (cursor <= end && safety < 400) {
+    dates.push(cursor.toISOString().slice(0, 10));
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+    safety += 1;
+  }
+
+  return {
+    type: 'date_range',
+    label: llmIntent.label || `${from} → ${to}`,
+    from,
+    to,
+    dates,
+    source: 'llm',
+  };
 }
 
 async function saveChatHistory(userMessage, botReply) {
@@ -761,14 +789,49 @@ app.post('/api/chat', async (req, res) => {
   let intent;
   if (isRefinement) {
     // REFINEMENT — keep history date/place, overlay latest budget/mood/audience
+    let effectiveDay;
+    if (latestIntent.day?.type !== 'any') {
+      // Current message has a full parseable date — always use it
+      effectiveDay = latestIntent.day;
+    } else {
+      // Current message has no full date. Check for a bare ordinal like "how about 10th".
+      // If found, inherit the month from the last known date in the merged history context
+      // so "how about 10th" after "events on 5th may" correctly resolves to May 10th.
+      const bareDay = parseBareOrdinal(trimmed.toLowerCase());
+      if (bareDay !== null && mergedIntent.day?.dates?.length > 0) {
+        const lastKnown = mergedIntent.day.dates[mergedIntent.day.dates.length - 1];
+        const parts = lastKnown.split('-').map(Number); // [yyyy, mm, dd]
+        const todayStr = todayISO();
+        const candidate = new Date(Date.UTC(parts[0], parts[1] - 1, bareDay));
+        if (!Number.isNaN(candidate.getTime()) && candidate.getUTCDate() === bareDay) {
+          let candidateISO = candidate.toISOString().slice(0, 10);
+          // If the inferred date is already in the past, try the next month
+          if (candidateISO < todayStr) {
+            const nextMonth = new Date(Date.UTC(parts[0], parts[1], bareDay));
+            if (!Number.isNaN(nextMonth.getTime()) && nextMonth.getUTCDate() === bareDay) {
+              candidateISO = nextMonth.toISOString().slice(0, 10);
+            }
+          }
+          if (candidateISO >= todayStr) {
+            effectiveDay = { type: 'specific_date', label: candidateISO, dates: [candidateISO] };
+          } else {
+            effectiveDay = mergedIntent.day;
+          }
+        } else {
+          effectiveDay = mergedIntent.day;
+        }
+      } else {
+        effectiveDay = mergedIntent.day;
+      }
+    }
+
     intent = {
       ...mergedIntent,
       budget: latestIntent.budget?.type !== 'any' || Number.isFinite(latestIntent.budget?.maxPrice)
         ? latestIntent.budget
         : mergedIntent.budget,
       mood: latestIntent.mood?.length > 0 ? latestIntent.mood : mergedIntent.mood,
-      // For refinements that shift only the date (e.g. "how about Saturday?"), use latest date
-      day: latestIntent.day?.type !== 'any' ? latestIntent.day : mergedIntent.day,
+      day: effectiveDay,
       audience: latestIntent.audience,
       isEventRequest: latestIntent.isEventRequest || mergedIntent.isEventRequest,
     };
@@ -778,6 +841,42 @@ app.post('/api/chat', async (req, res) => {
   }
   // Past mode only from the *current* message — never from older chat lines (prevents past events in "suggest something fun").
   intent.askingAboutPast = latestIntent.askingAboutPast === true;
+
+  // ----------------------------------------------------------------------
+  // HYBRID INTENT: hand off to LLM for "complex" queries the regex parser
+  // can't reliably handle (operators, negation, compound relative phrases,
+  // personal references). Simple queries stay on the fast rule path.
+  // The LLM's keywords (if any) override extractKeywords() for the search.
+  // ----------------------------------------------------------------------
+  let llmKeywordsOverride = null;
+  if (latestIntent.isEventRequest && needsLlmIntent(trimmed, intent)) {
+    console.log(`Hybrid intent: routing "${trimmed.slice(0, 80)}" to LLM (rule day=${intent.day?.type})`);
+    const llmIntent = await extractIntentViaLlm(trimmed, history);
+    if (llmIntent) {
+      console.log(
+        `LLM intent → from=${llmIntent.from} to=${llmIntent.to} kw=[${llmIntent.keywords.join(', ')}] label="${llmIntent.label}"`,
+      );
+      // If LLM produced any usable date bound, replace intent.day so the
+      // existing date-specific filter path picks it up.
+      if (llmIntent.from || llmIntent.to) {
+        const llmDay = llmIntentToDayObject(llmIntent);
+        if (llmDay.type === 'date_range') {
+          intent.day = llmDay;
+        }
+      }
+      // Always trust LLM's keyword extraction over the regex stopword list
+      // when LLM is invoked — it does a better job ignoring filler words.
+      if (Array.isArray(llmIntent.keywords)) {
+        llmKeywordsOverride = llmIntent.keywords;
+      }
+      // LLM is also a sanity check on isEventRequest; only downgrade if the
+      // model is confident this is small talk.
+      if (llmIntent.isEventRequest === false) intent.isEventRequest = false;
+    } else {
+      console.log('LLM intent extraction returned null — staying on rule-based intent');
+    }
+  }
+
   const hasExplicitFilter =
     intent.day?.type !== 'any' ||
     intent.place?.mode !== 'any' ||
@@ -793,7 +892,7 @@ app.post('/api/chat', async (req, res) => {
       lowerTrim,
     );
 
-  if (!latestIntent.isEventRequest || forceCasual) {
+  if (!intent.isEventRequest || forceCasual) {
     try {
       const rawLlm = await generateCasualRecommendation(trimmed, history);
       const parsed = parseLlmJson(rawLlm);
@@ -830,10 +929,63 @@ app.post('/api/chat', async (req, res) => {
     const dateSpecific = intent.day?.dates?.length > 0;
     let selectedEvents = [];
 
+    // Extract topic keywords once — used by both BRANCH 1 (date-specific) and
+    // BRANCH 2 (RAG) for the strict post-filter, and by BRANCH 2 for SQL
+    // ILIKE search. Prefer LLM-extracted keywords (they ignore filler words
+    // better) over the regex stopword filter when available.
+    //
+    // For REFINEMENT turns ("any more?", "what about saturday?"), pull keywords
+    // from the merged context so the topic ("cancer", "jazz") carries forward;
+    // for FRESH turns, only the latest message — prevents stale topic bleed.
+    const keywordSource = isRefinement ? intentContext : trimmed;
+    const rawKeywords = (llmKeywordsOverride && llmKeywordsOverride.length > 0)
+      ? llmKeywordsOverride
+      : extractKeywords(keywordSource, 5);
+
+    // Validate keywords against the DB — drop any that have ZERO matches in
+    // the entire events_chatbot table. This prevents typos ("evenys" instead
+    // of "events") and arbitrary noise words from killing every result via
+    // the strict post-filter. Real topics like "cancer", "jazz", "marathon"
+    // always have at least one DB match (otherwise nothing to strict-filter
+    // against in the first place).
+    let keywords = rawKeywords;
+    if (rawKeywords.length > 0) {
+      const validationHits = await keywordSearchEvents(getSupabase(), rawKeywords, 1);
+      const validKw = new Set();
+      for (const row of validationHits) {
+        const hay = ([row.title, row.description, row.category, row.venue, row.city]
+          .filter(Boolean).join(' ')).toLowerCase().replace(/[^a-z0-9]+/g, ' ');
+        for (const kw of rawKeywords) {
+          if (hay.includes(String(kw).toLowerCase())) validKw.add(kw);
+        }
+      }
+      keywords = rawKeywords.filter((k) => validKw.has(k));
+      const dropped = rawKeywords.filter((k) => !validKw.has(k));
+      if (dropped.length > 0) {
+        console.log(
+          `Dropped noise keywords (0 DB matches, likely typo/non-existent): [${dropped.join(', ')}]`,
+        );
+      }
+    }
+    if (keywords.length > 0) {
+      console.log(
+        `Topic keywords (${llmKeywordsOverride ? 'llm' : 'rule'}, src=${isRefinement ? 'merged' : 'latest'}): [${keywords.join(', ')}]`,
+      );
+    }
+
     if (dateSpecific) {
       console.log('Date-specific request: scanning events_chatbot for exact date filter');
       const allRows = await fetchAllEventsChatbotRows(getSupabase());
-      const allEvents = allRows.map(dbRowToEvent);
+      let allEvents = allRows.map(dbRowToEvent);
+      // BUG-FIX (recall): apply strict keyword filter to the FULL candidate
+      // pool BEFORE filterEventsByPreferences ranks/diversifies. Otherwise
+      // the source-diversity pass inside filterEventsByPreferences may evict
+      // relevant events to make room for irrelevant ones from other sources.
+      if (keywords.length > 0) {
+        const beforeKw = allEvents.length;
+        allEvents = applyKeywordFilter(allEvents, keywords);
+        console.log(`Topic pre-filter (date branch): ${beforeKw} → ${allEvents.length} match [${keywords.join(', ')}]`);
+      }
       selectedEvents = filterEventsByPreferences(allEvents, intent);
       console.log(`Date filter: ${selectedEvents.length} event(s)`);
     } else {
@@ -852,10 +1004,23 @@ app.post('/api/chat', async (req, res) => {
       }
 
       const matchCount = hasExplicitFilter ? 100 : 60;
-      const { data: matches, error: rpcErr } = await getSupabase().rpc('match_events_chatbot_rag', {
-        query_embedding: queryEmbedding,
-        match_count: matchCount,
-      });
+      // Run vector search and SQL keyword search in parallel.
+      // Keyword search catches events whose embedding doesn't exist yet OR whose
+      // vector similarity for the user's query falls outside top-N (vector model
+      // dilutes rare keywords like "cancer", "BBC Mandarin").
+      // `keywords` is hoisted from above and used both here for SQL search and
+      // later by applyKeywordFilter as a strict topic post-filter.
+      const [vectorRes, keywordRows] = await Promise.all([
+        getSupabase().rpc('match_events_chatbot_rag', {
+          query_embedding: queryEmbedding,
+          match_count: matchCount,
+        }),
+        keywords.length > 0
+          ? keywordSearchEvents(getSupabase(), keywords, 25)
+          : Promise.resolve([]),
+      ]);
+      const { data: matches, error: rpcErr } = vectorRes;
+      console.log(`Keyword search returned ${keywordRows.length} extra rows`);
 
       if (rpcErr) {
         console.error('RAG rpc error:', rpcErr.message);
@@ -885,9 +1050,36 @@ app.post('/api/chat', async (req, res) => {
       const rows = Array.isArray(matches) ? matches : [];
       console.log(`Found ${rows.length} similar events`);
 
-      let eventsForCards = rows.map(dbRowToEvent);
+      // Merge vector + keyword results, vector takes priority on duplicates.
+      const merged = rows.map(dbRowToEvent);
+      const vectorIds = new Set(merged.map((e) => e.id));
+      for (const kr of keywordRows) {
+        if (!vectorIds.has(kr.id)) merged.push(dbRowToEvent(kr));
+      }
+      let eventsForCards = merged;
       if (!intent.askingAboutPast) {
         eventsForCards = filterFutureEvents(eventsForCards);
+      }
+      // BUG-FIX (recall): apply the strict keyword filter EARLY — to the full
+      // merged pool (vector + keyword search) — BEFORE selectDiverseRecommendations
+      // limits to 15 with source diversity. Otherwise the diversity pass can
+      // evict relevant cancer/jazz/etc. events because of source quotas, and
+      // the post-filter then has nothing to keep. Filtering first means
+      // diversity picks among already-relevant events.
+      if (keywords.length > 0) {
+        const beforeKw = eventsForCards.length;
+        eventsForCards = applyKeywordFilter(eventsForCards, keywords);
+        console.log(`Topic pre-filter (RAG branch): ${beforeKw} → ${eventsForCards.length} match [${keywords.join(', ')}]`);
+
+        // If keyword filter wiped the merged pool but keyword search itself
+        // returned rows directly from DB, fall back to those (they're already
+        // proven to contain the keyword). Catches the case where vector
+        // search overpowered keyword rows in the merge.
+        if (eventsForCards.length === 0 && keywordRows.length > 0) {
+          eventsForCards = keywordRows.map(dbRowToEvent);
+          if (!intent.askingAboutPast) eventsForCards = filterFutureEvents(eventsForCards);
+          console.log(`Topic pre-filter empty pool; fell back to ${eventsForCards.length} keyword-search rows`);
+        }
       }
       if (hasExplicitFilter) {
         selectedEvents = filterEventsByPreferences(eventsForCards, intent);
@@ -898,11 +1090,16 @@ app.post('/api/chat', async (req, res) => {
           if (!intent.askingAboutPast) {
             allEvents = filterFutureEvents(allEvents);
           }
+          if (keywords.length > 0) {
+            allEvents = applyKeywordFilter(allEvents, keywords);
+          }
           selectedEvents = filterEventsByPreferences(allEvents, intent);
         }
       } else {
         let pool = dedupeEventsForRecommendations(eventsForCards);
-        if (poolNeedsSourceBlend(pool)) {
+        // Source blending only when there are no topic keywords — otherwise
+        // we'd dilute the relevant pool with random catalog events.
+        if (keywords.length === 0 && poolNeedsSourceBlend(pool)) {
           const allRows = await fetchAllEventsChatbotRows(getSupabase());
           const allDeduped = dedupeEventsForRecommendations(allRows.map(dbRowToEvent));
           const catalogSlice = intent.askingAboutPast ? allDeduped : filterFutureEvents(allDeduped);
@@ -913,6 +1110,18 @@ app.post('/api/chat', async (req, res) => {
       console.log(
         `Intent filter: ${hasExplicitFilter ? 'on' : 'off'}; selected ${selectedEvents.length} event(s)`,
       );
+    }
+
+    // SAFETY NET — strict keyword filter is normally applied EARLIER (before
+    // the diversity/limit step) so we don't lose relevant events. This pass
+    // is a no-op in the common case but guards against any code path that
+    // reintroduces unrelated events later.
+    if (keywords.length > 0 && selectedEvents.length > 0) {
+      const before = selectedEvents.length;
+      selectedEvents = applyKeywordFilter(selectedEvents, keywords);
+      if (selectedEvents.length !== before) {
+        console.log(`Topic safety post-filter: ${before} → ${selectedEvents.length} match [${keywords.join(', ')}]`);
+      }
     }
 
     const slim = selectedEvents.map((r) => ({
@@ -996,79 +1205,146 @@ app.get('/api/events', async (req, res) => {
   }
 });
 
-app.get('/api/itinerary/events', async (req, res) => {
+/**
+ * AirLabs Routes DB — timetable-style routes between airports (all airlines on that pair).
+ * Unlike /schedules (gate board, ~10h lookahead), routes match “what flies this pair” for planning.
+ */
+app.get('/api/airlabs/routes', async (req, res) => {
+  const dep = String(req.query.dep_iata || '')
+    .trim()
+    .toUpperCase();
+  const arr = String(req.query.arr_iata || '')
+    .trim()
+    .toUpperCase();
+  if (!/^[A-Z]{3}$/.test(dep) || !/^[A-Z]{3}$/.test(arr)) {
+    return res.status(400).json({ error: 'dep_iata and arr_iata must be 3-letter IATA codes', response: [] });
+  }
+  const apiKey = (process.env.VITE_AIRLABS_API_KEY || process.env.AIRLABS_API_KEY || '').trim();
+  if (!apiKey) {
+    return res.status(503).json({
+      error: 'AirLabs API key not configured. Set VITE_AIRLABS_API_KEY in .env',
+      response: [],
+    });
+  }
+  const airline = String(req.query.airline_iata || '').trim().toUpperCase();
+  const all = [];
+  let offset = 0;
+  const limit = 50;
+  const maxPages = 12;
+
   try {
-    const q = normalizeText(req.query.q || '');
-    const pool = getItineraryEventPool().map(eventOptionFromRow);
-    const out = (q
-      ? pool.filter((e) => normalizeText(`${e.title} ${e.venue} ${e.city}`).includes(q))
-      : pool
-    ).slice(0, 30);
-    return res.json({ events: out });
+    for (let page = 0; page < maxPages; page++) {
+      const params = {
+        dep_iata: dep,
+        arr_iata: arr,
+        api_key: apiKey,
+        limit,
+        offset,
+      };
+      if (airline.length === 2) params.airline_iata = airline;
+
+      const { data } = await axios.get('https://airlabs.co/api/v9/routes', {
+        params,
+        timeout: 30000,
+        headers: {
+          Accept: 'application/json',
+          'User-Agent': 'TicketScraper/1.0 (itinerary flight routes; localhost dev)',
+        },
+      });
+
+      const batch = Array.isArray(data.response) ? data.response : [];
+      all.push(...batch);
+      if (batch.length < limit) break;
+      offset += limit;
+    }
+
+    res.set('Cache-Control', 'public, max-age=3600');
+    return res.json({ response: all });
   } catch (err) {
-    return res.status(500).json({ events: [], error: err.message || 'Failed to list events' });
+    const status = err.response?.status;
+    console.error('[airlabs routes]', status || err.message);
+    return res.status(502).json({
+      error: err.response?.data?.message || err.message || 'AirLabs routes request failed',
+      response: [],
+    });
   }
 });
 
-app.post('/api/itinerary/plan', async (req, res) => {
-  try {
-    const pool = getItineraryEventPool();
-    const selected = findEventForItinerary(pool, req.body || {});
-    if (!selected) {
-      return res.status(400).json({ error: 'Selected event not found. Choose an event from the list.' });
-    }
-
-    const style = String(req.body?.travelStyle || 'balanced').slice(0, 40);
-    const adventure = String(req.body?.adventureLevel || 'medium').slice(0, 24);
-    const days = Math.min(5, Math.max(1, Number(req.body?.days) || 2));
-    const budget = String(req.body?.budget || 'mid').slice(0, 24);
-
-    const eventCtx = eventOptionFromRow(selected);
-    let plan = buildFallbackItinerary(eventCtx, {
-      travelStyle: style,
-      adventureLevel: adventure,
-      days,
+/** AirLabs schedules (real-time, ~10h lookahead) — optional; not used for date-based trip planning. */
+app.get('/api/airlabs/schedules', async (req, res) => {
+  const dep = String(req.query.dep_iata || '')
+    .trim()
+    .toUpperCase();
+  const arr = String(req.query.arr_iata || '')
+    .trim()
+    .toUpperCase();
+  if (!/^[A-Z]{3}$/.test(dep) || !/^[A-Z]{3}$/.test(arr)) {
+    return res.status(400).json({ error: 'dep_iata and arr_iata must be 3-letter IATA codes', response: [] });
+  }
+  const apiKey = (process.env.VITE_AIRLABS_API_KEY || process.env.AIRLABS_API_KEY || '').trim();
+  if (!apiKey) {
+    return res.status(503).json({
+      error: 'AirLabs API key not configured. Set VITE_AIRLABS_API_KEY in .env',
+      response: [],
     });
-    // Optional LLM enrichment. Keep deterministic guide as baseline.
-    const useLlm = process.env.ITINERARY_USE_LLM === '1';
-    if (useLlm) {
-      try {
-        const llmPlan = await generateItineraryWithDashScope({
-          country: 'Malaysia',
-          event: eventCtx,
-          preferences: { travelStyle: style, adventureLevel: adventure, days, budget },
-          constraints: {
-            malaysiaOnly: true,
-            keepPlacesNearEventCity: true,
-          },
-        });
-        if (llmPlan && typeof llmPlan === 'object') {
-          plan = {
-            ...plan,
-            ...llmPlan,
-            event_context: llmPlan.event_context || plan.event_context,
-            days: Array.isArray(llmPlan.days) && llmPlan.days.length ? llmPlan.days : plan.days,
-          };
-        }
-      } catch {
-        // keep deterministic plan
-      }
-    }
+  }
+  try {
+    const params = { dep_iata: dep, arr_iata: arr, api_key: apiKey };
+    const airline = String(req.query.airline_iata || '').trim().toUpperCase();
+    if (airline.length === 2) params.airline_iata = airline;
 
-    return res.json({
-      event: eventCtx,
-      itinerary: plan,
-      tips: {
-        flights_link: 'https://www.google.com/travel/flights',
-        hotels_link: `https://www.google.com/travel/hotels/${encodeURIComponent(
-          selected.city || 'Malaysia',
-        )}`,
+    const { data } = await axios.get('https://airlabs.co/api/v9/schedules', {
+      params,
+      timeout: 30000,
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'TicketScraper/1.0 (itinerary flight search; localhost dev)',
       },
     });
+    res.set('Cache-Control', 'public, max-age=120');
+    return res.json(data);
   } catch (err) {
-    return res.status(500).json({ error: err.message || 'Failed to build itinerary' });
+    const status = err.response?.status;
+    console.error('[airlabs schedules]', status || err.message);
+    return res.status(502).json({
+      error: err.response?.data?.message || err.message || 'AirLabs request failed',
+      response: [],
+    });
   }
 });
+
+/**
+ * Nominatim reverse geocode (server-side User-Agent per OSM policy).
+ * Query: lat, lng (or lon for compatibility)
+ */
+app.get('/api/geocode/reverse', async (req, res) => {
+  const lat = Number(req.query.lat);
+  const lng = Number(req.query.lng ?? req.query.lon);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    return res.status(400).json({ error: 'lat and lng (or lon) required' });
+  }
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+    return res.status(400).json({ error: 'lat/lng out of range' });
+  }
+  try {
+    const { data } = await axios.get('https://nominatim.openstreetmap.org/reverse', {
+      params: { lat, lon: lng, format: 'json' },
+      timeout: 15000,
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'TicketScraper-TripPlanner/1.0 (flight-search geocode)',
+      },
+    });
+    res.set('Cache-Control', 'private, max-age=300');
+    return res.json(data);
+  } catch (err) {
+    console.error('[nominatim]', err.message);
+    return res.status(502).json({ error: err.message || 'Geocoding failed' });
+  }
+});
+
+const { registerItineraryRoutes } = require('./itinerary-routes');
+registerItineraryRoutes(app, { getSupabase, getMergedScrapedEvents: getCachedMergedScrapedEvents });
 
 if (require.main === module) {
   app.listen(PORT, () => {

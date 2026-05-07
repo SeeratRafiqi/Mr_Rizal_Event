@@ -4,101 +4,201 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>🎟️ Scraped Events Viewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <style>
+    /* ── DESIGN TOKENS ───────────────────────────────── */
+    :root {
+      --pg-ivory:   #F8F4EE;
+      --pg-parch:   #EFE8DC;
+      --pg-sand:    #E2D5C3;
+      --pg-rule:    #DCC7AE;
+      --pg-forest:  #1E3A2F;
+      --pg-forest2: #2C5040;
+      --pg-gold:    #C8A96E;
+      --pg-ink:     #1A1A18;
+      --pg-muted:   #7A6F63;
+      --pg-warm:    #A8987E;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #0f0f0f;
-      color: #fff;
+      font-family: 'Jost', 'Segoe UI', system-ui, sans-serif;
+      font-size: 16.5px;
+      background: var(--pg-ivory);
+      color: var(--pg-ink);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
     }
 
+    /* ── HEADER ────────────────────────────────────── */
     header {
-      background: #1a1a2e;
-      padding: 24px 32px;
-      border-bottom: 1px solid #2a2a4a;
+      background: #0C1510;
+      padding: 0 48px;
+      height: 90px;
+      flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      border-bottom: 1px solid rgba(200,169,110,.10);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .header-brand { display: flex; flex-direction: column; gap: 2px; }
+    header h1 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 2rem;
+      font-weight: 400;
+      color: var(--pg-ivory);
+      letter-spacing: .04em;
+    }
+    .header-eyebrow {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .82rem;
+      font-weight: 500;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: rgba(200,169,110,.65);
+    }
+    header > span, #last-updated {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .85rem;
+      letter-spacing: .08em;
+      color: rgba(255,255,255,.32);
+      text-align: right;
+      max-width: 420px;
     }
 
-    header h1 { font-size: 22px; color: #a78bfa; }
-    header span { font-size: 14px; color: #888; }
-
+    /* ── CONTROLS ──────────────────────────────────── */
     .controls {
-      padding: 20px 32px;
+      padding: 14px 48px;
       display: flex;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
-      background: #111;
-      border-bottom: 1px solid #222;
+      background: var(--pg-parch);
+      border-bottom: 1px solid var(--pg-rule);
+      flex-shrink: 0;
+      align-items: center;
+    }
+    .controls-label {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .85rem;
+      font-weight: 600;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--pg-muted);
+      margin-right: 4px;
     }
 
     input, select {
-      padding: 10px 14px;
-      border-radius: 8px;
-      border: 1px solid #333;
-      background: #1a1a1a;
-      color: #fff;
-      font-size: 14px;
+      padding: 10px 15px;
+      border-radius: 2px;
+      border: 1px solid var(--pg-rule);
+      background: var(--pg-ivory);
+      color: var(--pg-ink);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 15.5px;
       outline: none;
+      transition: border-color .2s;
     }
-
     input { width: 280px; }
-    input:focus, select:focus { border-color: #a78bfa; }
+    input:focus, select:focus { border-color: var(--pg-forest); }
+    input::placeholder { color: var(--pg-warm); }
 
+    /* ── STATS BAR ─────────────────────────────────── */
     .stats {
-      padding: 16px 32px;
-      font-size: 13px;
-      color: #888;
+      padding: 13px 48px;
+      font-size: .92rem;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--pg-muted);
+      border-bottom: 1px solid var(--pg-parch);
+      flex-shrink: 0;
     }
+    .stats span { color: var(--pg-forest); font-weight: 600; }
 
-    .stats span { color: #a78bfa; font-weight: 600; }
-
+    /* ── EVENTS GRID ───────────────────────────────── */
+    .grid-frame {
+      padding: 28px 18px 48px;
+      background: var(--pg-ivory);
+      flex: 1;
+    }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
-      padding: 20px 32px 40px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      align-content: start;
     }
 
+    /* ── EVENT CARD ────────────────────────────────── */
     .card {
-      background: #1a1a1a;
-      border-radius: 12px;
-      border: 1px solid #2a2a2a;
+      background: #FFFFFF;
+      border-radius: 10px;
+      border: 1px solid var(--pg-rule);
       overflow: hidden;
-      transition: transform 0.2s, border-color 0.2s;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 18px rgba(30,58,47,.10), 0 1px 4px rgba(30,58,47,.07);
+      transition: transform .22s ease, box-shadow .22s ease, background .22s;
     }
-
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--pg-gold);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform .38s ease;
+      z-index: 1;
+    }
     .card:hover {
-      transform: translateY(-4px);
-      border-color: #a78bfa;
+      transform: translateY(-5px);
+      box-shadow: 0 16px 48px rgba(30,58,47,.16), 0 6px 16px rgba(30,58,47,.10);
+      background: #FFFDF9;
     }
+    .card:hover::after { transform: scaleX(1); }
 
+    .card-img-wrap { height: 160px; overflow: hidden; flex-shrink: 0; }
     .card img {
       width: 100%;
       height: 160px;
       object-fit: cover;
-      background: #222;
+      background: var(--pg-sand);
+      display: block;
+      filter: sepia(.05) brightness(.97);
+      transition: transform .55s ease, filter .4s;
     }
+    .card:hover img { transform: scale(1.05); filter: sepia(.02) brightness(1.01); }
 
-    .card-body { padding: 16px; }
+    .card-body {
+      padding: 14px 18px 18px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
 
     .card-title {
-      font-size: 15px;
-      font-weight: 600;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.2rem;
+      font-weight: 500;
       margin-bottom: 8px;
-      color: #fff;
-      line-height: 1.4;
+      color: var(--pg-forest);
+      line-height: 1.28;
     }
-
     .card-meta {
-      font-size: 12px;
-      color: #888;
-      margin-bottom: 6px;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .84rem;
+      font-weight: 400;
+      letter-spacing: .02em;
+      color: var(--pg-muted);
+      margin-bottom: 5px;
       display: flex;
       align-items: center;
       gap: 6px;
@@ -106,72 +206,87 @@
 
     .badge {
       display: inline-block;
-      padding: 3px 10px;
-      border-radius: 20px;
-      font-size: 11px;
+      padding: 4px 11px;
+      border-radius: 2px;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .68rem;
       font-weight: 600;
+      letter-spacing: .09em;
+      text-transform: uppercase;
       margin-top: 10px;
-      margin-right: 6px;
+      margin-right: 5px;
     }
-
-    .badge-free { background: #064e3b; color: #34d399; }
-    .badge-paid { background: #1e1b4b; color: #a78bfa; }
-    .badge-category { background: #1c1917; color: #d97706; }
+    .badge-free  { background: var(--pg-forest); color: var(--pg-gold); }
+    .badge-paid  { background: transparent; color: var(--pg-forest); border: 1px solid var(--pg-rule); }
+    .badge-category { background: transparent; color: var(--pg-muted); border: 1px solid var(--pg-sand); }
 
     .card-summary {
-      font-size: 12px;
-      color: #666;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .93rem;
+      color: var(--pg-muted);
       margin-top: 10px;
-      line-height: 1.5;
+      line-height: 1.65;
+      font-weight: 300;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
       overflow: hidden;
+      flex-shrink: 0;
     }
-
     .card-link {
       display: block;
-      margin-top: 14px;
+      margin-top: auto;
+      padding: 11px;
       text-align: center;
-      padding: 8px;
-      background: #2a2a4a;
-      border-radius: 8px;
-      color: #a78bfa;
+      background: var(--pg-forest);
+      border-radius: 3px;
+      color: var(--pg-gold);
       text-decoration: none;
-      font-size: 13px;
-      font-weight: 500;
-      transition: background 0.2s;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .73rem;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      transition: background .2s;
     }
-
-    .card-link:hover { background: #3a3a6a; }
+    .card-link:hover { background: var(--pg-forest2); }
 
     .empty {
       grid-column: 1/-1;
       text-align: center;
-      padding: 60px;
-      color: #555;
-      font-size: 15px;
+      padding: 90px 40px;
+      color: var(--pg-warm);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.9rem;
+      font-style: italic;
+      font-weight: 300;
+      background: var(--pg-ivory);
     }
-
     .loading {
       text-align: center;
-      padding: 60px;
-      color: #555;
-      font-size: 15px;
+      padding: 90px 40px;
+      color: var(--pg-warm);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .85rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
       grid-column: 1/-1;
+      background: var(--pg-ivory);
     }
-
     .no-img {
       width: 100%;
-      height: 160px;
-      background: linear-gradient(135deg, #1a1a2e, #2a2a4a);
+      height: 156px;
+      background: linear-gradient(135deg, var(--pg-sand) 0%, #C8B09A 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 36px;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 32px;
+      letter-spacing: .06em;
+      color: rgba(255,255,255,.6);
     }
 
-    /* —— Floating assistant (70% suggestions / 30% chat) —— */
+    /* —— Floating assistant ——————————————————————————————— */
     .ai-fab {
       position: fixed;
       right: 24px;
@@ -180,37 +295,18 @@
       width: 56px;
       height: 56px;
       border-radius: 50%;
-      border: none;
-      cursor: pointer;
-      font-size: 24px;
-      background: linear-gradient(135deg, #7c3aed, #a78bfa);
-      color: #fff;
-      box-shadow: 0 8px 32px rgba(124, 58, 237, 0.45);
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .ai-fab:hover { transform: scale(1.06); box-shadow: 0 10px 36px rgba(124, 58, 237, 0.55); }
-    .ai-it-fab {
-      position: fixed;
-      right: 24px;
-      bottom: 90px;
-      z-index: 1500;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      border: none;
+      border: 2px solid rgba(200,169,110,.3);
       cursor: pointer;
       font-size: 22px;
-      background: linear-gradient(135deg, #0ea5e9, #22d3ee);
-      color: #fff;
-      box-shadow: 0 8px 32px rgba(14, 165, 233, 0.45);
-      transition: transform 0.2s, box-shadow 0.2s;
+      background: #0C1510;
+      color: var(--pg-gold);
+      box-shadow: 0 6px 26px rgba(30,58,47,.5);
+      transition: transform 0.2s, box-shadow 0.2s, background .2s;
+      font-family: 'Jost', system-ui, sans-serif;
     }
-    .ai-it-fab:hover { transform: scale(1.06); box-shadow: 0 10px 36px rgba(14, 165, 233, 0.55); }
-    body.ai-drawer-open {
-      overflow: hidden;
-    }
-    body.ai-drawer-open .ai-fab,
-    body.ai-drawer-open .ai-it-fab { display: none; }
+    .ai-fab:hover { transform: scale(1.06); background: #162E24; box-shadow: 0 10px 34px rgba(30,58,47,.65); }
+    body.ai-drawer-open { overflow: hidden; }
+    body.ai-drawer-open .ai-fab { display: none; }
 
     .ai-overlay {
       display: none;
@@ -220,162 +316,192 @@
     }
     .ai-overlay.is-open { display: block; }
 
+    /* Full-screen backdrop — always blurred, click to close */
     .ai-overlay-backdrop {
       position: absolute;
       inset: 0;
       z-index: 1;
-      background: rgba(0, 0, 0, 0.45);
+      background: rgba(10,18,13,.22);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       cursor: pointer;
     }
 
+    /* Layout: side-by-side, full screen */
     .ai-overlay-layout {
       position: absolute;
       inset: 0;
       z-index: 2;
       display: flex;
       flex-direction: row;
+      align-items: stretch;
       pointer-events: none;
     }
 
-    .ai-events-column {
-      position: relative;
-      z-index: 3;
-      pointer-events: auto;
-      width: 70%;
+    /* ── Left events zone ──────────────────────────────── */
+    .ai-events-zone {
+      flex: 1;
       min-width: 0;
       display: flex;
       flex-direction: column;
-      background: linear-gradient(180deg, rgba(18, 18, 22, 0.98) 0%, rgba(12, 12, 14, 0.99) 100%);
-      border-right: 1px solid #2a2a3a;
-      box-shadow: 12px 0 40px rgba(0, 0, 0, 0.35);
+      background: transparent;
+      pointer-events: none;
+      transition: background .35s cubic-bezier(.4,0,.2,1);
+      overflow: hidden;
+    }
+    .ai-events-zone.has-events {
+      background: var(--pg-ivory);
+      pointer-events: auto;
+      border-right: 1px solid var(--pg-rule);
     }
 
-    .ai-events-head {
+    .ai-events-zone-head {
+      display: none;
       flex-shrink: 0;
-      padding: 14px 18px;
-      border-bottom: 1px solid #2a2a3a;
-      display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      padding: 14px 28px;
+      background: #0C1510;
+      border-bottom: 1px solid rgba(200,169,110,.15);
     }
-    .ai-events-head h3 {
-      font-size: 14px;
-      font-weight: 600;
-      color: #c4b5fd;
+    .ai-events-zone.has-events .ai-events-zone-head { display: flex; }
+    .ai-events-zone-head h3 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.15rem;
+      font-weight: 400;
+      color: var(--pg-ivory);
+      letter-spacing: .04em;
       margin: 0;
     }
-    .ai-events-head button {
-      font-size: 12px;
-      padding: 6px 10px;
-      border-radius: 8px;
-      border: 1px solid #3f3f5a;
-      background: #1f1f2e;
-      color: #a8a8c0;
-      cursor: pointer;
+    .ai-events-zone-head-meta {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .6rem;
+      color: rgba(200,169,110,.6);
+      letter-spacing: .06em;
+      text-transform: uppercase;
     }
-    .ai-events-head button:hover { border-color: #a78bfa; color: #e5e5e5; }
+    .ai-events-zone-clear {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .58rem;
+      font-weight: 600;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 2px;
+      border: 1px solid rgba(200,169,110,.25);
+      background: transparent;
+      color: rgba(200,169,110,.6);
+      cursor: pointer;
+      transition: border-color .2s, color .2s;
+    }
+    .ai-events-zone-clear:hover { border-color: var(--pg-gold); color: var(--pg-gold); }
 
-    .ai-events-stack {
+    .ai-events-zone-scroll {
+      display: none;
       flex: 1;
       min-height: 0;
       overflow-y: auto;
-      padding: 12px 16px 20px;
+      padding: 24px 28px 32px;
     }
+    .ai-events-zone.has-events .ai-events-zone-scroll { display: block; }
 
-    .ai-events-empty {
-      padding: 32px 20px;
-      text-align: center;
-      color: #666;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-    .ai-events-empty[hidden] { display: none !important; }
-
-    .ai-round {
-      margin-bottom: 20px;
-      border: 1px solid #2f2f42;
-      border-radius: 12px;
+    /* ── Event blocks inside the zone ─────────────────── */
+    .chat-events-block {
+      margin: 0 0 28px;
+      border: 1px solid var(--pg-rule);
+      border-radius: 8px;
       overflow: hidden;
-      background: #14141a;
+      background: #fff;
+      box-shadow: 0 2px 16px rgba(30,58,47,.06);
     }
-    .ai-round-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 10px 12px;
-      background: #1a1a24;
-      border-bottom: 1px solid #2a2a3a;
+    .chat-events-label {
+      padding: 9px 16px;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .62rem;
+      font-weight: 700;
+      letter-spacing: .09em;
+      text-transform: uppercase;
+      color: var(--pg-forest);
+      background: var(--pg-parch);
+      border-bottom: 1px solid var(--pg-rule);
     }
-    .ai-round-head span {
-      font-size: 12px;
-      color: #94a3b8;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .chat-events-label em {
+      font-style: italic;
+      color: var(--pg-muted);
+      font-weight: 400;
+      text-transform: none;
+      letter-spacing: 0;
     }
-    .ai-round-head button {
-      flex-shrink: 0;
-      font-size: 11px;
-      padding: 4px 8px;
-      border-radius: 6px;
-      border: none;
-      background: #2a2a3e;
-      color: #a78bfa;
-      cursor: pointer;
-    }
-
-    .ai-round-fold {
-      width: 100%;
-      text-align: left;
-      padding: 12px 14px;
-      margin-bottom: 10px;
-      border-radius: 10px;
-      border: 1px solid #2f2f42;
-      background: #16161c;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      transition: border-color 0.15s, background 0.15s;
-    }
-    .ai-round-fold:hover { border-color: #5b21b6; background: #1c1c26; }
-    .ai-round-fold-n { font-size: 12px; font-weight: 700; color: #a78bfa; }
-    .ai-round-fold-q { font-size: 12px; color: #888; }
-
-    .ai-round-grid {
+    .chat-events-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 12px;
-      padding: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+      padding: 14px;
+      background: var(--pg-ivory);
     }
 
     .card.card--compact img { height: 100px; }
     .card.card--compact .no-img { height: 100px; font-size: 28px; }
     .card.card--compact .card-body { padding: 10px 12px; }
-    .card.card--compact .card-title { font-size: 13px; }
-    .card.card--compact .card-meta { font-size: 11px; }
-    .card.card--compact .card-link { font-size: 12px; margin-top: 8px; padding: 6px; }
+    .card.card--compact .card-title { font-size: 1rem; }
+    .card.card--compact .card-meta { font-size: .72rem; }
+    .card.card--compact .card-link { font-size: .62rem; margin-top: 8px; padding: 6px; }
 
+    /* ── Inline chat event cards ──────────────────────── */
+    .chat-events-grid .card {
+      background: #fff;
+      border: 1px solid var(--pg-rule);
+      box-shadow: 0 2px 8px rgba(30,58,47,.07);
+    }
+    .chat-events-grid .card:hover { background: #FFFDF9; transform: translateY(-3px); box-shadow: 0 8px 24px rgba(30,58,47,.12); }
+    .chat-events-grid .card-title {
+      color: var(--pg-forest);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1rem;
+    }
+    .chat-events-grid .card-meta { color: var(--pg-muted); }
+    .chat-events-grid .card img { filter: sepia(.05) brightness(.97); }
+    .chat-events-grid .card:hover img { transform: scale(1.04); filter: sepia(.02) brightness(1.01); }
+    .chat-events-grid .card-link {
+      background: var(--pg-forest);
+      color: var(--pg-gold);
+      border: none;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      font-size: .62rem;
+      border-radius: 2px;
+    }
+    .chat-events-grid .card-link:hover { background: var(--pg-forest2); }
+    .chat-events-grid .badge-free { background: var(--pg-forest); color: var(--pg-gold); }
+    .chat-events-grid .badge-paid { background: transparent; color: var(--pg-forest); border: 1px solid var(--pg-rule); }
+    .chat-events-grid .badge-category { background: transparent; color: var(--pg-muted); border: 1px solid var(--pg-sand); }
+    .chat-events-grid .no-img { background: linear-gradient(135deg, var(--pg-sand), #C8B09A); height: 100px; font-size: 28px; }
+
+    /* ── Chat drawer — floating right panel (≈1/4 page width) */
     .ai-drawer {
       position: relative;
       z-index: 3;
       pointer-events: auto;
-      width: 30%;
-      min-width: 300px;
-      max-width: 420px;
+      flex-shrink: 0;
+      width: clamp(300px, 26vw, 420px);
+      align-self: center;
+      height: 90vh;
+      max-height: 960px;
+      margin: 0 32px 0 24px;
+      border-radius: 14px;
       display: flex;
       flex-direction: column;
-      background: #0c0c0f;
-      border-left: 1px solid #2a2a3a;
+      background: var(--pg-parch);
+      box-shadow:
+        0 24px 80px rgba(10,18,13,.45),
+        0 0 0 1px rgba(200,169,110,.1);
+      overflow: hidden;
     }
     .ai-drawer-head {
       flex-shrink: 0;
-      padding: 14px 16px;
-      border-bottom: 1px solid #2a2a3a;
+      padding: 16px 18px;
+      background: var(--pg-forest);
+      border-bottom: 1px solid #162e24;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -383,9 +509,11 @@
     }
     .ai-drawer-head h2 {
       margin: 0;
-      font-size: 15px;
-      color: #ddd6fe;
-      font-weight: 600;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.2rem;
+      font-weight: 400;
+      color: var(--pg-ivory);
+      letter-spacing: .03em;
     }
     .ai-drawer-actions {
       display: flex;
@@ -393,158 +521,63 @@
       gap: 8px;
     }
     .ai-history-btn {
-      height: 36px;
-      padding: 0 12px;
-      border-radius: 10px;
-      border: 1px solid #3a3a52;
-      background: #181822;
-      color: #c4b5fd;
-      font-size: 12px;
+      font-family: 'Jost', system-ui, sans-serif;
+      height: 30px;
+      padding: 0 11px;
+      border-radius: 2px;
+      border: 1px solid rgba(200,169,110,.3);
+      background: transparent;
+      color: rgba(200,169,110,.75);
+      font-size: .6rem;
       font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
       cursor: pointer;
+      transition: border-color .2s, color .2s;
     }
-    .ai-history-btn:hover {
-      border-color: #a78bfa;
-      color: #fff;
-    }
+    .ai-history-btn:hover { border-color: var(--pg-gold); color: var(--pg-gold); }
     .ai-drawer-close {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      border: none;
-      background: #222;
-      color: #fff;
-      font-size: 22px;
+      font-family: 'Jost', system-ui, sans-serif;
+      width: 30px;
+      height: 30px;
+      border-radius: 2px;
+      border: 1px solid rgba(200,169,110,.25);
+      background: transparent;
+      color: rgba(255,255,255,.6);
+      font-size: 18px;
       line-height: 1;
       cursor: pointer;
+      transition: border-color .2s, color .2s;
     }
-    .ai-drawer-close:hover { background: #333; }
+    .ai-drawer-close:hover { border-color: var(--pg-gold); color: var(--pg-ivory); }
 
     .ai-drawer-sub {
       flex-shrink: 0;
-      font-size: 11px;
-      color: #666;
-      padding: 0 16px 10px;
-      line-height: 1.4;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .7rem;
+      color: var(--pg-muted);
+      padding: 10px 18px 12px;
+      line-height: 1.55;
+      border-bottom: 1px solid var(--pg-rule);
+      background: var(--pg-parch);
     }
 
     .ai-history-panel {
       display: none;
       position: absolute;
-      left: 12px;
-      right: 12px;
+      left: 10px;
+      right: 10px;
       top: 58px;
-      bottom: 12px;
+      bottom: 10px;
       z-index: 6;
-      border: 1px solid #2f2f46;
-      border-radius: 12px;
-      background: #0e0e14;
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+      border: 1px solid var(--pg-rule);
+      border-radius: 6px;
+      background: var(--pg-ivory);
+      box-shadow: 0 12px 40px rgba(30,58,47,.14);
       overflow: hidden;
       flex-direction: column;
     }
     .ai-history-panel.is-open { display: flex; }
-    .ai-itinerary-panel {
-      display: none;
-      position: absolute;
-      left: 12px;
-      right: 12px;
-      top: 58px;
-      bottom: 12px;
-      z-index: 6;
-      border: 1px solid #2f2f46;
-      border-radius: 12px;
-      background: #0e0e14;
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
-      overflow: hidden;
-      flex-direction: column;
-    }
-    .ai-itinerary-panel.is-open { display: flex; }
-    .ai-itinerary-body {
-      flex: 1;
-      min-height: 0;
-      overflow-y: auto;
-      padding: 10px;
-      display: grid;
-      gap: 10px;
-    }
-    .ai-field { display: grid; gap: 6px; }
-    .ai-field label { font-size: 11px; color: #9ca3af; }
-    .ai-field input, .ai-field select {
-      width: 100%;
-      border-radius: 8px;
-      border: 1px solid #333;
-      background: #161621;
-      color: #fff;
-      padding: 9px 10px;
-      font-size: 12px;
-      outline: none;
-    }
-    .ai-field input:focus, .ai-field select:focus { border-color: #a78bfa; }
-    .ai-autocomplete-list {
-      border: 1px solid #2f2f42;
-      border-radius: 8px;
-      overflow: hidden;
-      max-height: 180px;
-      overflow-y: auto;
-      background: #11111a;
-    }
-    .ai-autocomplete-item {
-      width: 100%;
-      border: none;
-      text-align: left;
-      padding: 8px 10px;
-      background: #11111a;
-      color: #ddd;
-      border-bottom: 1px solid #1f1f2a;
-      cursor: pointer;
-      font-size: 12px;
-      display: grid;
-      gap: 2px;
-    }
-    .ai-autocomplete-item:hover { background: #1b1b2a; }
-    .ai-itinerary-build {
-      border: none;
-      border-radius: 10px;
-      background: #a78bfa;
-      color: #0f0f0f;
-      font-weight: 700;
-      font-size: 12px;
-      padding: 10px 12px;
-      cursor: pointer;
-    }
-    .ai-itinerary-build:disabled { opacity: 0.6; cursor: not-allowed; }
-    .ai-result-note { font-size: 11px; color: #8f8fa8; }
-    .ai-place-details {
-      position: fixed;
-      left: 50%;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 2600;
-      width: min(92vw, 560px);
-      max-height: 80vh;
-      overflow: auto;
-      background: #0f0f14;
-      border: 1px solid #2f2f42;
-      border-radius: 12px;
-      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.6);
-      padding: 14px;
-      display: none;
-    }
-    .ai-place-details.is-open { display: block; }
-    .ai-place-details h4 { color: #ddd6fe; margin-bottom: 8px; }
-    .ai-place-details p { font-size: 13px; line-height: 1.45; color: #d1d5db; margin-bottom: 8px; }
-    .ai-place-details a { color: #a78bfa; text-decoration: none; font-size: 12px; }
-    .ai-place-close {
-      float: right;
-      border: none;
-      background: #2a2a3e;
-      color: #fff;
-      border-radius: 8px;
-      width: 28px;
-      height: 28px;
-      cursor: pointer;
-    }
 
     .ai-history-head {
       flex-shrink: 0;
@@ -553,150 +586,124 @@
       justify-content: space-between;
       gap: 10px;
       padding: 12px 14px;
-      border-bottom: 1px solid #2a2a3a;
-      background: #14141d;
+      border-bottom: 1px solid var(--pg-rule);
+      background: var(--pg-parch);
     }
     .ai-history-head h4 {
       margin: 0;
-      font-size: 13px;
-      color: #ddd6fe;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .68rem;
+      font-weight: 600;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--pg-forest);
     }
     .ai-history-close {
-      border: none;
-      background: #252538;
-      color: #ddd;
-      border-radius: 8px;
-      width: 28px;
-      height: 28px;
+      font-family: 'Jost', system-ui, sans-serif;
+      border: 1px solid var(--pg-rule);
+      background: transparent;
+      color: var(--pg-muted);
+      border-radius: 2px;
+      width: 26px;
+      height: 26px;
       cursor: pointer;
-      font-size: 18px;
+      font-size: 15px;
       line-height: 1;
+      transition: color .2s, border-color .2s;
     }
-    .ai-history-close:hover { background: #33334a; }
+    .ai-history-close:hover { color: var(--pg-forest); border-color: var(--pg-forest); }
 
     .ai-history-list {
       flex: 1;
       min-height: 0;
       overflow-y: auto;
       padding: 10px;
+      background: var(--pg-ivory);
     }
     .ai-history-empty {
       padding: 22px 14px;
-      color: #7a7a8f;
-      font-size: 12px;
+      font-family: 'Jost', system-ui, sans-serif;
+      color: var(--pg-warm);
+      font-size: .75rem;
       text-align: center;
-      border: 1px dashed #2f2f42;
-      border-radius: 10px;
+      border: 1px dashed var(--pg-rule);
+      border-radius: 4px;
       margin: 4px;
     }
     .ai-conv {
-      border: 1px solid #2b2b3e;
-      border-radius: 10px;
-      margin-bottom: 10px;
-      background: #14141d;
+      border: 1px solid var(--pg-rule);
+      border-radius: 4px;
+      margin-bottom: 8px;
+      background: #fff;
       overflow: hidden;
     }
     .ai-conv-summary {
       width: 100%;
       border: none;
-      background: #191926;
-      color: #ddd;
+      background: var(--pg-parch);
+      color: var(--pg-ink);
       text-align: left;
-      padding: 10px 12px;
+      padding: 10px 14px;
       cursor: pointer;
       display: grid;
       gap: 3px;
+      transition: background .15s;
     }
-    .ai-conv-summary:hover { background: #202031; }
+    .ai-conv-summary:hover { background: var(--pg-sand); }
     .ai-conv-title {
-      font-size: 12px;
-      color: #ddd6fe;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .78rem;
+      color: var(--pg-ink);
       font-weight: 600;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
     .ai-conv-meta {
-      font-size: 11px;
-      color: #8b8ba3;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .66rem;
+      color: var(--pg-muted);
     }
     .ai-conv-actions {
-      padding: 8px 10px;
-      border-top: 1px solid #2a2a3a;
-      background: #151523;
+      padding: 8px 12px;
+      border-top: 1px solid var(--pg-rule);
+      background: var(--pg-ivory);
       display: flex;
       justify-content: flex-end;
     }
     .ai-conv-events-btn {
-      border: 1px solid #3a3a52;
-      background: #1e1e30;
-      color: #c4b5fd;
-      border-radius: 8px;
-      font-size: 11px;
+      font-family: 'Jost', system-ui, sans-serif;
+      border: 1px solid var(--pg-rule);
+      background: transparent;
+      color: var(--pg-forest);
+      border-radius: 2px;
+      font-size: .58rem;
       font-weight: 600;
-      padding: 6px 10px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 5px 10px;
       cursor: pointer;
+      transition: border-color .2s, background .2s;
     }
-    .ai-conv-events-btn:hover { border-color: #a78bfa; color: #fff; }
-    .ai-conv-rounds {
-      display: none;
-      border-top: 1px solid #2a2a3a;
-      padding: 8px;
-      gap: 8px;
-      flex-direction: column;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-    .ai-conv-rounds.is-open { display: flex; }
-    .ai-conv-round {
-      border: 1px solid #2f2f42;
-      border-radius: 8px;
-      overflow: hidden;
-      background: #11111a;
-    }
-    .ai-conv-round-head {
-      width: 100%;
-      border: none;
-      background: #1b1b2a;
-      color: #cbd5e1;
-      text-align: left;
-      padding: 8px 10px;
-      cursor: pointer;
-      font-size: 11px;
-      display: grid;
-      gap: 2px;
-    }
-    .ai-conv-round-head:hover { background: #232338; }
-    .ai-conv-round-q {
-      color: #8f8fa8;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .ai-conv-round-grid {
-      display: none;
-      grid-template-columns: 1fr;
-      gap: 8px;
-      padding: 8px;
-    }
-    .ai-conv-round-grid.is-open { display: grid; }
-
+    .ai-conv-events-btn:hover { border-color: var(--pg-forest); background: var(--pg-parch); }
+    /* Chat log */
     #chat-log {
       flex: 1;
       min-height: 120px;
       overflow-y: auto;
-      padding: 12px 14px;
+      padding: 14px 16px;
       margin: 0 12px;
-      border: 1px solid #2a2a4a;
-      border-radius: 10px;
-      background: #111;
+      border: 1px solid var(--pg-rule);
+      border-radius: 4px;
+      background: #fff;
       white-space: pre-wrap;
-      line-height: 1.45;
-      font-size: 13px;
+      line-height: 1.6;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .82rem;
+      color: var(--pg-ink);
     }
-
-    .msg-user { color: #93c5fd; margin-bottom: 10px; }
-    .msg-bot { color: #d4d4d4; margin-bottom: 10px; }
+    .msg-user { color: var(--pg-forest); margin-bottom: 10px; font-weight: 600; }
+    .msg-bot  { color: var(--pg-ink); margin-bottom: 10px; }
 
     .ai-drawer-input {
       flex-shrink: 0;
@@ -704,8 +711,8 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
-      border-top: 1px solid #2a2a3a;
-      background: #0f0f12;
+      border-top: 1px solid var(--pg-rule);
+      background: var(--pg-parch);
     }
 
     .ai-chat-row {
@@ -718,67 +725,1467 @@
       flex: 1;
       min-height: 72px;
       max-height: 160px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid #333;
-      background: #1a1a1a;
-      color: #fff;
-      font-size: 13px;
+      padding: 10px 14px;
+      border-radius: 3px;
+      border: 1px solid var(--pg-rule);
+      background: var(--pg-ivory);
+      color: var(--pg-ink);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .82rem;
       resize: vertical;
       outline: none;
-      font-family: inherit;
+      transition: border-color .2s;
     }
-    #chat-message:focus { border-color: #a78bfa; }
+    #chat-message::placeholder { color: var(--pg-warm); }
+    #chat-message:focus { border-color: var(--pg-forest); }
 
     #chat-send {
-      padding: 10px 16px;
-      border-radius: 10px;
+      font-family: 'Jost', system-ui, sans-serif;
+      padding: 10px 18px;
+      border-radius: 2px;
       border: none;
-      background: #a78bfa;
-      color: #0f0f0f;
-      font-weight: 600;
+      background: var(--pg-forest);
+      color: var(--pg-gold);
+      font-weight: 700;
+      font-size: .68rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
       cursor: pointer;
-      font-size: 13px;
+      transition: background .2s;
+      white-space: nowrap;
     }
-    #chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
+    #chat-send:hover { background: var(--pg-forest2); }
+    #chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
 
     #chat-err {
-      color: #f87171;
-      font-size: 12px;
+      font-family: 'Jost', system-ui, sans-serif;
+      color: #b94040;
+      font-size: .72rem;
       margin: 0 12px 8px;
     }
 
     @media (max-width: 900px) {
-      .ai-overlay-layout { flex-direction: column; }
-      .ai-events-column {
-        width: 100%;
-        height: 42vh;
-        border-right: none;
-        border-bottom: 1px solid #2a2a3a;
-      }
+      .ai-overlay-layout { flex-direction: column-reverse; align-items: stretch; }
+      .ai-events-zone { flex: 1; min-height: 0; }
       .ai-drawer {
         width: 100%;
         max-width: none;
         min-width: 0;
-        flex: 1;
-        min-height: 0;
+        height: 56vh;
+        align-self: stretch;
+        margin: 0;
+        border-radius: 0;
+        border-top: 1px solid var(--pg-rule);
+        box-shadow: 0 -8px 40px rgba(10,18,13,.3);
       }
     }
+
+    /* —— Trip Planner (separate from chatbot) —— */
+    .viewer-fab-stack {
+      position: fixed;
+      right: 24px;
+      bottom: 20px;
+      z-index: 1600;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+      pointer-events: none;
+    }
+    .viewer-fab-stack > button {
+      pointer-events: auto;
+    }
+    .itin-fab {
+      position: relative;
+      z-index: 2;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 2px solid rgba(200,169,110,.35);
+      cursor: pointer;
+      font-size: 22px;
+      line-height: 1;
+      background: #1E3A2F;
+      color: #C8A96E;
+      box-shadow: 0 6px 24px rgba(30,58,47,.35);
+      transition: transform 0.2s, box-shadow 0.2s, background .2s;
+    }
+    .itin-fab:hover { transform: scale(1.06); background: #2C5040; box-shadow: 0 10px 32px rgba(30,58,47,.45); }
+    /* Chat FAB must stay in the stack — base .ai-fab uses position:fixed which removes it from
+       the flex column and stacks it on the corner on top of the Trip Planner button. */
+    .viewer-fab-stack .ai-fab {
+      position: static !important;
+      top: auto !important;
+      right: auto !important;
+      bottom: auto !important;
+      left: auto !important;
+      z-index: 1;
+      width: 60px;
+      height: 60px;
+      font-size: 26px;
+    }
+    body.ai-drawer-open .viewer-fab-stack .ai-fab { display: none; }
+
+    body.itin-modal-open { overflow: hidden; }
+
+    .itin-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 2100;
+    }
+    .itin-modal.is-open { display: block; }
+    .itin-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(44, 36, 28, 0.55);
+      backdrop-filter: blur(6px);
+      cursor: pointer;
+    }
+    .itin-modal-panel {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: min(1040px, 96vw);
+      max-height: min(92vh, 920px);
+      background: #f8f4ee;
+      border-radius: 4px;
+      box-shadow: 0 28px 70px rgba(20, 30, 20, 0.38);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid #dcc7ae;
+    }
+    .itin-modal-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: linear-gradient(180deg, #0c1510 0%, #16261d 100%);
+      border-bottom: 1px solid rgba(200,169,110,.22);
+      box-shadow: 0 8px 24px rgba(0,0,0,.18);
+    }
+    .itin-header-back {
+      justify-self: start;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,250,243,.35);
+      background: rgba(255,255,255,.06);
+      color: rgba(248,244,238,.94);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background .2s, border-color .2s, color .2s;
+    }
+    .itin-header-back:hover:not(:disabled):not([hidden]) {
+      background: rgba(200,169,110,.22);
+      border-color: rgba(200,169,110,.65);
+      color: #fdf9f4;
+    }
+    .itin-header-back[hidden] { display: none !important; }
+    .itin-modal-header-center {
+      justify-self: center;
+      text-align: center;
+    }
+    .itin-header-right {
+      justify-self: end;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .itin-header-chip {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: none;
+      background: rgba(248,244,238,.93);
+      color: #0f1712;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(0,0,0,.22);
+      transition: transform .15s ease, filter .15s ease;
+    }
+    .itin-header-chip:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.02);
+    }
+    .itin-modal-header h1 {
+      margin: 0;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.45rem;
+      font-weight: 400;
+      letter-spacing: 0.04em;
+      color: #F8F4EE;
+    }
+    .itin-icon-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.1);
+      color: rgba(255,255,255,.8);
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .itin-icon-btn:hover { background: rgba(255,255,255,.22); color: #fff; }
+    .itin-modal-scroll {
+      overflow-y: auto;
+      padding: 24px 28px 30px;
+      flex: 1;
+      min-height: 0;
+      font-size: 15px;
+    }
+    .itin-alert {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+    .itin-alert[hidden] { display: none !important; }
+    .itin-loading-msg {
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #e0f2fe;
+      border: 1px solid #7dd3fc;
+      color: #0c4a6e;
+      font-size: 14px;
+      margin-bottom: 14px;
+      line-height: 1.45;
+    }
+    .itin-loading-msg[hidden] { display: none !important; }
+    .itin-form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px 18px;
+      align-items: end;
+    }
+    .itin-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #57534e;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .itin-field input,
+    .itin-field select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #cbb59a;
+      background: #fffdf8;
+      color: #1c1917;
+      font-size: 14px;
+    }
+    .itin-ac-wrap { position: relative; }
+    .itin-ac-list {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 100%;
+      margin-top: 4px;
+      max-height: 220px;
+      overflow-y: auto;
+      background: #fffdf8;
+      border: 1px solid #cbb59a;
+      border-radius: 10px;
+      z-index: 5;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+    }
+    .itin-ac-list[hidden] { display: none !important; }
+    .itin-ac-item {
+      width: 100%;
+      text-align: left;
+      padding: 10px 12px;
+      border: none;
+      border-bottom: 1px solid #e7e5e4;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .itin-ac-item:hover { background: #faf5ef; }
+    .itin-ac-item strong { font-size: 13px; color: #1c1917; }
+    .itin-ac-item span { font-size: 11px; color: #78716c; }
+    .itin-selected {
+      font-size: 13px;
+      color: #44403c;
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: #fff9;
+      border-radius: 8px;
+      border: 1px dashed #a8a29e;
+    }
+    .itin-interests {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      padding: 8px 0;
+    }
+    .itin-interests label {
+      font-size: 13px;
+      color: #44403c;
+      font-weight: 600;
+      text-transform: none;
+      letter-spacing: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .itin-primary {
+      margin-top: 18px;
+      padding: 12px 28px;
+      border-radius: 3px;
+      border: none;
+      background: #1E3A2F;
+      color: #C8A96E;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(30,58,47,.25);
+      transition: background .2s, color .2s;
+    }
+    .itin-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .itin-primary:hover:not(:disabled) { background: #2C5040; color: #D4B47A; }
+
+    .itin-summary-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 18px 0 22px;
+    }
+    .itin-summary-card {
+      background: #1E3A2F;
+      border: 1px solid #162e24;
+      border-radius: 3px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .itin-summary-card span {
+      display: block;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .58rem;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      color: rgba(200,169,110,.75);
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+    .itin-summary-card strong {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.4rem;
+      font-weight: 400;
+      color: #F8F4EE;
+    }
+
+    .itin-guide-summary {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.05rem;
+      font-style: italic;
+      font-weight: 300;
+      line-height: 1.65;
+      color: #44403c;
+      margin-bottom: 16px;
+      padding: 12px 16px;
+      border-left: 2px solid #C8A96E;
+    }
+    .itin-warn {
+      padding: 10px 12px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .itin-warn--info { background: #ecfeff; border: 1px solid #a5f3fc; color: #155e75; }
+    .itin-warn--warn { background: #fffbeb; border: 1px solid #fcd34d; color: #92400e; }
+
+    /* ── ITINERARY DAY CARDS — premium editorial style ───── */
+    .itin-day-card {
+      display: grid;
+      grid-template-columns: 76px 1fr;
+      gap: 0 20px;
+      margin-bottom: 26px;
+      padding-bottom: 26px;
+      border-bottom: 1px solid #dcc7ae;
+      animation: itinFadeUp .45s ease both;
+    }
+    .itin-day-card:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    @keyframes itinFadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .itin-day-spine {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 3px;
+    }
+    .itin-day-num {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 3.6rem;
+      font-weight: 300;
+      color: #1E3A2F;
+      line-height: 1;
+      margin-bottom: 3px;
+    }
+    .itin-day-spine-lbl {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .52rem;
+      font-weight: 500;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: #C8A96E;
+      text-align: center;
+    }
+    .itin-day-line {
+      flex: 1;
+      width: 1px;
+      background: #dcc7ae;
+      margin-top: 10px;
+    }
+    .itin-day-content {}
+    .itin-day-hdr {
+      padding-bottom: 12px;
+      border-bottom: 1px solid #dcc7ae;
+      margin-bottom: 14px;
+    }
+    .itin-day-dest {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.75rem;
+      font-weight: 400;
+      color: #1E3A2F;
+      line-height: 1.2;
+      margin: 0 0 6px;
+    }
+    .itin-day-dest em { font-style: italic; }
+    .itin-day-tagline {
+      font-size: .92rem;
+      color: #7A6F63;
+      font-weight: 300;
+      line-height: 1.6;
+      margin: 0;
+    }
+    .itin-slots-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1px;
+      background: #dcc7ae;
+      border: 1px solid #dcc7ae;
+      margin-bottom: 10px;
+    }
+    .itin-slot {
+      background: #faf6f0;
+      padding: 12px 12px 14px;
+      position: relative;
+    }
+    .itin-slot::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: #C8A96E;
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform .3s ease;
+    }
+    .itin-slot:hover::before { transform: scaleX(1); }
+    .itin-slot-label {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .55rem;
+      font-weight: 500;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: #C8A96E;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .itin-slot-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #C8A96E;
+      flex-shrink: 0;
+    }
+    .itin-mini-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .itin-mini-card {
+      border: none;
+      padding: 0;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+      text-align: left;
+      background: #fff;
+      box-shadow: 0 1px 5px rgba(30,58,47,.07);
+      transition: transform .15s, box-shadow .15s;
+      width: 100%;
+    }
+    .itin-mini-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 14px rgba(30,58,47,.13);
+    }
+    .itin-mini-img-wrap {
+      height: 60px;
+      background: #e2d5c3;
+      overflow: hidden;
+    }
+    .itin-mini-img-wrap img {
+      width: 100%; height: 100%;
+      object-fit: cover; display: block;
+      filter: sepia(.06) brightness(.97);
+    }
+    .itin-mini-fallback {
+      height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      background: linear-gradient(135deg, #e8d5c3, #d4c0a4);
+    }
+    .itin-mini-body {
+      padding: 6px 9px 8px;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .itin-mini-body strong {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.08rem;
+      font-weight: 500;
+      color: #1E3A2F;
+      line-height: 1.25;
+    }
+    .itin-mini-body span { font-size: .75rem; color: #7A6F63; }
+    .itin-day-note {
+      background: #1E3A2F;
+      padding: 11px 14px;
+      border-radius: 0 0 4px 4px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0 24px;
+    }
+    .itin-meals, .itin-tips { flex: 1; min-width: 140px; }
+    .itin-meals h4, .itin-tips h4 {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .55rem;
+      font-weight: 500;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: #C8A96E;
+      margin: 0 0 5px;
+    }
+    .itin-meals ul, .itin-tips ul {
+      margin: 0;
+      padding-left: 14px;
+      font-size: .85rem;
+      color: rgba(255,255,255,.6);
+      line-height: 1.7;
+    }
+
+    .itin-links-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    .itin-link-btn {
+      display: inline-block;
+      padding: 9px 18px;
+      border-radius: 3px;
+      background: #1E3A2F;
+      color: #C8A96E;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      text-decoration: none;
+      transition: background .2s;
+    }
+    .itin-link-btn:hover { background: #2C5040; }
+    .itin-link-btn--alt { background: #2C5040; color: #C8A96E; }
+    .itin-link-btn--alt:hover { background: #1E3A2F; }
+    button.itin-link-btn {
+      font: inherit;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      text-align: center;
+    }
+    .itin-link-btn--ghost {
+      background: transparent;
+      border: 1px solid #1E3A2F;
+      color: #1E3A2F;
+    }
+    .itin-link-btn--ghost:hover { background: #f0e8dc; }
+    .itin-ghost {
+      margin-top: 14px;
+      padding: 8px 16px;
+      border-radius: 3px;
+      border: 1px solid #cbb59a;
+      background: transparent;
+      cursor: pointer;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #7A6F63;
+      transition: border-color .2s, color .2s;
+    }
+    .itin-ghost:hover { border-color: #1E3A2F; color: #1E3A2F; }
+
+    /* ── Trip planner v2: three journeys + polish ───────────────────── */
+    .itin-variant-stage {
+      margin-bottom: 22px;
+      padding: 20px;
+      border-radius: 18px;
+      background: linear-gradient(145deg, #fffdf9 0%, #f7efe4 52%, #f0e4d6 100%);
+      border: 1px solid #e2d5c8;
+      box-shadow: 0 18px 48px rgba(30,58,47,.07), inset 0 1px 0 rgba(255,255,255,.85);
+    }
+    .itin-variant-stage-intro {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(1.35rem, 2.5vw, 1.85rem);
+      font-weight: 600;
+      color: #14231b;
+      margin: 0 0 8px;
+      letter-spacing: .03em;
+    }
+    .itin-variant-stage-meta {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 13px;
+      color: #6b6359;
+      margin: 0 0 20px;
+      line-height: 1.55;
+      max-width: 52rem;
+    }
+    .itin-variant-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 900px) {
+      .itin-variant-grid { grid-template-columns: 1fr; }
+    }
+    .itin-variant-card {
+      text-align: left;
+      padding: 18px 18px 16px;
+      border-radius: 14px;
+      border: 1px solid #d9ccb8;
+      background: rgba(255,255,253,.94);
+      box-shadow: 0 14px 32px rgba(30,58,47,.06);
+      transition: transform .22s cubic-bezier(.4, 0, .2, 1), box-shadow .22s ease, border-color .2s;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+      display: block;
+      width: 100%;
+    }
+    .itin-variant-card:hover {
+      transform: translateY(-4px);
+      border-color: #c8a96e88;
+      box-shadow: 0 22px 44px rgba(30,58,47,.11);
+    }
+    .itin-variant-card:focus-visible {
+      outline: 3px solid #c8a96e;
+      outline-offset: 2px;
+    }
+    .itin-variant-card-num {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: #a8873e;
+      margin-bottom: 8px;
+    }
+    .itin-variant-card h3 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.38rem;
+      font-weight: 600;
+      color: #16261d;
+      margin: 0 0 8px;
+    }
+    .itin-variant-tagline {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 13px;
+      color: #5c544b;
+      margin: 0 0 12px;
+      line-height: 1.5;
+      font-style: italic;
+    }
+    .itin-variant-blurb {
+      font-size: 12px;
+      line-height: 1.55;
+      color: #6b6359;
+      margin: 0 0 14px;
+      display: -webkit-box;
+      -webkit-line-clamp: 5;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .itin-variant-select-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #1e3a2f, #274a3c);
+      color: #d4b47a;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    .itin-plan-toolbar {
+      margin-bottom: 18px;
+      padding: 12px;
+      border-radius: 999px;
+      background: rgba(22,38,29,.93);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(200,169,110,.28);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+    }
+    .itin-plan-toolbar-label {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 11px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: rgba(247,239,229,.72);
+      margin-right: auto;
+      padding-left: 8px;
+    }
+    .itin-plan-tab {
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: none;
+      background: transparent;
+      color: rgba(255,250,243,.76);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .2s, color .2s;
+    }
+    .itin-plan-tab:hover { color: #fffdf8; background: rgba(255,255,255,.07); }
+    .itin-plan-tab.is-active {
+      background: linear-gradient(135deg, #c8a96e, #d4bf90);
+      color: #161f19;
+      box-shadow: 0 4px 16px rgba(0,0,0,.22);
+    }
+
+    .itin-plan-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .itin-save-trip {
+      padding: 10px 20px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #c8a96e, #b8955a);
+      color: #0f1511;
+      box-shadow: 0 6px 22px rgba(200,169,110,.35);
+      transition: transform .18s ease, filter .18s ease;
+    }
+    .itin-save-trip:hover:not(:disabled) {
+      transform: translateY(-1px);
+      filter: brightness(1.04);
+    }
+    .itin-save-trip:disabled { opacity: .45; cursor: not-allowed; }
+
+    .itin-history-section {
+      padding: 4px 0 12px;
+    }
+    .itin-history-intro {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.42rem;
+      font-weight: 600;
+      color: #16261d;
+      margin: 0 0 8px;
+    }
+    .itin-history-caption {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 13px;
+      color: #6b6359;
+      margin: 0 0 18px;
+      line-height: 1.55;
+    }
+    .itin-history-ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: min(420px, 52vh);
+      overflow-y: auto;
+    }
+    .itin-history-row {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 16px 18px;
+      border-radius: 12px;
+      border: 1px solid #e4dacc;
+      background: rgba(255,253,251,.94);
+      box-shadow: 0 10px 28px rgba(30,58,47,.05);
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+      transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+    }
+    .itin-history-row:hover {
+      border-color: #c8a96e98;
+      transform: translateY(-2px);
+      box-shadow: 0 16px 36px rgba(30,58,47,.09);
+    }
+    .itin-history-row-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.08rem;
+      font-weight: 600;
+      color: #14231b;
+      margin-bottom: 6px;
+    }
+    .itin-history-row-meta {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 12px;
+      color: #766b60;
+      line-height: 1.55;
+    }
+
+    .itin-day-card { position: relative; }
+    .itin-day-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: -4px;
+      margin-bottom: 10px;
+    }
+    .itin-day-regen {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(30,58,47,.38);
+      background: transparent;
+      color: #1e3a2f;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background .2s, border-color .2s, color .2s;
+    }
+    .itin-day-regen:hover:not(:disabled) {
+      border-color: #c8a96e;
+      background: rgba(200,169,110,.12);
+      color: #143028;
+    }
+    .itin-day-regen:disabled { opacity: .45; cursor: wait; }
+
+    /* Flight search modal (AirLabs / AirAsia) — matches trip planner palette */
+    body.fs-modal-open, body.hs-modal-open { overflow: hidden; }
+    .fs-modal.itin-modal, .hs-modal.itin-modal { z-index: 2300; }
+    .hs-near-event {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #fcd34d;
+      background: #fef3c7;
+      color: #78350f;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+    .hs-near-event:hover { background: #fde68a; }
+    .fs-disclaimer {
+      font-size: 13px;
+      color: #57534e;
+      line-height: 1.5;
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      background: #fff9;
+      border-radius: 10px;
+      border: 1px solid #e7e5e4;
+    }
+    .fs-popular {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .fs-chip {
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #cbb59a;
+      background: #fffdf8;
+      color: #44403c;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .fs-chip:hover {
+      background: #ea580c;
+      color: #fff;
+      border-color: #ea580c;
+    }
+    .fs-hint {
+      font-size: 12px;
+      color: #78716c;
+      margin: 8px 0 12px;
+      min-height: 1.2em;
+    }
+    .fs-loading {
+      font-size: 13px;
+      color: #0c4a6e;
+      margin-bottom: 10px;
+    }
+    .fs-loading[hidden] { display: none !important; }
+    .fs-results {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .fs-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      background: #fffdf8;
+      border: 1px solid #cbb59a;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .fs-flight-no {
+      font-size: 15px;
+      color: #1c1917;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .fs-times {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+      color: #57534e;
+    }
+    .fs-times strong { color: #1c1917; }
+    .fs-book-btn {
+      flex-shrink: 0;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: none;
+      background: #1c1917;
+      color: #fff;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .fs-book-btn:hover { filter: brightness(1.08); }
+    .fs-empty {
+      padding: 18px;
+      background: #fff9;
+      border: 1px dashed #a8a29e;
+      border-radius: 12px;
+      font-size: 14px;
+      color: #44403c;
+      line-height: 1.55;
+    }
+    .fs-empty p { margin: 0 0 12px; }
+    .fs-deep-link {
+      display: inline-block;
+      padding: 10px 18px;
+      border-radius: 10px;
+      background: #ea580c;
+      color: #fff !important;
+      font-weight: 700;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .fs-deep-link:hover { filter: brightness(1.05); }
+    .fs-note {
+      font-size: 13px;
+      color: #92400e;
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      line-height: 1.45;
+    }
+    .fs-card-meta {
+      font-size: 12px;
+      color: #57534e;
+      margin-top: 6px;
+    }
+    .fs-card-meta span { margin-right: 10px; }
+
+    .itin-place-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 2200;
+    }
+    .itin-place-overlay.is-open { display: block; }
+    .itin-place-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(28, 25, 23, 0.55);
+      cursor: pointer;
+    }
+    .itin-place-panel {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: min(440px, 94vw);
+      max-height: 90vh;
+      overflow-y: auto;
+      background: #f0e4d4;
+      border-radius: 18px;
+      box-shadow: 0 24px 50px rgba(0,0,0,0.35);
+      border: 1px solid #cbb59a;
+    }
+    .itin-place-panel img {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      display: block;
+      background: #e7e5e4;
+    }
+    .itin-place-body { padding: 16px 18px 20px; }
+    .itin-place-body h2 { margin: 0 0 6px; font-size: 1.35rem; color: #1c1917; }
+    .itin-place-loc { font-size: 13px; color: #78716c; margin-bottom: 12px; }
+    .itin-place-desc { font-size: 14px; line-height: 1.55; color: #44403c; margin-bottom: 12px; }
+    .itin-fun-box {
+      background: #fffbeb;
+      border: 1px solid #fbbf24;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 14px;
+    }
+    .itin-fun-box strong {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      color: #b45309;
+      margin-bottom: 6px;
+    }
+    .itin-fun-box #itin-place-fact,
+    .itin-fun-box span {
+      display: block;
+      color: #78350f;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .itin-place-meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      font-size: 13px;
+      color: #44403c;
+      margin-bottom: 14px;
+    }
+    .itin-map-btn {
+      display: block;
+      width: 100%;
+      text-align: center;
+      padding: 12px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #ea580c, #c2410c);
+      color: #fff !important;
+      font-weight: 800;
+      text-decoration: none;
+    }
+    .itin-place-close-row {
+      display: flex;
+      justify-content: flex-end;
+      padding: 8px 10px 0;
+    }
+    /* ── HERO BANNER ──────────────────────────────────────── */
+    .hero-banner {
+      background: var(--pg-forest);
+      position: relative;
+      overflow: hidden;
+      padding: 60px 52px 0;
+      flex-shrink: 0;
+    }
+    .hero-banner-watermark {
+      position: absolute;
+      right: -40px;
+      top: 50%;
+      transform: translateY(-52%);
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(10rem, 22vw, 26rem);
+      font-weight: 300;
+      color: rgba(255,255,255,.028);
+      letter-spacing: .06em;
+      pointer-events: none;
+      white-space: nowrap;
+      line-height: 1;
+      user-select: none;
+    }
+    .hero-banner-inner {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 48px;
+      position: relative;
+      z-index: 1;
+      margin-bottom: 44px;
+    }
+    .hero-banner-content { flex: 1; min-width: 0; }
+
+    /* image mosaic */
+    .hero-img-mosaic {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+      height: 360px;
+      align-items: stretch;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .hero-img {
+      display: block;
+      object-fit: cover;
+      filter: sepia(.18) brightness(.78) contrast(1.04);
+      transition: filter .4s ease;
+    }
+    .hero-img-mosaic:hover .hero-img { filter: sepia(.1) brightness(.86) contrast(1.02); }
+    .hero-img-tall {
+      width: 210px;
+      height: 100%;
+      border-radius: 4px 0 0 4px;
+    }
+    .hero-img-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 200px;
+    }
+    .hero-img-stack .hero-img {
+      flex: 1;
+      width: 100%;
+      border-radius: 0;
+    }
+    .hero-img-stack .hero-img:last-child { border-radius: 0 4px 4px 0; }
+    .hero-banner-eyebrow {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .62rem;
+      font-weight: 500;
+      letter-spacing: .22em;
+      text-transform: uppercase;
+      color: rgba(200,169,110,.7);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .hero-banner-eyebrow::before {
+      content: '';
+      display: block;
+      width: 30px;
+      height: 1px;
+      background: var(--pg-gold);
+    }
+    .hero-banner-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(3rem, 5.5vw, 5.2rem);
+      font-weight: 300;
+      color: var(--pg-ivory);
+      line-height: .93;
+      letter-spacing: -.01em;
+      margin-bottom: 20px;
+    }
+    .hero-banner-title em { font-style: italic; color: var(--pg-gold); }
+    .hero-banner-sub {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .88rem;
+      color: rgba(255,255,255,.42);
+      font-weight: 300;
+      line-height: 1.75;
+      max-width: 400px;
+    }
+    .hero-stats-row {
+      display: flex;
+      align-items: stretch;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,.09);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .hero-stat-box {
+      padding: 20px 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      border-right: 1px solid rgba(255,255,255,.08);
+      min-width: 100px;
+    }
+    .hero-stat-box:last-child { border-right: none; }
+    .hero-stat-num {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 2.4rem;
+      font-weight: 400;
+      color: var(--pg-ivory);
+      line-height: 1;
+    }
+    .hero-stat-label {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .57rem;
+      font-weight: 500;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: rgba(200,169,110,.62);
+    }
+
+    /* ── TICKER ───────────────────────────────────────────── */
+    .ticker-wrap {
+      background: #162e24;
+      overflow: hidden;
+      white-space: nowrap;
+      border-bottom: 1px solid rgba(200,169,110,.12);
+      flex-shrink: 0;
+      padding: 9px 0;
+    }
+    .ticker-track {
+      display: inline-block;
+      animation: tickerScroll 50s linear infinite;
+    }
+    .ticker-track:hover { animation-play-state: paused; }
+    .ticker-item {
+      display: inline-block;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .6rem;
+      font-weight: 500;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: rgba(200,169,110,.5);
+      padding: 0 20px;
+    }
+    .ticker-sep {
+      display: inline-block;
+      font-family: 'Jost', system-ui, sans-serif;
+      color: rgba(200,169,110,.2);
+    }
+    @keyframes tickerScroll {
+      0%   { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* ── GRID SECTION HEAD ────────────────────────────────── */
+    .grid-section-head { padding: 28px 34px 0; }
+    .grid-section-head-inner {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--pg-rule);
+      margin-bottom: 24px;
+    }
+    .grid-sec-eyebrow {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .6rem;
+      font-weight: 500;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--pg-gold);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .grid-sec-eyebrow::before {
+      content: '';
+      display: block;
+      width: 22px;
+      height: 1px;
+      background: var(--pg-gold);
+    }
+    .grid-sec-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.9rem;
+      font-weight: 400;
+      color: var(--pg-forest);
+      line-height: 1.1;
+    }
+    .grid-sec-title em { font-style: italic; }
+    .source-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: flex-end;
+    }
+    .source-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 8px 14px;
+      background: #fff;
+      border: 1px solid var(--pg-rule);
+      border-radius: 4px;
+      min-width: 78px;
+      box-shadow: 0 1px 4px rgba(30,58,47,.05);
+    }
+    .source-badge-num {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.55rem;
+      font-weight: 400;
+      color: var(--pg-forest);
+      line-height: 1;
+    }
+    .source-badge-name {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .55rem;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--pg-muted);
+      margin-top: 3px;
+    }
+
+    /* ── CARD ENTRANCE ANIMATION ──────────────────────────── */
+    .card-enter {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity .5s ease, transform .5s ease;
+    }
+    .card-enter.card-visible { opacity: 1; transform: translateY(0); }
   </style>
 </head>
 <body>
 
 <header>
-  <div style="display: flex; gap: 20px; align-items: center;">
-    <h1>🎟️ Event Explorer</h1>
+  <div class="header-brand">
+    <span class="header-eyebrow">Malaysia &middot; Live Events &amp; Culture</span>
+    <h1>Event Explorer</h1>
   </div>
   <span id="last-updated">Loading...</span>
 </header>
 
+<!-- HERO BANNER -->
+<section class="hero-banner">
+  <div class="hero-banner-watermark">EVENTS</div>
+  <div class="hero-banner-inner">
+    <div class="hero-banner-content">
+      <p class="hero-banner-eyebrow">Discover &middot; Explore &middot; Experience</p>
+      <h2 class="hero-banner-title">What's on<br /><em>in Malaysia</em></h2>
+      <p class="hero-banner-sub">Every event worth attending — music, culture, food, sports and more — scraped fresh from across the web and delivered here.</p>
+      <div class="hero-stats-row">
+        <div class="hero-stat-box">
+          <span class="hero-stat-num" id="hero-total">—</span>
+          <span class="hero-stat-label">Live Events</span>
+        </div>
+        <div class="hero-stat-box">
+          <span class="hero-stat-num" id="hero-free">—</span>
+          <span class="hero-stat-label">Free Entry</span>
+        </div>
+        <div class="hero-stat-box">
+          <span class="hero-stat-num">4</span>
+          <span class="hero-stat-label">Platforms</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-img-mosaic">
+      <img class="hero-img hero-img-tall"
+           src="https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=340&h=480&fit=crop&auto=format&q=80"
+           alt="Concert crowd" loading="lazy" />
+      <div class="hero-img-stack">
+        <img class="hero-img"
+             src="https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=260&h=230&fit=crop&auto=format&q=80"
+             alt="Festival stage" loading="lazy" />
+        <img class="hero-img"
+             src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=260&h=230&fit=crop&auto=format&q=80"
+             alt="Event lights" loading="lazy" />
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-track">
+    <span class="ticker-item">Music</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Comedy</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Arts &amp; Culture</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Food &amp; Drink</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Sports</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Wellness</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Kuala Lumpur</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Penang</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Johor Bahru</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Tech &amp; Innovation</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Family</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Nightlife</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Eventbrite</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Ticket2U</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">GoLive Asia</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Ticketmelon</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Music</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Comedy</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Arts &amp; Culture</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Food &amp; Drink</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Sports</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Wellness</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Kuala Lumpur</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Penang</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Johor Bahru</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Tech &amp; Innovation</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Family</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Nightlife</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Eventbrite</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Ticket2U</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">GoLive Asia</span><span class="ticker-sep">&middot;</span>
+    <span class="ticker-item">Ticketmelon</span><span class="ticker-sep">&middot;</span>
+  </div>
+</div>
+
 <div id="eventsView" style="flex: 1;">
 
 <div class="controls">
-  <input type="text" id="search" placeholder="🔍 Search events..." />
+  <span class="controls-label">Filter</span>
+  <input type="text" id="search" placeholder="Search events, venues, categories…" />
   <select id="filter-free" onchange="filterEvents()">
     <option value="all">All Events</option>
     <option value="free">Free Only</option>
@@ -798,10 +2205,23 @@
   </select>
 </div>
 
-<div class="stats" id="stats">Loading events...</div>
+<div class="stats" id="stats" style="display:none;">Loading events...</div>
 
-<div class="grid" id="grid">
-  <div class="loading">⏳ Fetching scraped events...</div>
+<!-- GRID SECTION HEAD -->
+<div class="grid-section-head">
+  <div class="grid-section-head-inner">
+    <div>
+      <p class="grid-sec-eyebrow">Showing <span id="grid-event-count">—</span> events</p>
+      <h3 class="grid-sec-title">Browse <em>the full listing</em></h3>
+    </div>
+    <div class="source-badges" id="source-badges"></div>
+  </div>
+</div>
+
+<div class="grid-frame">
+  <div class="grid" id="grid">
+    <div class="loading">Fetching events…</div>
+  </div>
 </div>
 
 </div>
@@ -809,82 +2229,32 @@
 <div id="ai-overlay" class="ai-overlay" aria-hidden="true">
   <div class="ai-overlay-backdrop" id="ai-overlay-backdrop" aria-hidden="true"></div>
   <div class="ai-overlay-layout">
-    <div class="ai-events-column" id="ai-events-column">
-      <div class="ai-events-head">
-        <h3>Suggested events</h3>
-        <button type="button" id="ai-clear-rounds" title="Clear saved suggestions from this session">Clear all</button>
+    <!-- Left: transparent backdrop zone → becomes event panel when events arrive -->
+    <div class="ai-events-zone" id="ai-events-zone">
+      <div class="ai-events-zone-head">
+        <h3>Suggested Events</h3>
+        <span class="ai-events-zone-head-meta" id="ai-events-zone-meta"></span>
+        <button type="button" class="ai-events-zone-clear" id="ai-events-zone-clear">Clear</button>
       </div>
-      <div class="ai-events-stack" id="ai-events-stack"></div>
-      <div class="ai-events-empty" id="ai-events-empty">Ask the assistant for ideas — matching events show here on the left (sharp, no blur). Older batches collapse into a compact row; tap to expand.</div>
+      <div class="ai-events-zone-scroll" id="ai-events-zone-scroll"></div>
     </div>
+    <!-- Right: floating chat panel -->
     <aside class="ai-drawer" id="ai-drawer" aria-label="Event assistant chat">
       <div class="ai-drawer-head">
         <h2>Event assistant</h2>
         <div class="ai-drawer-actions">
           <button type="button" class="ai-history-btn" id="ai-new-chat-btn">New chat</button>
-          <button type="button" class="ai-history-btn" id="ai-itinerary-btn">Itinerary</button>
           <button type="button" class="ai-history-btn" id="ai-history-btn">History</button>
           <button type="button" class="ai-drawer-close" id="ai-close" aria-label="Close assistant">×</button>
         </div>
       </div>
-      <p class="ai-drawer-sub">Mood, budget, date — suggestions use your scraped listings. Configure <code style="color:#a78bfa;">DASHSCOPE_API_KEY</code> in <code style="color:#a78bfa;">.env</code>.</p>
+      <p class="ai-drawer-sub">Mood, budget, date — suggestions use your scraped listings. Configure <code style="color:var(--pg-forest);font-weight:600;">DASHSCOPE_API_KEY</code> in <code style="color:var(--pg-forest);font-weight:600;">.env</code>.</p>
       <div id="ai-history-panel" class="ai-history-panel" aria-hidden="true">
         <div class="ai-history-head">
           <h4>Conversation History</h4>
           <button type="button" class="ai-history-close" id="ai-history-close" aria-label="Close history">×</button>
         </div>
         <div id="ai-history-list" class="ai-history-list"></div>
-      </div>
-      <div id="ai-itinerary-panel" class="ai-itinerary-panel" aria-hidden="true">
-        <div class="ai-history-head">
-          <h4>Malaysia Itinerary Builder</h4>
-          <button type="button" class="ai-history-close" id="ai-itinerary-close" aria-label="Close itinerary">×</button>
-        </div>
-        <div class="ai-itinerary-body">
-          <div class="ai-field">
-            <label for="it-event-input">Event (type to search)</label>
-            <input id="it-event-input" type="text" placeholder="Start typing event title..." autocomplete="off" />
-            <div id="it-event-list" class="ai-autocomplete-list" style="display:none;"></div>
-          </div>
-          <div class="ai-field">
-            <label for="it-style">Travel style</label>
-            <select id="it-style">
-              <option value="balanced">Balanced</option>
-              <option value="adventurous">Adventurous</option>
-              <option value="culture">Culture & history</option>
-              <option value="foodie">Foodie</option>
-              <option value="chill">Relaxed</option>
-            </select>
-          </div>
-          <div class="ai-field">
-            <label for="it-adventure">Adventure level</label>
-            <select id="it-adventure">
-              <option value="low">Low</option>
-              <option value="medium" selected>Medium</option>
-              <option value="high">High</option>
-            </select>
-          </div>
-          <div class="ai-field">
-            <label for="it-days">Trip length (days)</label>
-            <select id="it-days">
-              <option value="1">1</option>
-              <option value="2" selected>2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-            </select>
-          </div>
-          <div class="ai-field">
-            <label for="it-budget">Budget level</label>
-            <select id="it-budget">
-              <option value="budget">Budget</option>
-              <option value="mid" selected>Mid</option>
-              <option value="premium">Premium</option>
-            </select>
-          </div>
-          <button type="button" id="it-build-btn" class="ai-itinerary-build">Build itinerary</button>
-          <p class="ai-result-note">Malaysia-only suggestions. Place cards are clickable for details + fun facts. Images open via Google image search.</p>
-        </div>
       </div>
       <div id="chat-log" aria-live="polite"></div>
       <p id="chat-err" role="alert"></p>
@@ -898,10 +2268,253 @@
   </div>
 </div>
 
-<button type="button" class="ai-fab" id="ai-fab" aria-label="Open event assistant" title="Event assistant">💬</button>
-<button type="button" class="ai-it-fab" id="ai-it-fab" aria-label="Open itinerary builder" title="Itinerary builder">🧭</button>
-<div id="ai-place-details" class="ai-place-details" aria-hidden="true"></div>
+<div class="viewer-fab-stack" aria-label="Quick actions">
+  <button type="button" class="itin-fab" id="itin-fab" aria-label="Open trip planner" title="Trip planner">📅</button>
+  <button type="button" class="ai-fab" id="ai-fab" aria-label="Open event assistant" title="Event assistant">💬</button>
+</div>
 
+<div id="itin-modal" class="itin-modal" aria-hidden="true">
+  <div class="itin-modal-backdrop" id="itin-modal-backdrop"></div>
+  <div class="itin-modal-panel" role="dialog" aria-labelledby="itin-modal-title">
+    <header class="itin-modal-header">
+      <button type="button" class="itin-header-back" id="itin-back-btn" hidden aria-label="Back">← Back</button>
+      <div class="itin-modal-header-center">
+        <h1 id="itin-modal-title">Trip Planner</h1>
+      </div>
+      <div class="itin-header-right">
+        <button type="button" class="itin-header-chip" id="itin-history-open">History</button>
+        <button type="button" class="itin-icon-btn" id="itin-modal-close" aria-label="Close trip planner">×</button>
+      </div>
+    </header>
+    <div class="itin-modal-scroll">
+      <div id="itin-alert" class="itin-alert" hidden></div>
+      <div id="itin-loading-msg" class="itin-loading-msg" hidden role="status" aria-live="polite"></div>
+
+      <section id="itin-history-section" class="itin-history-section" hidden>
+        <p class="itin-history-intro">Saved itineraries</p>
+        <p class="itin-history-caption">Open a saved plan to revisit your chosen route — you can edit days again after loading.</p>
+        <div id="itin-history-status" class="itin-loading-msg itin-history-status" hidden>Loading saved trips…</div>
+        <p id="itin-history-empty" class="itin-history-caption" hidden>No saves yet — curate journeys and tap <strong>Save itinerary</strong> when you’re happy.</p>
+        <ul id="itin-history-ul" class="itin-history-ul" hidden></ul>
+      </section>
+
+      <section id="itin-form-section">
+        <div class="itin-form-grid">
+          <div class="itin-field">
+            <label for="itin-date-depart">Departure date</label>
+            <input type="date" id="itin-date-depart" />
+          </div>
+          <div class="itin-field">
+            <label for="itin-date-return">Return date</label>
+            <input type="date" id="itin-date-return" />
+          </div>
+          <div class="itin-field">
+            <label for="itin-adventure">Adventure level</label>
+            <select id="itin-adventure">
+              <option value="easy">Easy</option>
+              <option value="medium" selected>Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+          <div class="itin-field">
+            <label for="itin-pace">Travel pace</label>
+            <select id="itin-pace">
+              <option value="slow">Slow</option>
+              <option value="balanced" selected>Balanced</option>
+              <option value="packed">Packed</option>
+            </select>
+          </div>
+        </div>
+        <div class="itin-field itin-ac-wrap" style="margin-top:14px;">
+          <label for="itin-event-search">Event search</label>
+          <input type="search" id="itin-event-search" placeholder="Type at least 2 characters…" autocomplete="off" />
+          <input type="hidden" id="itin-event-id" />
+          <div id="itin-ac-list" class="itin-ac-list" hidden></div>
+          <div id="itin-selected-label" class="itin-selected">No event selected</div>
+        </div>
+        <div class="itin-field" style="margin-top:14px;">
+          <label>Interests</label>
+          <div class="itin-interests">
+            <label><input type="checkbox" class="itin-interest" value="food" checked /> Food</label>
+            <label><input type="checkbox" class="itin-interest" value="culture" checked /> Culture</label>
+            <label><input type="checkbox" class="itin-interest" value="nature" /> Nature</label>
+            <label><input type="checkbox" class="itin-interest" value="adventure" /> Adventure</label>
+            <label><input type="checkbox" class="itin-interest" value="shopping" /> Shopping</label>
+            <label><input type="checkbox" class="itin-interest" value="nightlife" /> Nightlife</label>
+            <label><input type="checkbox" class="itin-interest" value="family" /> Family</label>
+            <label><input type="checkbox" class="itin-interest" value="wellness" /> Wellness</label>
+          </div>
+        </div>
+        <button type="button" class="itin-primary" id="itin-generate">Curate three journeys</button>
+      </section>
+
+      <section id="itin-result-section" hidden>
+        <div id="itin-variant-stage" class="itin-variant-stage" hidden></div>
+        <div id="itin-plan-toolbar" class="itin-plan-toolbar" hidden></div>
+        <div class="itin-plan-actions" id="itin-plan-actions" hidden>
+          <button type="button" class="itin-save-trip" id="itin-save-trip">Save itinerary</button>
+        </div>
+        <p id="itin-guide-summary" class="itin-guide-summary" hidden></p>
+        <div id="itin-warnings" hidden></div>
+        <div class="itin-summary-row" id="itin-summary-row-wrap" hidden>
+          <div class="itin-summary-card"><span>Duration</span><strong id="itin-summary-duration">—</strong></div>
+          <div class="itin-summary-card"><span>Main event</span><strong id="itin-summary-eventdate">—</strong></div>
+          <div class="itin-summary-card"><span>Places</span><strong id="itin-summary-places">—</strong></div>
+        </div>
+        <div id="itin-days-container"></div>
+        <div id="itin-travel-links"></div>
+        <button type="button" class="itin-ghost" id="itin-edit-trip">Edit trip &amp; regenerate</button>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- Flight search (AirLabs routes + AirAsia booking deep link) -->
+<div id="fs-modal" class="itin-modal fs-modal" aria-hidden="true">
+  <div class="itin-modal-backdrop" id="fs-modal-backdrop"></div>
+  <div class="itin-modal-panel" role="dialog" aria-labelledby="fs-modal-title">
+    <header class="itin-modal-header">
+      <h1 id="fs-modal-title">Flight search</h1>
+      <button type="button" class="itin-icon-btn" id="fs-modal-close" aria-label="Close flight search">×</button>
+    </header>
+    <div class="itin-modal-scroll">
+      <p class="fs-disclaimer">
+        Enter your route and date, then <strong>Search flights</strong> opens AirAsia's live booking page in a new tab
+        with your inputs pre-filled. AirAsia sells partner flights too, so you'll see multiple carriers and real
+        prices there.
+      </p>
+      <div class="itin-field">
+        <label>Popular routes</label>
+        <div id="fs-chips" class="fs-popular" aria-label="Quick route chips"></div>
+      </div>
+      <div class="itin-form-grid">
+        <div class="itin-field">
+          <label for="fs-from">From (IATA)</label>
+          <input type="text" id="fs-from" maxlength="3" placeholder="KUL" autocomplete="off" />
+        </div>
+        <div class="itin-field">
+          <label for="fs-to">To (IATA)</label>
+          <input type="text" id="fs-to" maxlength="3" placeholder="SIN" autocomplete="off" />
+        </div>
+        <div class="itin-field">
+          <label for="fs-date">Travel date</label>
+          <input type="date" id="fs-date" />
+        </div>
+        <div class="itin-field">
+          <label for="fs-pax">Passengers</label>
+          <select id="fs-pax">
+            <option value="1" selected>1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+          </select>
+        </div>
+      </div>
+      <button type="button" class="itin-ghost" id="fs-detect">Use my location (set From)</button>
+      <div id="fs-detect-hint" class="fs-hint" aria-live="polite"></div>
+      <button type="button" class="itin-primary" id="fs-search">Search flights</button>
+      <div id="fs-alert" class="itin-alert" hidden></div>
+      <div id="fs-loading" class="itin-loading-msg" hidden>Opening AirAsia…</div>
+      <div id="fs-results" class="fs-results"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Hotel search (Booking.com deep link, pre-filled near the selected event) -->
+<div id="hs-modal" class="itin-modal hs-modal" aria-hidden="true">
+  <div class="itin-modal-backdrop" id="hs-modal-backdrop"></div>
+  <div class="itin-modal-panel" role="dialog" aria-labelledby="hs-modal-title">
+    <header class="itin-modal-header">
+      <h1 id="hs-modal-title">Hotel search</h1>
+      <button type="button" class="itin-icon-btn" id="hs-modal-close" aria-label="Close hotel search">×</button>
+    </header>
+    <div class="itin-modal-scroll">
+      <p class="fs-disclaimer">
+        Enter a destination and dates, then <strong>Search hotels</strong> opens Booking.com in a new tab with your
+        inputs pre-filled. When opened from an itinerary, the destination is set to the event's venue / city so you
+        see stays nearby.
+      </p>
+      <button type="button" id="hs-near-event" class="hs-near-event" hidden></button>
+      <div class="itin-field">
+        <label>Popular destinations</label>
+        <div id="hs-chips" class="fs-popular" aria-label="Popular destination chips"></div>
+      </div>
+      <div class="itin-form-grid">
+        <div class="itin-field" style="grid-column: 1 / -1;">
+          <label for="hs-dest">Destination (city, neighbourhood, or venue)</label>
+          <input type="text" id="hs-dest" placeholder="e.g. Bukit Bintang, Kuala Lumpur" autocomplete="off" />
+        </div>
+        <div class="itin-field">
+          <label for="hs-checkin">Check-in</label>
+          <input type="date" id="hs-checkin" />
+        </div>
+        <div class="itin-field">
+          <label for="hs-checkout">Check-out</label>
+          <input type="date" id="hs-checkout" />
+        </div>
+        <div class="itin-field">
+          <label for="hs-guests">Guests</label>
+          <select id="hs-guests">
+            <option value="1" selected>1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+          </select>
+        </div>
+        <div class="itin-field">
+          <label for="hs-rooms">Rooms</label>
+          <select id="hs-rooms">
+            <option value="1" selected>1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+          </select>
+        </div>
+      </div>
+      <button type="button" class="itin-ghost" id="hs-detect">Use my location (set destination)</button>
+      <div id="hs-detect-hint" class="fs-hint" aria-live="polite"></div>
+      <button type="button" class="itin-primary" id="hs-search">Search hotels</button>
+      <div id="hs-alert" class="itin-alert" hidden></div>
+      <div id="hs-loading" class="itin-loading-msg" hidden>Opening Booking.com…</div>
+      <div id="hs-results" class="fs-results"></div>
+    </div>
+  </div>
+</div>
+
+<div id="itin-place-overlay" class="itin-place-overlay" aria-hidden="true">
+  <div class="itin-place-backdrop" id="itin-place-backdrop"></div>
+  <div class="itin-place-panel">
+    <div class="itin-place-close-row">
+      <button type="button" class="itin-icon-btn" id="itin-place-close" aria-label="Close place details">×</button>
+    </div>
+    <img id="itin-place-img" src="" alt="" />
+    <div class="itin-place-body">
+      <h2 id="itin-place-title">Place</h2>
+      <div id="itin-place-loc" class="itin-place-loc"></div>
+      <p id="itin-place-desc" class="itin-place-desc"></p>
+      <div class="itin-fun-box">
+        <strong>FUN FACT</strong>
+        <span id="itin-place-fact"></span>
+      </div>
+      <div id="itin-place-meta" class="itin-place-meta"></div>
+      <a class="itin-map-btn" id="itin-place-map" href="#" target="_blank" rel="noopener noreferrer">View on Maps</a>
+    </div>
+  </div>
+</div>
+
+<script src="/itinerary-modal.js" defer></script>
+<script type="module" src="/flight-search.js"></script>
+<script type="module" src="/hotel-search.js"></script>
 <script>
   let allEvents = [];
   let filterDebounceTimer = null;
@@ -915,26 +2528,29 @@
     }, 200);
   }
 
-  function eventCardHtml(e) {
+  function eventCardHtml(e, animDelay = 0) {
     return `
-      <div class="card">
-        ${e.image
-          ? `<img src="${e.image}" alt="${e.title}" width="400" height="240" loading="lazy" decoding="async" fetchpriority="low" onerror="this.outerHTML='<div class=\\'no-img\\'>🎟️</div>'" />`
-          : `<div class="no-img">🎟️</div>`
-        }
+      <div class="card card-enter" data-anim-delay="${animDelay}">
+        <div class="card-img-wrap">
+          ${e.image
+            ? `<img src="${e.image}" alt="${e.title}" width="400" height="240" loading="lazy" decoding="async" fetchpriority="low" onerror="this.outerHTML='<div class=\\'no-img\\'>🎟️</div>'" />`
+            : `<div class="no-img">🎟️</div>`
+          }
+        </div>
         <div class="card-body">
           <div class="card-title">${e.title || 'Untitled Event'}</div>
-          <div class="card-meta">📍 ${e.venue || 'Unknown Venue'}, ${e.city && String(e.city).trim() ? e.city : 'Location TBA'}</div>
-          <div class="card-meta">📅 ${e.date ? new Date(e.date).toDateString() : 'Date TBA'}</div>
+          <div class="card-meta">&#9679; ${e.venue || 'Unknown Venue'}, ${e.city && String(e.city).trim() ? e.city : 'Location TBA'}</div>
+          <div class="card-meta">&#9679; ${e.date ? new Date(e.date).toDateString() : 'Date TBA'}</div>
           <div>
             ${getEventSource(e) !== 'unknown' ? `<span class="badge badge-category">${sourceLabel(getEventSource(e))}</span>` : ''}
             <span class="badge ${e.isFree ? 'badge-free' : 'badge-paid'}">
-              ${e.isFree ? '✅ Free' : `💰 ${e.price || 'Paid'}`}
+              ${e.isFree ? 'Free' : `${e.price || 'Paid'}`}
             </span>
             ${e.category ? `<span class="badge badge-category">${e.category}</span>` : ''}
           </div>
           ${e.summary ? `<div class="card-summary">${e.summary}</div>` : ''}
-          ${e.url ? `<a class="card-link" href="${e.url}" target="_blank">View Event →</a>` : ''}
+          <div style="flex:1;min-height:14px;"></div>
+          ${e.url ? `<a class="card-link" href="${e.url}" target="_blank">View Event &rarr;</a>` : ''}
         </div>
       </div>
     `;
@@ -950,10 +2566,33 @@
       document.getElementById('last-updated').textContent =
         `Eventbrite: ${counts.eventbrite || 0} • Ticket2U: ${counts.ticket2u || 0} • GoLive Asia: ${counts.goliveasia || 0} • Ticketmelon: ${counts.ticketmelon || 0}`;
 
+      // Hero stat numbers
+      const heroTotal = document.getElementById('hero-total');
+      const heroFree  = document.getElementById('hero-free');
+      if (heroTotal) heroTotal.textContent = allEvents.length;
+      if (heroFree)  heroFree.textContent  = allEvents.filter(e => e.isFree).length;
+
+      // Source badges
+      const badges = document.getElementById('source-badges');
+      if (badges) {
+        const sources = [
+          { key: 'eventbrite',  label: 'Eventbrite' },
+          { key: 'ticket2u',    label: 'Ticket2U' },
+          { key: 'goliveasia',  label: 'GoLive Asia' },
+          { key: 'ticketmelon', label: 'Ticketmelon' },
+        ];
+        badges.innerHTML = sources.map(s =>
+          `<div class="source-badge">
+             <span class="source-badge-num">${counts[s.key] || 0}</span>
+             <span class="source-badge-name">${s.label}</span>
+           </div>`
+        ).join('');
+      }
+
       filterEvents();
     } catch (err) {
       document.getElementById('grid').innerHTML =
-        '<div class="empty">❌ Could not load events. Make sure server.js is running.</div>';
+        '<div class="empty">Could not load events. Make sure server.js is running.</div>';
     }
   }
 
@@ -990,6 +2629,9 @@
     document.getElementById('stats').innerHTML =
       `Showing <span>${filtered.length}</span> of <span>${allEvents.length}</span> events`;
 
+    const countEl = document.getElementById('grid-event-count');
+    if (countEl) countEl.textContent = filtered.length;
+
     renderCards(filtered);
   }
 
@@ -1025,16 +2667,35 @@
     return counts;
   }
 
+  let _cardObserver = null;
+  function setupCardAnimations() {
+    if (_cardObserver) _cardObserver.disconnect();
+    _cardObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          const el = entry.target;
+          const delay = parseInt(el.dataset.animDelay || '0', 10);
+          setTimeout(() => el.classList.add('card-visible'), delay);
+          _cardObserver.unobserve(el);
+        }
+      });
+    }, { threshold: 0.07, rootMargin: '0px 0px -30px 0px' });
+    document.querySelectorAll('.card.card-enter').forEach(c => _cardObserver.observe(c));
+  }
+
   function renderCards(events) {
     const grid = document.getElementById('grid');
 
     if (events.length === 0) {
-      grid.innerHTML = '<div class="empty">😕 No events match your search.</div>';
+      grid.innerHTML = '<div class="empty">No events match your search.</div>';
       return;
     }
 
     const slice = events.length > MAX_CARDS ? events.slice(0, MAX_CARDS) : events;
-    grid.innerHTML = slice.map((e) => eventCardHtml(e)).join('');
+    grid.innerHTML = slice.map((e, i) => {
+      const delay = Math.min(i % 8, 7) * 55;
+      return eventCardHtml(e, delay);
+    }).join('');
     if (events.length > MAX_CARDS) {
       const note = document.createElement('div');
       note.className = 'empty';
@@ -1047,6 +2708,7 @@
         ' matches — refine search or filters to see more.';
       grid.appendChild(note);
     }
+    setupCardAnimations();
   }
 
   function escapeHtml(str) {
@@ -1080,32 +2742,22 @@
   function initAiAssistant() {
     const aiOverlay = document.getElementById('ai-overlay');
     const fab = document.getElementById('ai-fab');
-    const itineraryFab = document.getElementById('ai-it-fab');
     const logEl = document.getElementById('chat-log');
     const messageEl = document.getElementById('chat-message');
     const sendBtn = document.getElementById('chat-send');
     const errEl = document.getElementById('chat-err');
-    const stackEl = document.getElementById('ai-events-stack');
-    const emptyEl = document.getElementById('ai-events-empty');
-    if (!aiOverlay || !fab || !logEl || !messageEl || !sendBtn || !stackEl || !emptyEl) return;
+    const eventsZoneEl = document.getElementById('ai-events-zone');
+    const eventsZoneScrollEl = document.getElementById('ai-events-zone-scroll');
+    const eventsZoneMetaEl = document.getElementById('ai-events-zone-meta');
+    const eventsZoneClearBtn = document.getElementById('ai-events-zone-clear');
+    if (!aiOverlay || !fab || !logEl || !messageEl || !sendBtn) return;
 
     const AI_CONVERSATIONS_KEY = 'ticket_scraper_ai_conversations_v2';
     const historyBtn = document.getElementById('ai-history-btn');
     const newChatBtn = document.getElementById('ai-new-chat-btn');
-    const itineraryBtn = document.getElementById('ai-itinerary-btn');
     const historyPanel = document.getElementById('ai-history-panel');
     const historyClose = document.getElementById('ai-history-close');
     const historyList = document.getElementById('ai-history-list');
-    const itineraryPanel = document.getElementById('ai-itinerary-panel');
-    const itineraryClose = document.getElementById('ai-itinerary-close');
-    const itEventInput = document.getElementById('it-event-input');
-    const itEventList = document.getElementById('it-event-list');
-    const itStyle = document.getElementById('it-style');
-    const itAdventure = document.getElementById('it-adventure');
-    const itDays = document.getElementById('it-days');
-    const itBudget = document.getElementById('it-budget');
-    const itBuildBtn = document.getElementById('it-build-btn');
-    const placeDetails = document.getElementById('ai-place-details');
 
     let conversations = [];
     let activeConversation = {
@@ -1173,49 +2825,6 @@
       persistConversations();
     }
 
-    function renderEventRounds() {
-      if (!eventRounds.length) {
-        stackEl.innerHTML = '';
-        emptyEl.hidden = false;
-        return;
-      }
-      emptyEl.hidden = true;
-      stackEl.innerHTML = eventRounds
-        .map(function (round) {
-          const um = round.userMessage || '';
-          const q = escapeHtml(um.slice(0, 120));
-          const tail = um.length > 120 ? '…' : '';
-          if (!round.expanded) {
-            return (
-              '<button type="button" class="ai-round-fold" data-rid="' +
-              round.id +
-              '"><span class="ai-round-fold-n">' +
-              (round.events || []).length +
-              ' events</span><span class="ai-round-fold-q">' +
-              q +
-              tail +
-              '</span></button>'
-            );
-          }
-          const cards = (round.events || []).map(chatCompactCardHtml).join('');
-          return (
-            '<section class="ai-round" data-rid="' +
-            round.id +
-            '"><div class="ai-round-head"><span title="' +
-            escapeHtml(um) +
-            '">' +
-            q +
-            tail +
-            '</span><button type="button" class="ai-round-min" data-rid="' +
-            round.id +
-            '">Collapse</button></div><div class="ai-round-grid">' +
-            cards +
-            '</div></section>'
-          );
-        })
-        .join('');
-    }
-
     function toggleHistory(open) {
       if (!historyPanel) return;
       if (open) {
@@ -1227,45 +2836,24 @@
       }
     }
 
-    function toggleItinerary(open) {
-      if (!itineraryPanel) return;
-      if (open) {
-        itineraryPanel.classList.add('is-open');
-        itineraryPanel.setAttribute('aria-hidden', 'false');
-      } else {
-        itineraryPanel.classList.remove('is-open');
-        itineraryPanel.setAttribute('aria-hidden', 'true');
-      }
-    }
-
     function historyConversationHtml(c) {
       const dt = new Date(c.updatedAt || c.createdAt || Date.now());
       const dateLabel = Number.isNaN(dt.getTime()) ? '' : dt.toLocaleString();
       const rounds = c.rounds || [];
-      const roundsHtml = rounds.length
-        ? rounds.map(function (r) {
-            const q = escapeHtml(String(r.userMessage || '').slice(0, 90));
-            const more = String(r.userMessage || '').length > 90 ? '…' : '';
-            const cards = r.events.map(chatCompactCardHtml).join('');
-            return (
-              '<div class="ai-conv-round" data-round-id="' +
-              r.id +
-              '"><button type="button" class="ai-conv-round-head" data-round-id="' +
-              r.id +
-              '"><span>' + r.events.length + ' suggested events</span><span class="ai-conv-round-q">' + q + more + '</span></button>' +
-              '<div class="ai-conv-round-grid" data-round-grid="' + r.id + '">' + cards + '</div></div>'
-            );
-          }).join('')
-        : '<div class="ai-history-empty" style="margin:0;">No event suggestions in this chat yet.</div>';
+      const totalEvents = rounds.reduce(function (s, r) { return s + (r.events ? r.events.length : 0); }, 0);
+      const eventsLabel = totalEvents > 0
+        ? totalEvents + ' event' + (totalEvents !== 1 ? 's' : '') + ' · '
+        : '';
 
       return (
         '<section class="ai-conv" data-conv-id="' + c.id + '">' +
         '<button type="button" class="ai-conv-summary" data-conv-id="' + c.id + '">' +
         '<span class="ai-conv-title">' + escapeHtml(c.title || 'Chat') + '</span>' +
-        '<span class="ai-conv-meta">' + (c.messages || []).length + ' messages • ' + rounds.length + ' suggestion rounds • ' + escapeHtml(dateLabel) + '</span>' +
+        '<span class="ai-conv-meta">' + eventsLabel + (c.messages || []).length + ' messages • ' + escapeHtml(dateLabel) + '</span>' +
         '</button>' +
-        '<div class="ai-conv-actions"><button type="button" class="ai-conv-events-btn" data-conv-events="' + c.id + '">Events</button></div>' +
-        '<div class="ai-conv-rounds" data-conv-rounds="' + c.id + '">' + roundsHtml + '</div>' +
+        (totalEvents > 0
+          ? '<div class="ai-conv-actions"><button type="button" class="ai-conv-events-btn" data-conv-events="' + c.id + '">View Events</button></div>'
+          : '') +
         '</section>'
       );
     }
@@ -1298,175 +2886,49 @@
       historyList.innerHTML = conversations.map(historyConversationHtml).join('');
     }
 
-    function showPlaceDetails(place) {
-      if (!placeDetails) return;
-      const mapLink = place.map_query
-        ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(place.map_query)
-        : '';
-      const imgLink = place.image_query
-        ? 'https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(place.image_query)
-        : '';
-      placeDetails.innerHTML =
-        '<button type="button" class="ai-place-close" id="ai-place-close">×</button>' +
-        '<h4>' + escapeHtml(place.name || 'Place details') + '</h4>' +
-        '<p><strong>Time:</strong> ' + escapeHtml(place.time || 'Flexible') + '</p>' +
-        (place.best_time ? '<p><strong>Best time:</strong> ' + escapeHtml(place.best_time) + '</p>' : '') +
-        (place.estimated_duration ? '<p><strong>Duration:</strong> ' + escapeHtml(place.estimated_duration) + '</p>' : '') +
-        (place.ticket_info ? '<p><strong>Ticket / fee:</strong> ' + escapeHtml(place.ticket_info) + '</p>' : '') +
-        '<p>' + escapeHtml(place.description || '') + '</p>' +
-        '<p><strong>Fun fact:</strong> ' + escapeHtml(place.fun_fact || 'No fun fact available yet.') + '</p>' +
-        (place.journal_prompt ? '<p><strong>Journal prompt:</strong> ' + escapeHtml(place.journal_prompt) + '</p>' : '') +
-        (mapLink ? '<p><a href="' + mapLink + '" target="_blank" rel="noopener noreferrer">Open on Google Maps</a></p>' : '') +
-        (imgLink ? '<p><a href="' + imgLink + '" target="_blank" rel="noopener noreferrer">View images on Google</a></p>' : '');
-      placeDetails.classList.add('is-open');
-      placeDetails.setAttribute('aria-hidden', 'false');
-      const closeBtn = document.getElementById('ai-place-close');
-      if (closeBtn) {
-        closeBtn.addEventListener('click', function () {
-          placeDetails.classList.remove('is-open');
-          placeDetails.setAttribute('aria-hidden', 'true');
-        });
-      }
+    function clearEventsZone() {
+      if (!eventsZoneEl) return;
+      eventsZoneEl.classList.remove('has-events');
+      if (eventsZoneScrollEl) eventsZoneScrollEl.innerHTML = '';
+      if (eventsZoneMetaEl) eventsZoneMetaEl.textContent = '';
     }
 
-    function renderItineraryResult(payload) {
-      const event = payload?.event || {};
-      const it = payload?.itinerary || {};
-      const days = Array.isArray(it.days) ? it.days : [];
-      const hotels = Array.isArray(it.hotels) ? it.hotels : [];
-      const flights = Array.isArray(it.flights) ? it.flights : [];
-      const journal = it.journal || {};
-
-      const dayBlocks = days.map(function (d, dIdx) {
-        const places = Array.isArray(d.places) ? d.places : [];
-        const placeCards = places.map(function (p, pIdx) {
-          const pid = 'p-' + dIdx + '-' + pIdx + '-' + Date.now();
-          return (
-            '<div class="card card--compact">' +
-            '<div class="card-body">' +
-            '<div class="card-title">' + escapeHtml(p.name || 'Place') + '</div>' +
-            '<div class="card-meta">🕒 ' + escapeHtml(p.time || 'Flexible') + '</div>' +
-            (p.best_time ? '<div class="card-meta">🌤️ Best: ' + escapeHtml(p.best_time) + '</div>' : '') +
-            (p.ticket_info ? '<div class="card-meta">🎟️ ' + escapeHtml(p.ticket_info) + '</div>' : '') +
-            '<div class="card-meta">' + escapeHtml(p.description || '') + '</div>' +
-            '<button type="button" class="card-link it-place-open" data-place-id="' + pid + '">Details + fun fact</button>' +
-            '</div></div>'
-          );
-        }).join('');
-        return (
-          '<section class="ai-round">' +
-          '<div class="ai-round-head"><span>Day ' + escapeHtml(String(d.day || dIdx + 1)) + ' • ' + escapeHtml(d.theme || 'Highlights') + '</span>' +
-          (d.route_map_url ? '<a class="card-link" href="' + escapeHtml(d.route_map_url) + '" target="_blank" rel="noopener noreferrer">Open day route map</a>' : '') +
-          '</div>' +
-          '<div class="ai-round-grid">' + placeCards + '</div>' +
-          '</section>'
-        );
-      }).join('');
-
-      const hotelCards = hotels.map(function (h) {
-        const link = h.booking_url || 'https://www.google.com/travel/hotels';
-        return '<div class="card card--compact"><div class="card-body"><div class="card-title">' +
-          escapeHtml(h.name || 'Hotel option') +
-          '</div><div class="card-meta">📍 ' + escapeHtml(h.area || '') +
-          '</div><div class="card-meta">' + escapeHtml(h.why || '') +
-          '</div><a class="card-link" href="' + escapeHtml(link) + '" target="_blank" rel="noopener noreferrer">Check hotel options</a></div></div>';
-      }).join('');
-
-      const flightCards = flights.map(function (f) {
-        const link = f.booking_url || 'https://www.google.com/travel/flights';
-        return '<div class="card card--compact"><div class="card-body"><div class="card-title">' +
-          escapeHtml(f.route || 'Flight option') +
-          '</div><div class="card-meta">' + escapeHtml(f.notes || '') +
-          '</div><a class="card-link" href="' + escapeHtml(link) + '" target="_blank" rel="noopener noreferrer">Check flights</a></div></div>';
-      }).join('');
-
-      stackEl.innerHTML =
-        '<section class="ai-round"><div class="ai-round-head"><span>' +
-        escapeHtml(event.title || 'Selected event') +
-        '</span></div><div class="ai-round-grid"><div class="card card--compact"><div class="card-body"><div class="card-title">Trip summary</div><div class="card-meta">' +
-        escapeHtml(it.summary || 'Your itinerary is ready.') +
-        '</div><div class="card-meta">📅 ' + escapeHtml(event.date || 'TBA') + ' • 📍 ' + escapeHtml(event.venue || event.city || 'Malaysia') +
-        '</div></div></div></div></section>' +
-        dayBlocks +
-        ((Array.isArray(journal.prompts) && journal.prompts.length) || (Array.isArray(journal.packing_notes) && journal.packing_notes.length)
-          ? '<section class="ai-round"><div class="ai-round-head"><span>Travel journal</span></div><div class="ai-round-grid">' +
-            '<div class="card card--compact"><div class="card-body"><div class="card-title">Journal prompts</div>' +
-            (Array.isArray(journal.prompts) && journal.prompts.length
-              ? journal.prompts.slice(0, 8).map(function (p) { return '<div class="card-meta">• ' + escapeHtml(p) + '</div>'; }).join('')
-              : '<div class="card-meta">• What was your highlight today?</div>') +
-            '</div></div>' +
-            '<div class="card card--compact"><div class="card-body"><div class="card-title">Pack & prep notes</div>' +
-            (Array.isArray(journal.packing_notes) && journal.packing_notes.length
-              ? journal.packing_notes.slice(0, 8).map(function (p) { return '<div class="card-meta">• ' + escapeHtml(p) + '</div>'; }).join('')
-              : '<div class="card-meta">• Bring comfortable walking shoes</div>') +
-            '</div></div>' +
-            '</div></section>'
-          : '') +
-        (hotelCards ? '<section class="ai-round"><div class="ai-round-head"><span>Hotel suggestions</span></div><div class="ai-round-grid">' + hotelCards + '</div></section>' : '') +
-        (flightCards ? '<section class="ai-round"><div class="ai-round-head"><span>Flight suggestions</span></div><div class="ai-round-grid">' + flightCards + '</div></section>' : '');
-      emptyEl.hidden = true;
-
-      const placeMap = new Map();
-      days.forEach(function (d, dIdx) {
-        (Array.isArray(d.places) ? d.places : []).forEach(function (p, pIdx) {
-          const key = 'p-' + dIdx + '-' + pIdx;
-          placeMap.set(key, p);
-        });
-      });
-      stackEl.querySelectorAll('.it-place-open').forEach(function (btn) {
-        const raw = String(btn.getAttribute('data-place-id') || '');
-        const key = raw.split('-').slice(0, 3).join('-');
-        btn.addEventListener('click', function () {
-          const place = placeMap.get(key);
-          if (place) showPlaceDetails(place);
-        });
-      });
-    }
-
-    stackEl.addEventListener('click', function (ev) {
-      const t = ev.target;
-      const fold = t.closest('.ai-round-fold');
-      const minBtn = t.closest('.ai-round-min');
-      const btn = fold || minBtn;
-      if (!btn) return;
-      const id = Number(btn.getAttribute('data-rid'));
-      if (!Number.isFinite(id)) return;
-      const round = eventRounds.find(function (r) {
-        return r.id === id;
-      });
-      if (!round) return;
-      if (fold) {
-        eventRounds.forEach(function (r) {
-          r.expanded = r.id === id;
-        });
-      } else {
-        round.expanded = false;
+    function appendEventsInline(events, userMessage) {
+      if (!events || !events.length || !eventsZoneEl || !eventsZoneScrollEl) return;
+      const label = userMessage
+        ? escapeHtml(String(userMessage).slice(0, 80)) + (String(userMessage).length > 80 ? '…' : '')
+        : '';
+      const block = document.createElement('div');
+      block.className = 'chat-events-block';
+      block.innerHTML =
+        '<div class="chat-events-label">' +
+        events.length + ' event' + (events.length !== 1 ? 's' : '') +
+        (label ? ' &nbsp;·&nbsp; <em>' + label + '</em>' : '') +
+        '</div>' +
+        '<div class="chat-events-grid">' +
+        events.map(chatCompactCardHtml).join('') +
+        '</div>';
+      eventsZoneScrollEl.appendChild(block);
+      eventsZoneEl.classList.add('has-events');
+      if (eventsZoneMetaEl) {
+        const total = eventsZoneScrollEl.querySelectorAll('.chat-events-block').length;
+        eventsZoneMetaEl.textContent = total + ' round' + (total !== 1 ? 's' : '');
       }
-      activeConversation.rounds = eventRounds.map(function (r) {
-        return { id: r.id, userMessage: r.userMessage, events: r.events };
-      });
-      upsertActiveConversation();
-      renderEventRounds();
-    });
-
-    const clearBtn = document.getElementById('ai-clear-rounds');
-    if (clearBtn) {
-      clearBtn.addEventListener('click', function () {
-        eventRounds = [];
-        activeConversation.rounds = [];
-        upsertActiveConversation();
-        renderEventRounds();
-      });
+      block.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
     function openDrawer() {
       aiOverlay.classList.add('is-open');
       aiOverlay.setAttribute('aria-hidden', 'false');
       document.body.classList.add('ai-drawer-open');
-      renderEventRounds();
+      /* Restore events zone from the active conversation's rounds if any */
+      if (eventsZoneEl && eventsZoneScrollEl && !eventsZoneEl.classList.contains('has-events')) {
+        eventRounds.slice().reverse().forEach(function (r) {
+          if (r.events && r.events.length) appendEventsInline(r.events, r.userMessage);
+        });
+      }
       renderHistory();
       toggleHistory(false);
-      toggleItinerary(false);
       messageEl.focus();
     }
 
@@ -1478,14 +2940,6 @@
     }
 
     fab.addEventListener('click', openDrawer);
-    if (itineraryFab) {
-      itineraryFab.addEventListener('click', function () {
-        openDrawer();
-        toggleHistory(false);
-        toggleItinerary(true);
-        if (itEventInput) itEventInput.focus();
-      });
-    }
     document.getElementById('ai-close').addEventListener('click', closeDrawer);
     document.getElementById('ai-overlay-backdrop').addEventListener('click', closeDrawer);
     document.addEventListener('keydown', function (e) {
@@ -1494,30 +2948,46 @@
 
     if (historyBtn) historyBtn.addEventListener('click', function () {
       renderHistory();
-      toggleItinerary(false);
       toggleHistory(!historyPanel.classList.contains('is-open'));
     });
     if (historyClose) historyClose.addEventListener('click', function () {
       toggleHistory(false);
     });
-    if (itineraryBtn) itineraryBtn.addEventListener('click', function () {
+    function loadConversationIntoLog(found, showEventsInline) {
+      upsertActiveConversation();
+      activeConversation = cloneConversation(found);
+      chatHistory.length = 0;
+      logEl.innerHTML = '';
+      clearEventsZone();
+      for (const m of activeConversation.messages) {
+        if (!m || (m.role !== 'user' && m.role !== 'assistant')) continue;
+        chatHistory.push({ role: m.role, content: String(m.content || '') });
+        append(m.role, m.content || '');
+      }
+      eventRounds = (activeConversation.rounds || []).map(function (r, idx) {
+        return {
+          id: Number(r.id) || Date.now() + idx,
+          userMessage: String(r.userMessage || ''),
+          events: Array.isArray(r.events) ? r.events.slice() : [],
+        };
+      });
+      if (showEventsInline) {
+        eventRounds.slice().reverse().forEach(function (r) {
+          if (r.events && r.events.length) appendEventsInline(r.events, r.userMessage);
+        });
+      }
       toggleHistory(false);
-      toggleItinerary(!itineraryPanel.classList.contains('is-open'));
-      if (itEventInput) itEventInput.focus();
-    });
-    if (itineraryClose) itineraryClose.addEventListener('click', function () {
-      toggleItinerary(false);
-    });
+      messageEl.focus();
+    }
+
     if (historyList) {
       historyList.addEventListener('click', function (e) {
         const convEventsBtn = e.target.closest('.ai-conv-events-btn');
         if (convEventsBtn) {
-          const convId = convEventsBtn.getAttribute('data-conv-events');
-          const box = historyList.querySelector('[data-conv-rounds="' + convId + '"]');
-          if (!box) return;
-          const opened = box.classList.contains('is-open');
-          historyList.querySelectorAll('.ai-conv-rounds').forEach(function (el) { el.classList.remove('is-open'); });
-          if (!opened) box.classList.add('is-open');
+          const convId = Number(convEventsBtn.getAttribute('data-conv-events'));
+          const found = conversations.find(function (c) { return c.id === convId; });
+          if (!found) return;
+          loadConversationIntoLog(found, true);
           return;
         }
 
@@ -1527,35 +2997,8 @@
           if (!Number.isFinite(convId)) return;
           const found = conversations.find(function (c) { return c.id === convId; });
           if (!found) return;
-          upsertActiveConversation();
-          activeConversation = cloneConversation(found);
-          chatHistory.length = 0;
-          logEl.innerHTML = '';
-          for (const m of activeConversation.messages) {
-            if (!m || (m.role !== 'user' && m.role !== 'assistant')) continue;
-            chatHistory.push({ role: m.role, content: String(m.content || '') });
-            append(m.role, m.content || '');
-          }
-          eventRounds = (activeConversation.rounds || []).map(function (r, idx) {
-            return {
-              id: Number(r.id) || Date.now() + idx,
-              userMessage: String(r.userMessage || ''),
-              events: Array.isArray(r.events) ? r.events.slice() : [],
-              expanded: idx === 0,
-            };
-          });
-          renderEventRounds();
-          toggleHistory(false);
-          messageEl.focus();
+          loadConversationIntoLog(found, false);
           return;
-        }
-
-        const roundHead = e.target.closest('.ai-conv-round-head');
-        if (roundHead) {
-          const rid = roundHead.getAttribute('data-round-id');
-          const grid = historyList.querySelector('[data-round-grid="' + rid + '"]');
-          if (!grid) return;
-          grid.classList.toggle('is-open');
         }
       });
     }
@@ -1576,110 +3019,23 @@
       eventRounds = [];
       logEl.innerHTML = '';
       errEl.textContent = '';
-      renderEventRounds();
+      clearEventsZone();
       renderHistory();
       toggleHistory(false);
-      toggleItinerary(false);
       messageEl.value = '';
       messageEl.focus();
     }
 
+    if (eventsZoneClearBtn) {
+      eventsZoneClearBtn.addEventListener('click', function () {
+        clearEventsZone();
+        eventRounds = [];
+        activeConversation.rounds = [];
+        upsertActiveConversation();
+      });
+    }
+
     if (newChatBtn) newChatBtn.addEventListener('click', startNewChat);
-
-    let selectedItEvent = null;
-    let itSearchTimer = null;
-    function hideItList() {
-      if (!itEventList) return;
-      itEventList.style.display = 'none';
-      itEventList.innerHTML = '';
-    }
-    async function searchItEvents() {
-      const q = String(itEventInput?.value || '').trim();
-      if (!q || q.length < 1) {
-        hideItList();
-        return;
-      }
-      try {
-        const res = await fetch('/api/itinerary/events?q=' + encodeURIComponent(q));
-        const data = await res.json().catch(function () { return {}; });
-        const rows = Array.isArray(data.events) ? data.events : [];
-        if (!rows.length) {
-          itEventList.innerHTML = '<div class="ai-history-empty" style="margin:0;">No events found</div>';
-          itEventList.style.display = 'block';
-          return;
-        }
-        itEventList.innerHTML = rows.map(function (e) {
-          return '<button type="button" class="ai-autocomplete-item" data-ek="' + escapeHtml(e.key) + '">' +
-            '<span>' + escapeHtml(e.title) + '</span>' +
-            '<span style="font-size:11px;color:#8f8fa8;">' + escapeHtml(e.date || 'TBA') + ' • ' + escapeHtml(e.venue || '') + '</span></button>';
-        }).join('');
-        itEventList.style.display = 'block';
-      } catch (_) {
-        itEventList.innerHTML = '<div class="ai-history-empty" style="margin:0;">Search failed</div>';
-        itEventList.style.display = 'block';
-      }
-    }
-    if (itEventInput) {
-      itEventInput.addEventListener('input', function () {
-        selectedItEvent = null;
-        if (itSearchTimer) clearTimeout(itSearchTimer);
-        itSearchTimer = setTimeout(searchItEvents, 180);
-      });
-    }
-    if (itEventList) {
-      itEventList.addEventListener('click', function (e) {
-        const item = e.target.closest('.ai-autocomplete-item');
-        if (!item) return;
-        const key = String(item.getAttribute('data-ek') || '');
-        selectedItEvent = key;
-        itEventInput.value = item.querySelector('span')?.textContent || itEventInput.value;
-        hideItList();
-      });
-    }
-    document.addEventListener('click', function (e) {
-      if (!itineraryPanel || !itineraryPanel.classList.contains('is-open')) return;
-      if (itEventList && !itEventList.contains(e.target) && e.target !== itEventInput) hideItList();
-    });
-
-    if (itBuildBtn) {
-      itBuildBtn.addEventListener('click', async function () {
-        if (!selectedItEvent) {
-          errEl.textContent = 'Pick an event from the search list first.';
-          return;
-        }
-        errEl.textContent = '';
-        const parts = selectedItEvent.split(':');
-        const body = {
-          eventKey: selectedItEvent,
-          source: parts[0] || '',
-          eventId: parts.slice(1).join(':'),
-          eventTitle: String(itEventInput.value || ''),
-          travelStyle: String(itStyle?.value || 'balanced'),
-          adventureLevel: String(itAdventure?.value || 'medium'),
-          days: Number(itDays?.value || 2),
-          budget: String(itBudget?.value || 'mid'),
-        };
-        itBuildBtn.disabled = true;
-        itBuildBtn.textContent = 'Building...';
-        try {
-          const res = await fetch('/api/itinerary/plan', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-          });
-          const data = await res.json().catch(function () { return {}; });
-          if (!res.ok) throw new Error(data.error || ('Request failed (' + res.status + ')'));
-          renderItineraryResult(data);
-          toggleItinerary(false);
-          append('assistant', 'I built a Malaysia-only itinerary around your selected event. Tap any place for details and a fun fact.');
-        } catch (e) {
-          errEl.textContent = e.message || 'Failed to build itinerary';
-        } finally {
-          itBuildBtn.disabled = false;
-          itBuildBtn.textContent = 'Build itinerary';
-        }
-      });
-    }
 
     function append(role, text) {
       const div = document.createElement('div');
@@ -1723,22 +3079,21 @@
           chatHistory.push({ role: 'assistant', content: reply || 'No reply' });
           activeConversation.messages.push({ role: 'assistant', content: reply || 'No reply' });
           while (chatHistory.length > 24) chatHistory.shift();
+          // Each new chat turn shows only the events for the LATEST question.
+          // Clearing first prevents stale events from previous rounds from
+          // bleeding into the panel and looking like wrong matches for the new query.
+          clearEventsZone();
           if (Array.isArray(data.events) && data.events.length) {
-            eventRounds.forEach(function (r) {
-              r.expanded = false;
-            });
+            appendEventsInline(data.events, message);
             eventRounds.unshift({
               id: Date.now(),
               userMessage: message,
               events: data.events.slice(),
-              expanded: true,
             });
             while (eventRounds.length > 10) eventRounds.pop();
             activeConversation.rounds = eventRounds.map(function (r) {
               return { id: r.id, userMessage: r.userMessage, events: r.events };
             });
-            upsertActiveConversation();
-            renderEventRounds();
           }
           upsertActiveConversation();
         }
@@ -1760,7 +3115,6 @@
       }
     });
 
-    renderEventRounds();
   }
 
   initAiAssistant();
@@ -1769,6 +3123,7 @@
   if (searchInput) searchInput.addEventListener('input', scheduleFilterEvents);
 
   loadEvents();
+
 </script>
 
 </body>

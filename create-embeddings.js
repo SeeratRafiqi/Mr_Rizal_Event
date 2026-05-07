@@ -51,12 +51,18 @@ function sleep(ms) {
 }
 
 function buildDescription(row) {
+  // FIX (RAG recall): include description, city, source so rare keywords
+  // (e.g. "cancer", "BBC Mandarin", "I Ching") become searchable via vector match.
+  // Description is truncated to 1200 chars to keep embedding input small but meaningful.
+  const desc = String(row.description || '').replace(/\s+/g, ' ').trim().slice(0, 1200);
   const parts = [
     row.title,
+    row.category,
     row.venue,
+    row.city,
     row.date,
     row.price,
-    row.category,
+    desc,
   ].filter((x) => x != null && String(x).trim() !== '');
   return parts.join('. ');
 }
@@ -137,15 +143,25 @@ async function createEmbeddings() {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
+  const force = process.argv.includes('--force') || process.env.EMBEDDINGS_FORCE === '1';
+
   const existingRows = await fetchAllRows(supabase, 'event_embeddings_chatbot', 'event_id');
   const already = new Set(existingRows.map((r) => r.event_id));
 
   const events = await fetchAllRows(
     supabase,
     'events_chatbot',
-    'id, title, venue, date, price, category',
+    // FIX (RAG recall): also fetch description + city so they get into the embedding text
+    'id, title, description, venue, city, date, price, category',
   );
   console.log(`Loaded ${events.length} rows from events_chatbot (${existingRows.length} existing embeddings)`);
+
+  if (force && existingRows.length > 0) {
+    console.log('--force passed: deleting all existing embeddings to rebuild with richer text…');
+    const { error: delErr } = await supabase.from('event_embeddings_chatbot').delete().neq('event_id', '00000000-0000-0000-0000-000000000000');
+    if (delErr) throw new Error(`Force-delete failed: ${delErr.message}`);
+    already.clear();
+  }
 
   const pending = (events || []).filter((e) => e.id != null && !already.has(e.id));
   const total = pending.length;

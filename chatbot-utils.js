@@ -97,47 +97,50 @@ function parseSpecificDateReference(messageLower, baseDate = new Date()) {
     return isoDate(dt);
   }
 
-  const dayMonth = messageLower.match(
-    /\b(\d{1,2})(?:st|nd|rd|th)?\s+(?!of\b)([a-z]+)(?:\s+(20\d{2}))?\b/,
-  );
-  if (dayMonth) {
-    const day = Number(dayMonth[1]), month = monthMap[dayMonth[2]];
-    if (month == null) return null;
-    let year = dayMonth[3] ? Number(dayMonth[3]) : today.getUTCFullYear();
+  // FIX: use global match and return the LAST valid hit so that in combined
+  // multi-turn context like "events on 5th\nhow about 8th may" the earlier
+  // invalid pair "5th how" is skipped and "8th may" (the most-recent date) wins.
+  const dayMonthRe = /\b(\d{1,2})(?:st|nd|rd|th)?\s+(?!of\b)([a-z]+)(?:\s+(20\d{2}))?\b/g;
+  let dm; let lastDayMonthResult = null;
+  while ((dm = dayMonthRe.exec(messageLower)) !== null) {
+    const day = Number(dm[1]);
+    const month = monthMap[dm[2]];
+    if (month == null) continue;
+    let year = dm[3] ? Number(dm[3]) : today.getUTCFullYear();
     let dt = new Date(Date.UTC(year, month, day));
-    if (Number.isNaN(dt.getTime()) || dt.getUTCMonth() !== month || dt.getUTCDate() !== day) return null;
-    if (!dayMonth[3] && dt < today) { year += 1; dt = new Date(Date.UTC(year, month, day)); }
-    return isoDate(dt);
+    if (Number.isNaN(dt.getTime()) || dt.getUTCMonth() !== month || dt.getUTCDate() !== day) continue;
+    if (!dm[3] && dt < today) { year += 1; dt = new Date(Date.UTC(year, month, day)); }
+    lastDayMonthResult = isoDate(dt);
   }
+  if (lastDayMonthResult) return lastDayMonthResult;
 
-  const dayOfMonth = messageLower.match(
-    /\b(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+of\s+([a-z]+)(?:\s+(20\d{2}))?\b/,
-  );
-  if (dayOfMonth) {
-    const day = Number(dayOfMonth[1]);
-    const month = monthMap[dayOfMonth[2]];
-    if (month == null) return null;
-    let year = dayOfMonth[3] ? Number(dayOfMonth[3]) : today.getUTCFullYear();
+  const dayOfMonthRe = /\b(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)?\s+of\s+([a-z]+)(?:\s+(20\d{2}))?\b/g;
+  let dom; let lastDayOfMonthResult = null;
+  while ((dom = dayOfMonthRe.exec(messageLower)) !== null) {
+    const day = Number(dom[1]);
+    const month = monthMap[dom[2]];
+    if (month == null) continue;
+    let year = dom[3] ? Number(dom[3]) : today.getUTCFullYear();
     let dt = new Date(Date.UTC(year, month, day));
-    if (Number.isNaN(dt.getTime()) || dt.getUTCMonth() !== month || dt.getUTCDate() !== day) return null;
-    if (!dayOfMonth[3] && dt < today) {
-      year += 1;
-      dt = new Date(Date.UTC(year, month, day));
-    }
-    return isoDate(dt);
+    if (Number.isNaN(dt.getTime()) || dt.getUTCMonth() !== month || dt.getUTCDate() !== day) continue;
+    if (!dom[3] && dt < today) { year += 1; dt = new Date(Date.UTC(year, month, day)); }
+    lastDayOfMonthResult = isoDate(dt);
   }
+  if (lastDayOfMonthResult) return lastDayOfMonthResult;
 
-  const monthDay = messageLower.match(/\b([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s+(20\d{2}))?\b/);
-  if (monthDay) {
-    const month = monthMap[monthDay[1]];
-    if (month == null) return null;
-    const day = Number(monthDay[2]);
-    let year = monthDay[3] ? Number(monthDay[3]) : today.getUTCFullYear();
+  const monthDayRe = /\b([a-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s+(20\d{2}))?\b/g;
+  let md; let lastMonthDayResult = null;
+  while ((md = monthDayRe.exec(messageLower)) !== null) {
+    const month = monthMap[md[1]];
+    if (month == null) continue;
+    const day = Number(md[2]);
+    let year = md[3] ? Number(md[3]) : today.getUTCFullYear();
     let dt = new Date(Date.UTC(year, month, day));
-    if (Number.isNaN(dt.getTime()) || dt.getUTCMonth() !== month || dt.getUTCDate() !== day) return null;
-    if (!monthDay[3] && dt < today) { year += 1; dt = new Date(Date.UTC(year, month, day)); }
-    return isoDate(dt);
+    if (Number.isNaN(dt.getTime()) || dt.getUTCMonth() !== month || dt.getUTCDate() !== day) continue;
+    if (!md[3] && dt < today) { year += 1; dt = new Date(Date.UTC(year, month, day)); }
+    lastMonthDayResult = isoDate(dt);
   }
+  if (lastMonthDayResult) return lastMonthDayResult;
 
   return null;
 }
@@ -235,8 +238,263 @@ function nextSaturdayFrom(today) {
   return addDays(today, off);
 }
 
+/**
+ * Parse a small substring (the part of a sentence after "before"/"after"/"between"/etc.)
+ * into a single ISO date.  For period-like anchors ("may", "next week", "next month"),
+ * mode='start' returns the FIRST day of the period and mode='end' returns the LAST day.
+ *
+ * Returns null if the leading word(s) don't look date-like — this prevents false positives
+ * for phrases like "after work this weekend" (where "after" is colloquial, not temporal).
+ */
+function parseAnchorDate(textRaw, baseDate, mode) {
+  const text = String(textRaw || '').toLowerCase().trim();
+  if (!text) return null;
+
+  // Strip leading qualifier words ("the 5th", "this weekend", "next month")
+  const stripped = text.replace(/^(?:the|a|an|that|coming|upcoming|next|this)\s+/g, '').trim();
+  if (!stripped) return null;
+  // Strip ordinal suffix from first word so "31st" / "5th" pass the opener test.
+  // FIX: only strip when preceded by a digit, otherwise "august" → "augu" (eats real letters).
+  const firstWordRaw = stripped.split(/[\s,;.!?-]+/)[0] || '';
+  const firstWord = firstWordRaw.replace(/(\d)(?:st|nd|rd|th)$/i, '$1');
+
+  // First significant token must look date-like (number, month, weekday, today/tomorrow…)
+  const opener =
+    /^(?:\d{1,4}|january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec|today|tomorrow|tonight|monday|mon|tuesday|tue|tues|wednesday|wed|thursday|thu|thurs|friday|fri|saturday|sat|sunday|sun|weekend|week|month|year|20\d{2})$/i;
+  if (!opener.test(firstWord)) return null;
+
+  const today = toDateOnly(baseDate);
+  const monthMap = {
+    january: 0, jan: 0, february: 1, feb: 1, march: 2, mar: 2,
+    april: 3, apr: 3, may: 4, june: 5, jun: 5, july: 6, jul: 6,
+    august: 7, aug: 7, september: 8, sep: 8, sept: 8,
+    october: 9, oct: 9, november: 10, nov: 10, december: 11, dec: 11,
+  };
+
+  // ISO 2026-08-15
+  const isoMatch = text.match(/\b(20\d{2})-(\d{1,2})-(\d{1,2})\b/);
+  if (isoMatch) {
+    const y = Number(isoMatch[1]), m = Number(isoMatch[2]) - 1, d = Number(isoMatch[3]);
+    const dt = new Date(Date.UTC(y, m, d));
+    if (!Number.isNaN(dt.getTime()) && dt.getUTCMonth() === m && dt.getUTCDate() === d) return isoDate(dt);
+  }
+
+  // Day-month or month-day patterns ("31 may", "may 31", "the 5th of August")
+  const sp = parseSpecificDateReference(text, baseDate);
+  if (sp) return sp;
+
+  if (/\btomorrow\b/.test(text)) return isoDate(addDays(today, 1));
+  if (/\b(today|tonight)\b/.test(text)) return isoDate(today);
+
+  const weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  for (const day of weekdays) {
+    if (new RegExp(`\\b${day}\\b`, 'i').test(text)) {
+      const date = calculateNextDate(day, baseDate);
+      if (date) return date;
+    }
+  }
+
+  if (/\bnext\s+weekend\b/.test(text)) {
+    const thisSat = nextSaturdayFrom(today);
+    const offToThisSat = Math.round((thisSat - today) / 86400000);
+    const nextSatOff = offToThisSat === 0 ? 7 : offToThisSat + 7;
+    const sat = addDays(today, nextSatOff);
+    return mode === 'end' ? isoDate(addDays(sat, 1)) : isoDate(sat);
+  }
+  if (/\b(?:this\s+)?weekend\b/.test(text)) {
+    const thisSat = nextSaturdayFrom(today);
+    return mode === 'end' ? isoDate(addDays(thisSat, 1)) : isoDate(thisSat);
+  }
+
+  if (/\bnext\s+week\b/.test(text)) {
+    const start = addDays(today, 7);
+    return mode === 'end' ? isoDate(addDays(start, 6)) : isoDate(start);
+  }
+  if (/\bthis\s+week\b/.test(text)) {
+    const dow = today.getUTCDay(); // 0=Sun..6=Sat — clamp end to upcoming Sun
+    return mode === 'end' ? isoDate(addDays(today, (7 - dow) % 7)) : isoDate(today);
+  }
+
+  if (/\bnext\s+month\b/.test(text)) {
+    const y = today.getUTCFullYear(), m = today.getUTCMonth();
+    if (mode === 'end') return isoDate(new Date(Date.UTC(y, m + 2, 0)));
+    return isoDate(new Date(Date.UTC(y, m + 1, 1)));
+  }
+  if (/\bthis\s+month\b/.test(text)) {
+    const y = today.getUTCFullYear(), m = today.getUTCMonth();
+    if (mode === 'end') return isoDate(new Date(Date.UTC(y, m + 1, 0)));
+    return isoDate(today);
+  }
+
+  // Bare month name (no preposition needed in this anchor context — operator already implies temporal use)
+  const monthOnly = text.match(/\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)(?:\s+(20\d{2}))?\b/i);
+  if (monthOnly) {
+    const month = monthMap[monthOnly[1].toLowerCase()];
+    if (month != null) {
+      let year = monthOnly[2] ? Number(monthOnly[2]) : today.getUTCFullYear();
+      if (!monthOnly[2] && month < today.getUTCMonth()) year += 1;
+      if (mode === 'end') return isoDate(new Date(Date.UTC(year, month + 1, 0)));
+      return isoDate(new Date(Date.UTC(year, month, 1)));
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Detect range/operator phrasings: before/after/until/by/since/between/from-to.
+ * Returns { type:'date_range', label, from, to, dates:[...] } or null.
+ *
+ * Inclusivity convention:
+ *   before X / earlier than X / prior to X        → strictly earlier (X excluded)
+ *   by X / until X / no later than X / on/before  → through X (X included)
+ *   after X / later than X / past X               → strictly later (X excluded)
+ *   since X / starting X / on or after X / from X → from X onwards (X included)
+ *   between X and Y / from X to Y                 → inclusive on both ends
+ *
+ * Lower bound is clamped to today (only future events are shown).
+ * Upper bound for open-ended "after"/"since" is clamped to today + 12 months.
+ */
+function parseDateRangeReference(messageLower, baseDate = new Date()) {
+  const today = toDateOnly(baseDate);
+  const todayStr = isoDate(today);
+  const maxFutureStr = isoDate(addDays(today, 366));
+
+  function makeRange(fromISO, toISO, label) {
+    let from = fromISO;
+    let to = toISO;
+    // FIX: parseSpecificDateReference auto-bumps any past date to next year, which
+    // breaks ranges like "from 5 may to 20 may" when today=May 6 (5 may → 2027, 20 may → 2026).
+    // Detect inversion and roll `from` back by 1 year — clamp to today afterwards.
+    if (from > to) {
+      const fromDate = new Date(from + 'T00:00:00Z');
+      fromDate.setUTCFullYear(fromDate.getUTCFullYear() - 1);
+      const candidate = isoDate(fromDate);
+      if (candidate <= to) from = candidate;
+    }
+    if (from < todayStr) from = todayStr;
+    if (to > maxFutureStr) to = maxFutureStr;
+    if (from > to) return { type: 'date_range', label, from, to, dates: [] };
+    const dates = [];
+    let cursor = new Date(from + 'T00:00:00Z');
+    const stop = new Date(to + 'T00:00:00Z');
+    while (cursor <= stop) {
+      dates.push(isoDate(cursor));
+      cursor = addDays(cursor, 1);
+    }
+    return { type: 'date_range', label, from, to, dates };
+  }
+
+  // Capture-stop patterns. Stop at punctuation OR a coordinating conjunction so that
+  // compound queries like "before X but after Y" don't gobble across operators.
+  // STOP_FULL stops at any conjunction (used for single operators like before/after/by/since).
+  // STOP_NO_AND keeps "and" allowed (used for between/from-to where "and"/"to" is syntax).
+  const STOP_FULL = '(?:\\s*[?.!,;]|\\s+(?:but|and|or|though|however|except|while|whereas)\\b|$)';
+  const STOP_NO_AND = '(?:\\s*[?.!,;]|\\s+(?:but|or|though|however|except|while|whereas)\\b|$)';
+
+  // Helper: when first anchor in "between X and Y" / "from X to Y" is a bare number
+  // (e.g. "between 5 and 20 august"), inherit the month from the second anchor.
+  const monthRe = /\b(january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|august|aug|september|sep|sept|october|oct|november|nov|december|dec)\b/i;
+  function resolveDualAnchors(rawA, rawB, modeA, modeB) {
+    let a = parseAnchorDate(rawA, baseDate, modeA);
+    let b = parseAnchorDate(rawB, baseDate, modeB);
+    const bareNumRe = /^\s*\d{1,2}(?:st|nd|rd|th)?\s*$/i;
+    // First anchor is bare number? Inherit month context from the second anchor.
+    if (!a && bareNumRe.test(rawA)) {
+      const m = rawB.match(monthRe);
+      if (m) a = parseAnchorDate(`${rawA.trim()} ${m[1]}`, baseDate, modeA);
+    }
+    // Second anchor is bare number? Inherit month context from the first anchor.
+    if (!b && bareNumRe.test(rawB)) {
+      const m = rawA.match(monthRe);
+      if (m) b = parseAnchorDate(`${rawB.trim()} ${m[1]}`, baseDate, modeB);
+    }
+    return [a, b];
+  }
+
+  // "between X and Y"
+  const between = messageLower.match(new RegExp(`\\bbetween\\s+(.+?)\\s+and\\s+(.+?)${STOP_NO_AND}`, 'i'));
+  if (between) {
+    const [start, end] = resolveDualAnchors(between[1], between[2], 'start', 'end');
+    if (start && end) return makeRange(start, end, `between ${between[1].trim()} and ${between[2].trim()}`);
+  }
+
+  // "from X to/till/until/through Y"
+  const fromTo = messageLower.match(new RegExp(`\\bfrom\\s+(.+?)\\s+(?:to|till|until|through|thru)\\s+(.+?)${STOP_NO_AND}`, 'i'));
+  if (fromTo) {
+    const [start, end] = resolveDualAnchors(fromTo[1], fromTo[2], 'start', 'end');
+    if (start && end) return makeRange(start, end, `from ${fromTo[1].trim()} to ${fromTo[2].trim()}`);
+  }
+
+  // ── Single-operator pass: collect every operator in the message and combine ──
+  // FIX (compound operators): handle "before X but after Y", "after Y and before X",
+  // "since X until Y", "from X by Y" etc. Each operator captures only its own anchor
+  // (stops at conjunction), then we merge bounds into one range.
+  let lowerBound = null;
+  let upperBound = null;
+  const labelParts = [];
+
+  // before X / earlier than X / prior to X (exclusive upper)
+  const beforeRe = new RegExp(`(?<!\\bnot\\s)\\b(?:before|earlier than|prior to)\\s+(.+?)${STOP_FULL}`, 'i');
+  const beforeMatch = messageLower.match(beforeRe);
+  if (beforeMatch) {
+    const anchor = parseAnchorDate(beforeMatch[1], baseDate, 'start');
+    if (anchor) {
+      const endExcl = isoDate(addDays(new Date(anchor + 'T00:00:00Z'), -1));
+      upperBound = endExcl;
+      labelParts.push(`before ${beforeMatch[1].trim()}`);
+    }
+  }
+
+  // by X / until X / no later than X / on or before X (inclusive upper)
+  const byRe = new RegExp(`\\b(?:by|until|till|no later than|on or before|not after|up to|up till|up until)\\s+(.+?)${STOP_FULL}`, 'i');
+  const byMatch = messageLower.match(byRe);
+  if (byMatch && upperBound === null) {
+    const anchor = parseAnchorDate(byMatch[1], baseDate, 'end');
+    if (anchor) {
+      upperBound = anchor;
+      labelParts.push(`until ${byMatch[1].trim()}`);
+    }
+  }
+
+  // since X / starting X / on or after X / not before X (inclusive lower) — before "after"
+  const sinceRe = new RegExp(`\\b(?:since|starting(?:\\s+from)?|on or after|not before)\\s+(.+?)${STOP_FULL}`, 'i');
+  const sinceMatch = messageLower.match(sinceRe);
+  if (sinceMatch) {
+    const anchor = parseAnchorDate(sinceMatch[1], baseDate, 'start');
+    if (anchor) {
+      lowerBound = anchor;
+      labelParts.push(`since ${sinceMatch[1].trim()}`);
+    }
+  }
+
+  // after X / later than X / past X / post X (exclusive lower)
+  const afterRe = new RegExp(`(?<!\\b(?:or|no)\\s)\\b(?:after|later than|past|post)\\s+(.+?)${STOP_FULL}`, 'i');
+  const afterMatch = messageLower.match(afterRe);
+  if (afterMatch && lowerBound === null) {
+    const anchor = parseAnchorDate(afterMatch[1], baseDate, 'end');
+    if (anchor) {
+      const startExcl = isoDate(addDays(new Date(anchor + 'T00:00:00Z'), 1));
+      lowerBound = startExcl;
+      labelParts.push(`after ${afterMatch[1].trim()}`);
+    }
+  }
+
+  if (lowerBound !== null || upperBound !== null) {
+    const from = lowerBound !== null ? lowerBound : todayStr;
+    const to = upperBound !== null ? upperBound : maxFutureStr;
+    return makeRange(from, to, labelParts.join(' '));
+  }
+
+  return null;
+}
+
 function parseDayReference(messageLower, baseDate = new Date()) {
   const today = toDateOnly(baseDate);
+
+  // Detect operator-based ranges first ("before may", "after 31 august", "between A and B")
+  const dateRange = parseDateRangeReference(messageLower, baseDate);
+  if (dateRange) return dateRange;
 
   const specificDate = parseSpecificDateReference(messageLower, baseDate);
   if (specificDate) return { type: 'specific_date', label: specificDate, dates: [specificDate] };
@@ -276,11 +534,40 @@ function parseDayReference(messageLower, baseDate = new Date()) {
     return { type: 'weekend', label: 'this weekend', dates: weekendSatSunFromOffset(today, off) };
   }
 
+  // ── ISO-week parsing: "this week", "next week", "the week after next" ──
+  // Always anchored to MONDAY through SUNDAY (Malaysia/ISO convention),
+  // never "today + 7 days".
+  //
+  // BUG FIX: previously "next week" returned today+7..today+13 which gave
+  // arbitrary day-of-week starts (Wed→Wed if asked on Wednesday). The user
+  // expects Mon-Sun of the calendar week.
+  const weekAfterNext = /\b(?:the\s+)?week\s+after\s+(?:the\s+)?next\b/i.test(messageLower) ||
+    /\bnext\s+next\s+week\b/i.test(messageLower) ||
+    /\bin\s+(?:two|2)\s+weeks?\b/i.test(messageLower);
+  if (weekAfterNext) {
+    const dow = today.getUTCDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+    const daysToNextMonday = ((8 - dow) % 7) || 7;
+    const start = addDays(today, daysToNextMonday + 7); // Mon of the week AFTER next
+    const dates = [];
+    for (let i = 0; i < 7; i++) dates.push(isoDate(addDays(start, i)));
+    return { type: 'week_after_next', label: 'the week after next', dates };
+  }
   if (/\bnext week\b/i.test(messageLower)) {
-    const start = addDays(today, 7);
+    const dow = today.getUTCDay();
+    const daysToNextMonday = ((8 - dow) % 7) || 7;
+    const start = addDays(today, daysToNextMonday); // Mon of next ISO week
     const dates = [];
     for (let i = 0; i < 7; i++) dates.push(isoDate(addDays(start, i)));
     return { type: 'next_week', label: 'next week', dates };
+  }
+  if (/\bthis\s+week\b/i.test(messageLower)) {
+    // From today through the upcoming Sunday (past days of this week are
+    // automatically excluded by filterFutureEvents downstream).
+    const dow = today.getUTCDay();
+    const daysToSunday = (7 - dow) % 7; // 0 if today is Sunday
+    const dates = [];
+    for (let i = 0; i <= daysToSunday; i++) dates.push(isoDate(addDays(today, i)));
+    return { type: 'this_week', label: 'this week', dates };
   }
 
   // FIX: handle "next month" and "this month"
@@ -307,6 +594,29 @@ function parseDayReference(messageLower, baseDate = new Date()) {
   }
 
   return { type: 'any', label: 'any time', dates: [] };
+}
+
+/**
+ * Extract a bare day-of-month number from a message that has NO explicit month next to it.
+ * e.g. "how about 10th", "what about the 3rd", "try 15" → returns the day number (1–31).
+ * Returns null if no bare ordinal found, or if every number already has a month beside it.
+ */
+function parseBareOrdinal(messageLower) {
+  const allMonthNames =
+    'january|jan|february|feb|march|mar|april|apr|may|june|jun|july|jul|' +
+    'august|aug|september|sep|sept|october|oct|november|nov|december|dec';
+  // Matches a 1-2 digit number (with optional ordinal suffix) NOT immediately followed by a month name.
+  const re = new RegExp(
+    `\\b(\\d{1,2})(?:st|nd|rd|th)?\\b(?!\\s*(?:${allMonthNames})\\b)`,
+    'ig',
+  );
+  let m;
+  let lastDay = null;
+  while ((m = re.exec(messageLower)) !== null) {
+    const day = Number(m[1]);
+    if (day >= 1 && day <= 31) lastDay = day;
+  }
+  return lastDay;
 }
 
 /** If user says "5 May or around", widen a single parsed day to ±2 calendar days. */
@@ -378,8 +688,12 @@ function parseMoodKeywords(messageLower) {
     'comedy', 'family', 'kids', 'workshop', 'art', 'outdoor', 'food', 'networking',
   ];
   const out = new Set(known.filter((m) => messageLower.includes(m)));
+  // BUG-FIX: bare "kid" / "baby" / "my kid" must also count as a family
+  // signal — previously only multi-word forms ("kid-friendly", "with my kids")
+  // matched, so "i wanna take my kid to an event" did not trigger the
+  // family/kids mood and the filter went through the unfiltered RAG path.
   if (
-    /\b(child|children|toddler|kid-?friendly|family-?friendly|for kids|with (my )?kids|little ones)\b/i.test(
+    /\b(kids?|child|children|toddler|baby|infant|kid-?friendly|family-?friendly|family\s+with|for kids|for kids?\b|with (my )?kids?|little ones?|my (?:kid|child|baby|son|daughter|boy|girl)|my (?:kids?|children))\b/i.test(
       messageLower,
     )
   ) {
@@ -471,14 +785,47 @@ function isRefinementQuery(message, history) {
   // Rule 1: new place is always a topic reset
   if (hasNewPlace) return false;
 
-  // Detect continuation / refinement language
-  const hasContinuationPhrase =
+  // Rule 2 (priority): pure budget/mood tweak → always refine, regardless of
+  // any other topic-shift signal. "free ones?" / "cheaper?" / "any comedy?"
+  // after a prior event query are clear narrowings of the same subject.
+  if (!hasNewDate && (hasNewBudget || hasNewMood)) return true;
+
+  // --- Topic-shift detection ----------------------------------------------
+  // Extract topic keywords from the new message (e.g. "cancer", "jazz", "bjj").
+  // If the new message has a topic keyword that does NOT appear in the last
+  // few user turns, the user is asking about a NEW subject — treat as fresh,
+  // even if the message starts with "any" or "show me".
+  const newKeywords = extractKeywords(message, 5);
+  const hasTopicKeyword = newKeywords.length > 0;
+
+  let isTopicShift = false;
+  if (hasTopicKeyword) {
+    const priorKeywordSet = new Set();
+    history
+      .filter((h) => h && h.role === 'user' && typeof h.content === 'string')
+      .slice(-3)
+      .forEach((h) => {
+        extractKeywords(h.content, 8).forEach((k) => priorKeywordSet.add(k));
+      });
+    isTopicShift = !newKeywords.some((k) => priorKeywordSet.has(k));
+  }
+  // ------------------------------------------------------------------------
+
+  // Strong continuation phrases — explicit signals of "keep going from before"
+  const hasStrongContinuation =
     /^(what about|how about|what if|any more|what else|show me (more|cheaper|other|different)|and\s+(what|how)\s+about|also|but\s+what|or\s+what)\b/i.test(lower) ||
-    /^any\b/i.test(lower) ||
     /\b(instead|rather|alternatively|as well|too|also|more options?|other options?|what else|anything else|any more)\b/i.test(lower);
 
-  // Rule 2: only budget/mood changed, no date or place → always refine
-  if (!hasNewDate && (hasNewBudget || hasNewMood)) return true;
+  // Bare "any …" is a continuation ONLY when there's no new topic word.
+  // "any more?" / "any cheaper?" → continuation; "any cancer events" → fresh.
+  const startsWithAny = /^any\b/i.test(lower);
+  const hasContinuationPhrase =
+    hasStrongContinuation ||
+    (startsWithAny && !hasTopicKeyword);
+
+  // Topic-shifted questions are fresh queries — UNLESS the user explicitly
+  // signaled refinement with a strong phrase like "what about cancer events?".
+  if (isTopicShift && !hasStrongContinuation) return false;
 
   // Rule 3: continuation phrase + new date but no new place → refine
   if (hasContinuationPhrase && hasNewDate) return true;
@@ -997,6 +1344,92 @@ function buildIntentContext(message, history) {
   return combined.slice(-2000); // was -4000
 }
 
+/**
+ * Extract candidate keywords from a user message for SQL ILIKE keyword search.
+ * Strips common English stopwords + chatbot-specific filler ("show me", "any", "events"),
+ * removes operator/date words (since those go to the date parser), keeps meaningful nouns/adjectives.
+ *
+ * Returns up to `limit` keywords (3+ chars), de-duplicated, lowercased.
+ * Returns [] if no usable keywords (e.g. pure date query like "events tomorrow").
+ * Day ordinals like "17th" / "3rd" are skipped — they belong to date parsing only.
+ */
+const KEYWORD_STOPWORDS = new Set([
+  // pronouns / determiners / aux
+  'i', 'me', 'my', 'mine', 'we', 'us', 'our', 'you', 'your', 'yours', 'he', 'she', 'it', 'they', 'them', 'their',
+  'this', 'that', 'these', 'those', 'a', 'an', 'the', 'some', 'any', 'all', 'every', 'each', 'no', 'none', 'not',
+  'there', 'here', 'also', 'just', 'only', 'still', 'really', 'very', 'much', 'many', 'few', 'more', 'most', 'less',
+  'is', 'are', 'was', 'were', 'be', 'been', 'being', 'am', 'do', 'does', 'did', 'doing', 'have', 'has', 'had',
+  'will', 'would', 'shall', 'should', 'can', 'could', 'may', 'might', 'must',
+  // prepositions / conjunctions
+  'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'about', 'as', 'into', 'like', 'over', 'under',
+  'and', 'or', 'but', 'if', 'so', 'than', 'then', 'because', 'while', 'though', 'unless',
+  // chatbot fillers / question words
+  'what', 'which', 'who', 'whom', 'whose', 'when', 'where', 'why', 'how',
+  'show', 'find', 'tell', 'give', 'recommend', 'suggest', 'help', 'looking', 'look', 'want', 'need', 'wanted',
+  'please', 'pls', 'plz', 'kindly', 'thanks', 'thank', 'okay', 'ok', 'yes', 'yeah', 'yep', 'sure', 'maybe',
+  'hi', 'hey', 'hello', 'yo', 'sup',
+  // filler verbs of intent / attendance — these get extracted as "topics"
+  // otherwise and pollute the strict filter ("take" matches half the catalog)
+  'wanna', 'wanted', 'wants', 'wanting', 'gonna', 'gotta',
+  'take', 'taking', 'took', 'bring', 'bringing', 'brought',
+  'go', 'going', 'gone', 'come', 'coming', 'came',
+  'attend', 'attending', 'attended', 'join', 'joining', 'joined',
+  'visit', 'visiting', 'visited', 'see', 'seeing', 'watch', 'watching',
+  'check', 'checking', 'checkout',
+  // generic event words (these wouldn't help — every row contains them)
+  'event', 'events', 'show', 'shows', 'thing', 'things', 'something', 'anything', 'stuff', 'happen', 'happening',
+  // audience words — handled by parseMoodKeywords + inferAudience with
+  // BROADER synonym matching ("family"/"all ages"/"junior"/"disney"/etc).
+  // If we keep them as topic keywords the strict filter requires the
+  // literal word "kid" in the title, which most family events don't have.
+  'kid', 'kids', 'child', 'children', 'toddler', 'baby', 'infant',
+  'family', 'families', 'parent', 'parents', 'mom', 'dad', 'mum',
+  'son', 'daughter', 'junior', 'youth',
+  // operator/date words — handled by date parser, not keyword search
+  'before', 'after', 'until', 'till', 'since', 'between', 'during',
+  'today', 'tomorrow', 'tonight', 'yesterday', 'weekend', 'weekday', 'week', 'month', 'year', 'day',
+  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+  'next', 'last', 'upcoming', 'coming', 'past', 'previous',
+  'january', 'february', 'march', 'april', 'june', 'july', 'august', 'september', 'october', 'november', 'december',
+  'jan', 'feb', 'mar', 'apr', 'jun', 'jul', 'aug', 'sep', 'sept', 'oct', 'nov', 'dec',
+  // budget/place words — handled by their own parsers
+  'free', 'paid', 'cheap', 'cheaper', 'cheapest', 'affordable', 'expensive', 'pricier', 'priciest',
+  'rm', 'myr', 'price', 'priced', 'cost', 'costs', 'fee', 'budget',
+  'near', 'nearby', 'around',
+  // refinement filler nouns ("free ones?", "any options?", "show others")
+  'one', 'ones', 'option', 'options', 'kind', 'kinds', 'sort', 'sorts', 'type', 'types',
+  'other', 'others', 'different', 'similar',
+]);
+
+function extractKeywords(message, limit = 5) {
+  if (!message || typeof message !== 'string') return [];
+  const cleaned = message
+    .toLowerCase()
+    .replace(/[^a-z0-9\s\-']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleaned) return [];
+  const tokens = cleaned.split(/\s+/);
+  const seen = new Set();
+  const out = [];
+  for (const t of tokens) {
+    const word = t.replace(/^['-]+|['-]+$/g, '');
+    if (word.length < 3) continue;
+    if (/^\d+$/.test(word)) continue;       // pure numbers go to date parser
+    // Day ordinals ("17th", "3rd", "21st") — handled by the date parser, not
+    // topic search. If we keep them, the strict keyword pre-filter on the
+    // date branch shrinks the pool to rows that literally contain "17th" in
+    // text, which is almost always empty → "no events" for normal questions.
+    if (/^\d{1,2}(st|nd|rd|th)$/i.test(word)) continue;
+    if (KEYWORD_STOPWORDS.has(word)) continue;
+    if (seen.has(word)) continue;
+    seen.add(word);
+    out.push(word);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
 module.exports = {
   calculateNextDate,
   parseUserIntent,
@@ -1012,4 +1445,6 @@ module.exports = {
   mergeRagPoolForSourceDiversity,
   poolNeedsSourceBlend,
   selectDiverseRecommendations,
+  parseBareOrdinal,
+  extractKeywords,
 };

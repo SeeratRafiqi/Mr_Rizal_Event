@@ -8,6 +8,7 @@
     "scrape:ticket2u": "node ticket2u-scraper.js",
     "scrape:goliveasia": "node goliveasia-scraper.js",
     "scrape:ticketmelon": "node ticketmelon-scraper.js",
+    "scrape:hotels:amadeus": "node amadeus-hotels-fetch.js",
     "scheduler": "node scheduler.js",
     "server": "node server.js",
     "upload:supabase": "node upload-to-supabase.js",
