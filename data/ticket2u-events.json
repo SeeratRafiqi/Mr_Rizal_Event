@@ -14,6 +14,20 @@
     "summary": ""
   },
   {
+    "id": "50018",
+    "title": "Nepathya Live in KL",
+    "url": "https://www.ticket2u.com.my/event/50018/nepathya-live-in-kl",
+    "date": "2026-06-01",
+    "time": "7:00PM",
+    "venue": "Zepp Kuala Lumpur",
+    "city": "WP Kuala Lumpur",
+    "image": "https://images.t2u.io/upload/event/listing/0-50018-AWSS34e2c728c-03aa-4cd4-a82c-9a928e940791-cTyP_X.jpeg",
+    "isFree": false,
+    "price": "75.00 RM",
+    "category": "Entertainments, Concerts, and Shows Event",
+    "summary": ""
+  },
+  {
     "id": "49990",
     "title": "Past Life Regression Therapy",
     "url": "https://www.ticket2u.com.my/event/49990/past-life-regression-therapy",
@@ -445,20 +459,6 @@
     "isFree": false,
     "price": "40.00 RM",
     "category": "Entertainments, Concerts, and Shows Event",
-    "summary": ""
-  },
-  {
-    "id": "49829",
-    "title": "ALLSTAR LEGENDS Fans Meet & Greet",
-    "url": "https://www.ticket2u.com.my/event/49829/allstar-legends-fans-meet-greet",
-    "date": "2026-05-08",
-    "time": "2:30PM",
-    "venue": "PARKROYAL COLLECTION Kuala Lumpur",
-    "city": "WP Kuala Lumpur",
-    "image": "https://images.t2u.io/upload/event/listing/0-49829-AWSS3f40b8617-18d7-4fd2-85e2-748d5fbc8a01-7RJP_X.jpg",
-    "isFree": false,
-    "price": "990.00 RM",
-    "category": "Sports Event",
     "summary": ""
   },
   {
@@ -4004,6 +4004,20 @@
     "summary": "A boring place for kids till we explore a new area for family entertainment at Dataran Segar City which located at Lukut , Port Dickson, Negeri Sembilan. Current attractions include 3D Alive Art Gallery and Wild West Cowboy Indoor Theme Park."
   },
   {
+    "id": "50078",
+    "title": "Structured Warrants Workshop with CGS, Macquarie, and TED Optimus (Kuching, Sarawak)",
+    "url": "https://www.ticket2u.com.my/event/50078/structured-warrants-workshop-with-cgs,-macquarie,-and-ted-optimus-(kuching,-sarawak)",
+    "date": "2026-06-20",
+    "time": "9:30AM",
+    "venue": "Wisma Sta",
+    "city": "Sarawak",
+    "image": "https://images.t2u.io/upload/event/listing/0-50078-AWSS32debd915-cab2-4938-806b-25626611b1d4-G4k0.jpg",
+    "isFree": true,
+    "price": "Free",
+    "category": "Seminars and Talks Event",
+    "summary": ""
+  },
+  {
     "id": "50063",
     "title": "Structured Warrants Workshop with CGS, Macquarie, and TED Optimus (KK, Sabah)",
     "url": "https://www.ticket2u.com.my/event/50063/structured-warrants-workshop-with-cgs,-macquarie,-and-ted-optimus-(kk,-sabah)",
@@ -4016,6 +4030,20 @@
     "price": "Free",
     "category": "Seminars and Talks Event",
     "summary": ""
+  },
+  {
+    "id": "50039",
+    "title": "July 2026: Programme in Lending Application Using R-Credit Model Building",
+    "url": "https://www.ticket2u.com.my/event/50039/july-2026-programme-in-lending-application-using-r-credit-model-building",
+    "date": "2026-07-11",
+    "time": "11:00AM",
+    "venue": "online",
+    "city": "",
+    "image": "https://images.t2u.io/upload/event/listing/0-50039-AWSS369c78289-4508-45d6-9cb7-2a05401089b0-EjH2_X.png",
+    "isFree": false,
+    "price": "300.00 RM",
+    "category": "Class & Courses",
+    "summary": "July 2026: Programme in Lending Application Using R-Credit Model Building"
   },
   {
     "id": "50031",
@@ -4334,20 +4362,6 @@
     "venue": "San Wan Restaurant",
     "city": "Johor",
     "image": "https://images.t2u.io/upload/event/listing/0-49903-AWSS306b3b1c4-a68a-4be9-adcf-03e74159330d-ABPL_X.jpeg",
-    "isFree": false,
-    "price": "10.00 RM",
-    "category": "Seminars and Talks Event",
-    "summary": ""
-  },
-  {
-    "id": "49902",
-    "title": "LW Patch Party - 8 May 2026 - Alor Setar",
-    "url": "https://www.ticket2u.com.my/event/49902/lw-patch-party-8-may-2026-alor-setar",
-    "date": "2026-05-08",
-    "time": "12:00PM",
-    "venue": "Delight Garden Restaurant",
-    "city": "Kedah",
-    "image": "https://images.t2u.io/upload/event/listing/0-49902-AWSS391a919b0-2829-4fcf-be79-26d87f959380-a4k0_X.jpeg",
     "isFree": false,
     "price": "10.00 RM",
     "category": "Seminars and Talks Event",
@@ -5555,6 +5569,34 @@
     "isFree": false,
     "price": "29.00 RM",
     "category": "Attractions",
+    "summary": ""
+  },
+  {
+    "id": "49829",
+    "title": "ALLSTAR LEGENDS Fans Meet & Greet",
+    "url": "https://www.ticket2u.com.my/event/49829/allstar-legends-fans-meet-greet",
+    "date": "2026-05-08",
+    "time": "2:30PM",
+    "venue": "PARKROYAL COLLECTION Kuala Lumpur",
+    "city": "WP Kuala Lumpur",
+    "image": "https://images.t2u.io/upload/event/listing/0-49829-AWSS3f40b8617-18d7-4fd2-85e2-748d5fbc8a01-7RJP_X.jpg",
+    "isFree": false,
+    "price": "990.00 RM",
+    "category": "Sports Event",
+    "summary": ""
+  },
+  {
+    "id": "49902",
+    "title": "LW Patch Party - 8 May 2026 - Alor Setar",
+    "url": "https://www.ticket2u.com.my/event/49902/lw-patch-party-8-may-2026-alor-setar",
+    "date": "2026-05-08",
+    "time": "12:00PM",
+    "venue": "Delight Garden Restaurant",
+    "city": "Kedah",
+    "image": "https://images.t2u.io/upload/event/listing/0-49902-AWSS391a919b0-2829-4fcf-be79-26d87f959380-a4k0_X.jpeg",
+    "isFree": false,
+    "price": "10.00 RM",
+    "category": "Seminars and Talks Event",
     "summary": ""
   }
 ]

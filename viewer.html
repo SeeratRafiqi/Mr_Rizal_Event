@@ -898,6 +898,27 @@
       align-items: center;
       gap: 10px;
     }
+    /* Trip planner: when Back is hidden, grid auto-placement put title + actions in cols 1–2 of 3 — History/× looked centred. Flex keeps actions on the right. */
+    #itin-modal .itin-modal-header {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
+    }
+    #itin-modal .itin-header-back {
+      flex-shrink: 0;
+    }
+    #itin-modal .itin-modal-header-center {
+      flex: 1 1 auto;
+      min-width: 0;
+      justify-self: unset;
+      text-align: center;
+    }
+    #itin-modal .itin-header-right {
+      margin-left: auto;
+      justify-self: unset;
+      flex-shrink: 0;
+    }
     .itin-header-chip {
       padding: 8px 16px;
       border-radius: 999px;
@@ -938,6 +959,24 @@
       transition: background .2s;
     }
     .itin-icon-btn:hover { background: rgba(255,255,255,.22); color: #fff; }
+    /* Flight / hotel modals: only title + close — avoid 3-col trip header grid (× sat in centre column) */
+    .fs-modal .itin-modal-header,
+    .hs-modal .itin-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .fs-modal .itin-modal-header h1,
+    .hs-modal .itin-modal-header h1 {
+      flex: 1;
+      min-width: 0;
+      text-align: left;
+    }
+    .fs-modal .itin-modal-header .itin-icon-btn,
+    .hs-modal .itin-modal-header .itin-icon-btn {
+      flex-shrink: 0;
+    }
     .itin-modal-scroll {
       overflow-y: auto;
       padding: 24px 28px 30px;
@@ -1185,16 +1224,47 @@
     }
     .itin-slots-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       gap: 1px;
       background: #dcc7ae;
       border: 1px solid #dcc7ae;
       margin-bottom: 10px;
     }
+    /* Fixed three columns when 2+ periods have stops — gutters show between cells */
+    .itin-slots-row--cols-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    /* Single period for the day: left-aligned strip, no grid lines (same ~⅓ width as a column above) */
+    .itin-slots-row--solo {
+      display: flex;
+      justify-content: flex-start;
+      align-items: flex-start;
+      background: transparent;
+      border: none;
+      gap: 0;
+      margin-bottom: 10px;
+    }
+    .itin-slots-row--solo .itin-slot {
+      flex: 0 0 auto;
+      width: min(280px, 33.333%);
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .itin-slot--empty {
+      background: #faf6f0;
+      min-height: 8px;
+      pointer-events: none;
+    }
+    .itin-slot--empty::before {
+      display: none;
+    }
     .itin-slot {
       background: #faf6f0;
-      padding: 12px 12px 14px;
+      padding: 12px 10px 14px;
       position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      min-width: 0;
     }
     .itin-slot::before {
       content: '';
@@ -1229,11 +1299,15 @@
     .itin-mini-grid {
       display: flex;
       flex-direction: column;
-      gap: 7px;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+      align-items: stretch;
     }
     .itin-mini-card {
       border: none;
       padding: 0;
+      margin: 0;
       border-radius: 6px;
       overflow: hidden;
       cursor: pointer;
@@ -1242,13 +1316,21 @@
       box-shadow: 0 1px 5px rgba(30,58,47,.07);
       transition: transform .15s, box-shadow .15s;
       width: 100%;
+      max-width: none;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      min-height: 132px;
     }
     .itin-mini-card:hover {
       transform: translateY(-2px);
       box-shadow: 0 5px 14px rgba(30,58,47,.13);
     }
     .itin-mini-img-wrap {
-      height: 60px;
+      height: 72px;
+      flex-shrink: 0;
+      width: 100%;
       background: #e2d5c3;
       overflow: hidden;
     }
@@ -1264,17 +1346,65 @@
       background: linear-gradient(135deg, #e8d5c3, #d4c0a4);
     }
     .itin-mini-body {
-      padding: 6px 9px 8px;
-      display: flex; flex-direction: column; gap: 2px;
+      flex: 1;
+      min-height: 52px;
+      padding: 8px 10px 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 4px;
+      box-sizing: border-box;
     }
-    .itin-mini-body strong {
+    .itin-mini-title {
       font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: 1.08rem;
+      font-size: 15px;
+      font-weight: 500;
+      color: #1E3A2F;
+      line-height: 1.25;
+      margin: 0;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-break: break-word;
+    }
+    .itin-mini-area {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 400;
+      line-height: 1.35;
+      color: #7A6F63;
+      margin: 0;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      word-break: break-word;
+    }
+    @media (max-width: 560px) {
+      .itin-slots-row--cols-3 {
+        grid-template-columns: 1fr;
+      }
+      .itin-slots-row--solo .itin-slot {
+        width: 100%;
+        max-width: 100%;
+      }
+    }
+    /* Legacy selectors if any markup omits classes */
+    .itin-mini-body strong:not(.itin-mini-title) {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 15px;
       font-weight: 500;
       color: #1E3A2F;
       line-height: 1.25;
     }
-    .itin-mini-body span { font-size: .75rem; color: #7A6F63; }
+    .itin-mini-body span:not(.itin-mini-area) {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 11px;
+      color: #7A6F63;
+    }
     .itin-day-note {
       background: #1E3A2F;
       padding: 11px 14px;

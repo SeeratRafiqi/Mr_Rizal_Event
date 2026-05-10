@@ -7,6 +7,10 @@
     'Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen',
   ];
 
+  /** Last-resort image if remote URLs 403 / expire (matches server GENERIC_TRAVEL_IMG). */
+  const ITIN_IMG_STATIC_FALLBACK =
+    'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&w=400&q=70';
+
   let selectedEvent = null;
   /** Full API envelope (multi-variant trips). */
   let tripEnvelope = null;
@@ -409,11 +413,26 @@
     const meta = $('itin-place-meta');
     const mapBtn = $('itin-place-map');
     if (img) {
+      img.referrerPolicy = 'no-referrer';
+      img.removeAttribute('data-itin-img-fallback');
       img.src = p.image || '';
       img.alt = p.name || '';
       img.onerror = function () {
+        if (img.dataset.itinImgFallback === '1') {
+          img.dataset.itinImgFallback = '2';
+          img.src =
+            'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&w=800&q=70';
+          return;
+        }
+        if (img.dataset.itinImgFallback === '2') {
+          img.onerror = null;
+          return;
+        }
+        img.dataset.itinImgFallback = '1';
         img.src =
-          'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&w=800&q=70';
+          'https://picsum.photos/seed/' +
+          encodeURIComponent('itin-overlay-' + String(placeId)) +
+          '/800/500';
       };
     }
     if (title) title.textContent = p.name || 'Place';
@@ -732,19 +751,24 @@
       '">' +
       '<div class="itin-mini-img-wrap">' +
       (img
-        ? '<img src="' + img + '" alt="" loading="lazy" />'
+        ? '<img src="' +
+          img +
+          '" alt="" loading="lazy" referrerpolicy="no-referrer" />'
         : '<div class="itin-mini-fallback">📍</div>') +
-      '</div><div class="itin-mini-body"><strong>' +
+      '</div><div class="itin-mini-body"><strong class="itin-mini-title">' +
       name +
-      '</strong><span>' +
-      area +
+      '</strong><span class="itin-mini-area">' +
+      (area || '\u00a0') +
       '</span></div></button>'
     );
   }
 
-  function slotSection(title, slots) {
+  /** One grid cell per period; empty → blank column (keeps ~⅓ card width when 2+ periods have stops). */
+  function slotColumnHtml(title, slots) {
     const arr = Array.isArray(slots) ? slots : [];
-    if (!arr.length) return '';
+    if (!arr.length) {
+      return '<div class="itin-slot itin-slot--empty" aria-hidden="true"></div>';
+    }
     return (
       '<div class="itin-slot">' +
       '<div class="itin-slot-label"><span class="itin-slot-dot"></span>' +
@@ -790,14 +814,34 @@
         const hasAfternoon = Array.isArray(day.afternoon) && day.afternoon.length;
         const hasEvening   = Array.isArray(day.evening) && day.evening.length;
         const hasSlots     = hasMorning || hasAfternoon || hasEvening;
+        const nPeriods =
+          (hasMorning ? 1 : 0) + (hasAfternoon ? 1 : 0) + (hasEvening ? 1 : 0);
 
-        const slotsHtml = hasSlots
-          ? '<div class="itin-slots-row">' +
-            slotSection('Morning', day.morning) +
-            slotSection('Afternoon', day.afternoon) +
-            slotSection('Evening', day.evening) +
-            '</div>'
-          : '';
+        let slotsHtml = '';
+        if (hasSlots) {
+          if (nPeriods === 1) {
+            var soloTitle = 'Evening';
+            var soloSlots = day.evening;
+            if (hasMorning) {
+              soloTitle = 'Morning';
+              soloSlots = day.morning;
+            } else if (hasAfternoon) {
+              soloTitle = 'Afternoon';
+              soloSlots = day.afternoon;
+            }
+            slotsHtml =
+              '<div class="itin-slots-row itin-slots-row--solo">' +
+              slotColumnHtml(soloTitle, soloSlots) +
+              '</div>';
+          } else {
+            slotsHtml =
+              '<div class="itin-slots-row itin-slots-row--cols-3">' +
+              slotColumnHtml('Morning', day.morning) +
+              slotColumnHtml('Afternoon', day.afternoon) +
+              slotColumnHtml('Evening', day.evening) +
+              '</div>';
+          }
+        }
 
         const regenHtml =
           showDayRegenerate && planDetailVisible
@@ -841,7 +885,17 @@
   function renderWarnings(warnings) {
     const w = $('itin-warnings');
     if (!w) return;
-    if (!warnings || !warnings.length) {
+    const blockedTypes = {
+      live_places: true,
+      map_search_fallback: true,
+    };
+    const filtered = (Array.isArray(warnings) ? warnings : []).filter(function (x) {
+      if (!x || typeof x !== 'object') return false;
+      const t = String(x.type || '').trim();
+      if (blockedTypes[t]) return false;
+      return true;
+    });
+    if (!filtered.length) {
       w.innerHTML = '';
       w.hidden = true;
       w.setAttribute('hidden', '');
@@ -849,7 +903,7 @@
     }
     w.removeAttribute('hidden');
     w.hidden = false;
-    w.innerHTML = warnings
+    w.innerHTML = filtered
       .map(function (x) {
         const sev = x.severity === 'warn' ? 'itin-warn--warn' : 'itin-warn--info';
         return (
@@ -1236,6 +1290,30 @@
 
     const daysHost = $('itin-days-container');
     if (daysHost) {
+      daysHost.addEventListener(
+        'error',
+        function (e) {
+          const t = e.target;
+          if (!t || t.tagName !== 'IMG' || !t.closest('.itin-mini-img-wrap')) return;
+          if (t.dataset.itinImgFallback === '1') {
+            t.dataset.itinImgFallback = '2';
+            t.src = ITIN_IMG_STATIC_FALLBACK;
+            return;
+          }
+          if (t.dataset.itinImgFallback === '2') {
+            t.onerror = null;
+            return;
+          }
+          t.dataset.itinImgFallback = '1';
+          const card = t.closest('.itin-mini-card');
+          const pid = (card && card.getAttribute('data-place-id')) || 'place';
+          t.src =
+            'https://picsum.photos/seed/' +
+            encodeURIComponent('itin-card-' + pid) +
+            '/400/200';
+        },
+        true,
+      );
       daysHost.addEventListener('click', function (e) {
         const regenBtn = e.target.closest('[data-regen-day]');
         if (regenBtn) {

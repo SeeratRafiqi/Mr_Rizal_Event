@@ -331,6 +331,34 @@ function travelLinksForCity(city) {
 const GENERIC_TRAVEL_IMG =
   'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&w=400&q=70';
 
+/** Stable pseudo-random cover when Wikipedia / Commons / Unsplash all miss (loads reliably in `<img>`). */
+function seededPicsumUrl(placeName, city) {
+  const seed = String(`${placeName || ''}|${city || ''}`)
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 100);
+  const s = seed || 'malaysia-trip';
+  return `https://picsum.photos/seed/${encodeURIComponent(s)}/400/200`;
+}
+
+function pickFirstPhotoReference(details, candidate) {
+  const det = details || {};
+  const c = candidate || {};
+  const fromDet = det.photos?.[0]?.photo_reference;
+  if (fromDet) return String(fromDet).trim();
+  const fromCand = c.photos?.[0]?.photo_reference;
+  if (fromCand) return String(fromCand).trim();
+  return '';
+}
+
+function googlePlacePhotoUrl(photoRef, maxWidth, apiKey) {
+  const ref = String(photoRef || '').trim();
+  const key = String(apiKey || '').trim();
+  if (!ref || !key) return '';
+  const w = Math.min(1600, Math.max(200, Number(maxWidth) || 800));
+  return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${w}&photo_reference=${encodeURIComponent(ref)}&key=${encodeURIComponent(key)}`;
+}
+
 function unsplashClientIdFromEnv() {
   return String(
     process.env.UNSPLASH_ACCESS_KEY || process.env.UNSPLASH_API_KEY || '',
@@ -480,8 +508,8 @@ async function getPlaceImageHybrid(placeName, city, unsplashOverride) {
   } catch (e) {
     console.log('[itinerary] Unsplash image failed:', placeName, e?.message || e);
   }
-  console.log('[itinerary] image fallback (generic):', placeName);
-  return null;
+  console.log('[itinerary] image fallback (picsum seed):', placeName);
+  return seededPicsumUrl(placeName, city);
 }
 
 const ARRIVAL_DAY_TIPS = [
@@ -675,6 +703,7 @@ function shapeGoogleMeta(candidate, details, fallbackQuery) {
     statusLabel: businessStatusLabel(biz, openNow),
     googleMapsUrl: String(det.url || '').trim(),
     fallbackQuery: fallbackQuery || '',
+    photoReference: pickFirstPhotoReference(det, c),
   };
 }
 
@@ -978,6 +1007,12 @@ async function enrichPlacesWithGooglePlaces(places, city, stateName, googleApiKe
     const mapQuery = bestMapQueryForPlace(p, city);
     const officialMaps = String(meta.googleMapsUrl || '').trim();
     const mapUrl = officialMaps || googleMapsUrlByPlaceId(meta.placeId, mapQuery);
+    const googlePhoto =
+      meta.photoReference && googleApiKey
+        ? googlePlacePhotoUrl(meta.photoReference, 900, googleApiKey)
+        : '';
+    /** Prefer official Place Photo when Google matched — usually loads where hotlinked wiki thumbs fail. */
+    const image = googlePhoto || String(p.image || '').trim() || GENERIC_TRAVEL_IMG;
     return {
       ...p,
       location: meta.formattedAddress || p.location,
@@ -990,6 +1025,7 @@ async function enrichPlacesWithGooglePlaces(places, city, stateName, googleApiKe
       mapQuery,
       mapUrl,
       matchReason: reason,
+      image,
     };
   });
   const out = await Promise.all(tasks);
