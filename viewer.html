@@ -354,6 +354,117 @@
       grid-column: 1/-1;
       background: var(--pg-ivory);
     }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .events-chat-banner {
+      display: none;
+      margin: 0 18px 0;
+      padding: 14px 18px;
+      background: rgba(30, 58, 47, 0.06);
+      border: 1px solid var(--pg-rule);
+      border-radius: 8px;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.88rem;
+      color: var(--pg-muted);
+      line-height: 1.5;
+    }
+    .events-chat-banner.is-visible { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+    .events-chat-banner strong { color: var(--pg-forest); font-weight: 600; }
+    .events-chat-banner-clear {
+      margin-left: auto;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--pg-forest);
+      background: transparent;
+      border: 1px solid var(--pg-rule);
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .events-chat-banner-clear:hover { border-color: var(--pg-gold); background: var(--pg-parch); }
+
+    .empty--chat .empty--chat-sub {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.95rem;
+      font-style: normal;
+      font-weight: 400;
+      margin-top: 10px;
+      color: var(--pg-muted);
+    }
+    .empty--chat .empty--chat-query {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.82rem;
+      font-style: italic;
+      margin-top: 14px;
+      color: var(--pg-warm);
+    }
+
+    .grid-skeleton {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      grid-column: 1 / -1;
+    }
+    .grid-skeleton-card {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid var(--pg-rule);
+      overflow: hidden;
+    }
+    .grid-skeleton-card .sk-img {
+      height: 160px;
+      background: linear-gradient(90deg, var(--pg-parch) 0%, var(--pg-sand) 50%, var(--pg-parch) 100%);
+      background-size: 200% 100%;
+      animation: grid-sk-shimmer 1.4s ease-in-out infinite;
+    }
+    .grid-skeleton-card .sk-body { padding: 16px 18px 20px; }
+    .grid-skeleton-card .sk-line {
+      height: 12px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, var(--pg-parch) 0%, var(--pg-sand) 50%, var(--pg-parch) 100%);
+      background-size: 200% 100%;
+      animation: grid-sk-shimmer 1.4s ease-in-out infinite;
+    }
+    .grid-skeleton-card .sk-line--short { width: 55%; }
+    .grid-skeleton-card .sk-line--title { height: 18px; width: 85%; margin-bottom: 14px; }
+    @keyframes grid-sk-shimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+
+    .hero-ai-conversation .hero-chat-turn {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+    .hero-ai-conversation .hero-chat-turn--user {
+      background: rgba(30, 58, 47, 0.08);
+      color: var(--pg-ink);
+    }
+    .hero-ai-conversation .hero-chat-turn--bot {
+      background: rgba(200, 169, 110, 0.12);
+      border: 1px solid rgba(200, 169, 110, 0.25);
+      color: var(--pg-forest);
+    }
     .no-img {
       width: 100%;
       height: 156px;
@@ -3970,6 +4081,15 @@
       transition: opacity .5s ease, transform .5s ease;
     }
     .card-enter.card-visible { opacity: 1; transform: translateY(0); }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .card-enter { transition: none; opacity: 1; transform: none; }
+      .card-enter.card-visible { opacity: 1; transform: none; }
+      .card, .card img, .card::after { transition: none; }
+      .grid-skeleton-card .sk-img,
+      .grid-skeleton-card .sk-line { animation: none; }
+    }
   </style>
   <link rel="stylesheet" href="/eventra-ticket-theme.css" />
 </head>
@@ -4103,17 +4223,22 @@
 
 <div class="stats" id="stats" style="display:none;">Loading events...</div>
 
+<div id="events-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
 <!-- GRID SECTION HEAD -->
-<div class="grid-section-head">
+<div class="grid-section-head" id="events-section" tabindex="-1">
   <div class="grid-section-head-inner">
     <div>
       <p class="grid-sec-eyebrow">Showing <span id="grid-event-count">—</span> events</p>
-      <h3 class="grid-sec-title">Browse <em>the full listing</em></h3>
+      <h3 class="grid-sec-title" id="grid-sec-title">Browse <em>the full listing</em></h3>
     </div>
     <div class="source-badges" id="source-badges"></div>
   </div>
-</div>
 
+<p id="events-chat-banner" class="events-chat-banner" hidden>
+  <span id="events-chat-banner-text"></span>
+  <button type="button" class="events-chat-banner-clear" id="events-chat-banner-clear">Clear assistant results</button>
+</p>
 <div class="grid-frame">
   <div class="grid" id="grid">
     <div class="loading">Fetching events…</div>
@@ -4675,6 +4800,204 @@
   let allEvents = [];
   let filterDebounceTimer = null;
   const MAX_CARDS = 120;
+  let chatResultsMode = false;
+  let chatResultsPool = [];
+  let lastChatQuery = '';
+
+  function prefersReducedMotion() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function announceEvents(message) {
+    const el = document.getElementById('events-announcer');
+    if (!el) return;
+    el.textContent = '';
+    window.setTimeout(function () {
+      el.textContent = message;
+    }, 50);
+  }
+
+  function enrichChatEvent(e) {
+    if (!e || typeof e !== 'object') return e;
+    const id = e.id != null ? String(e.id) : '';
+    const found = id
+      ? allEvents.find(function (x) {
+          return String(x.id) === id;
+        })
+      : null;
+    if (found) return found;
+    const priceStr = String(e.price || '').trim();
+    const isFree = e.isFree === true || /^free$/i.test(priceStr);
+    return {
+      id: e.id || id || ('chat-' + String(e.title || '').slice(0, 24)),
+      title: e.title || 'Untitled Event',
+      image: e.image || '',
+      date: e.date || '',
+      venue: e.venue || '',
+      city: e.city || '',
+      summary: e.summary || '',
+      price: isFree ? 'Free' : priceStr || 'Paid',
+      isFree: isFree,
+      category: e.category || '',
+      url: e.url || '',
+      _source: e._source || e.source || '',
+    };
+  }
+
+  function showGridChatLoading() {
+    const grid = document.getElementById('grid');
+    if (!grid) return;
+    const sk = prefersReducedMotion()
+      ? ''
+      : ' animation: grid-sk-shimmer 1.4s ease-in-out infinite;';
+    const cards = [1, 2, 3, 4, 5, 6, 7, 8]
+      .map(function () {
+        return (
+          '<div class="grid-skeleton-card">' +
+          '<div class="sk-img" style="' + sk + '"></div>' +
+          '<div class="sk-body">' +
+          '<div class="sk-line sk-line--title" style="' + sk + '"></div>' +
+          '<div class="sk-line" style="' + sk + '"></div>' +
+          '<div class="sk-line sk-line--short" style="' + sk + '"></div>' +
+          '</div></div>'
+        );
+      })
+      .join('');
+    grid.innerHTML =
+      '<div class="grid-skeleton" aria-busy="true" aria-label="Searching events">' + cards + '</div>';
+    announceEvents('Searching for events that match your question.');
+  }
+
+  function setChatResultsBanner(query, count) {
+    const banner = document.getElementById('events-chat-banner');
+    const text = document.getElementById('events-chat-banner-text');
+    const title = document.getElementById('grid-sec-title');
+    if (text) {
+      const q = String(query || '').trim();
+      text.innerHTML =
+        count > 0
+          ? '<strong>' +
+            count +
+            '</strong> match' +
+            (count !== 1 ? 'es' : '') +
+            ' for your question' +
+            (q ? ': “' + escapeHtml(q.length > 72 ? q.slice(0, 72) + '…' : q) + '”' : '') +
+            '.'
+          : 'No events matched your question' +
+            (q ? ' (“' + escapeHtml(q.length > 72 ? q.slice(0, 72) + '…' : q) + '”)' : '') +
+            '.';
+    }
+    if (banner) {
+      banner.hidden = false;
+      banner.classList.add('is-visible');
+      banner.removeAttribute('hidden');
+    }
+    if (title) {
+      title.innerHTML = count > 0 ? 'Matches for <em>your search</em>' : 'No <em>matches yet</em>';
+    }
+  }
+
+  function clearChatFilter() {
+    chatResultsMode = false;
+    chatResultsPool = [];
+    lastChatQuery = '';
+    const banner = document.getElementById('events-chat-banner');
+    if (banner) {
+      banner.hidden = true;
+      banner.classList.remove('is-visible');
+      banner.setAttribute('hidden', '');
+    }
+    const title = document.getElementById('grid-sec-title');
+    if (title) title.innerHTML = 'Browse <em>the full listing</em>';
+    const searchInput = document.getElementById('search');
+    if (searchInput) searchInput.value = '';
+    filterEvents();
+    announceEvents('Showing the full event listing again.');
+  }
+
+  function renderChatNoResults(userMessage) {
+    const grid = document.getElementById('grid');
+    if (!grid) return;
+    const q = String(userMessage || '').trim();
+    grid.innerHTML =
+      '<div class="empty empty--chat" role="status">' +
+      '<p>No events match your search.</p>' +
+      '<p class="empty--chat-sub">Try different dates, a broader location, or another keyword.</p>' +
+      (q ? '<p class="empty--chat-query">Your question: “' + escapeHtml(q) + '”</p>' : '') +
+      '</div>';
+    window.__lastRenderedEventSlice = [];
+    const countEl = document.getElementById('grid-event-count');
+    if (countEl) countEl.textContent = '0';
+    const statsEl = document.getElementById('stats');
+    if (statsEl) {
+      statsEl.style.display = '';
+      statsEl.innerHTML = 'Showing <span>0</span> assistant matches';
+    }
+  }
+
+  function scrollToEventsSection(focusFirst) {
+    const section = document.getElementById('events-section');
+    const behavior = prefersReducedMotion() ? 'auto' : 'smooth';
+    if (section && section.scrollIntoView) {
+      section.scrollIntoView({ behavior: behavior, block: 'start' });
+    }
+    if (!focusFirst) return;
+    window.setTimeout(function () {
+      const grid = document.getElementById('grid');
+      const first = grid && grid.querySelector('.card[data-ev-idx]');
+      if (first && typeof first.focus === 'function') first.focus();
+    }, prefersReducedMotion() ? 80 : 420);
+  }
+
+  function applyChatEventsToGrid(events, userMessage) {
+    const enriched = (Array.isArray(events) ? events : []).map(enrichChatEvent);
+    chatResultsMode = true;
+    chatResultsPool = enriched;
+    lastChatQuery = String(userMessage || '').trim();
+    setChatResultsBanner(lastChatQuery, enriched.length);
+    if (!enriched.length) {
+      renderChatNoResults(lastChatQuery);
+      announceEvents('No events match your search. Try different dates or keywords.');
+      scrollToEventsSection(false);
+      return;
+    }
+    renderCards(enriched);
+    const statsEl = document.getElementById('stats');
+    if (statsEl) {
+      statsEl.style.display = '';
+      statsEl.innerHTML =
+        'Showing <span>' +
+        enriched.length +
+        '</span> match' +
+        (enriched.length !== 1 ? 'es' : '') +
+        ' from your assistant search';
+    }
+    announceEvents(
+      enriched.length +
+        ' event' +
+        (enriched.length !== 1 ? 's' : '') +
+        ' match your search. Results are listed below.',
+    );
+    scrollToEventsSection(true);
+  }
+
+  function appendHeroChatTurn(userMsg, botReply) {
+    const host = document.getElementById('hero-ai-conversation');
+    if (!host) return;
+    const u = document.createElement('div');
+    u.className = 'hero-chat-turn hero-chat-turn--user';
+    u.textContent = 'You: ' + String(userMsg || '').trim();
+    const b = document.createElement('div');
+    b.className = 'hero-chat-turn hero-chat-turn--bot';
+    b.textContent = 'Eventra: ' + String(botReply || '').trim();
+    host.appendChild(u);
+    host.appendChild(b);
+    host.scrollTop = host.scrollHeight;
+  }
 
   function scheduleFilterEvents() {
     if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
@@ -4758,11 +5081,13 @@
     const sourceFilter = document.getElementById('filter-source').value;
     const sort = document.getElementById('sort').value;
 
-    let filtered = allEvents.filter(e => {
+    const pool = chatResultsMode ? chatResultsPool : allEvents;
+    let filtered = pool.filter(e => {
       const source = getEventSource(e);
       const matchSearch =
         (e.title || '').toLowerCase().includes(search) ||
         (e.venue || '').toLowerCase().includes(search) ||
+        (e.city || '').toLowerCase().includes(search) ||
         (e.summary || '').toLowerCase().includes(search);
 
       const matchFree =
@@ -4782,8 +5107,21 @@
       filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
     }
 
-    document.getElementById('stats').innerHTML =
-      `Showing <span>${filtered.length}</span> of <span>${allEvents.length}</span> events`;
+    const statsEl = document.getElementById('stats');
+    if (statsEl) {
+      statsEl.style.display = '';
+      if (chatResultsMode) {
+        statsEl.innerHTML =
+          'Showing <span>' +
+          filtered.length +
+          '</span> of <span>' +
+          chatResultsPool.length +
+          '</span> assistant matches';
+      } else {
+        statsEl.innerHTML =
+          'Showing <span>' + filtered.length + '</span> of <span>' + allEvents.length + '</span> events';
+      }
+    }
 
     const countEl = document.getElementById('grid-event-count');
     if (countEl) countEl.textContent = filtered.length;
@@ -4843,7 +5181,12 @@
     const grid = document.getElementById('grid');
 
     if (events.length === 0) {
-      grid.innerHTML = '<div class="empty">No events match your search.</div>';
+      if (chatResultsMode) {
+        renderChatNoResults(lastChatQuery);
+      } else {
+        grid.innerHTML = '<div class="empty">No events match your search.</div>';
+      }
+      window.__lastRenderedEventSlice = [];
       return;
     }
 
@@ -5210,15 +5553,17 @@
     async function sendChat() {
       const message = (messageEl.value || '').trim();
       if (!message) return;
+      const fromHero = lastLaunchFromHero;
       errEl.textContent = '';
-      if (lastLaunchFromHero && heroAiBtnEl) {
+      if (fromHero && heroAiBtnEl) {
         heroAiBtnEl.disabled = true;
         heroAiBtnEl.textContent = 'Thinking...';
+        showGridChatLoading();
       }
       const historyPrior = chatHistory.map(function (h) {
         return { role: h.role, content: h.content };
       });
-      append('user', message);
+      if (!fromHero) append('user', message);
       messageEl.value = '';
       chatHistory.push({ role: 'user', content: message });
       if (!activeConversation.messages.length) activeConversation.title = trimTitle(message);
@@ -5236,35 +5581,68 @@
         });
         const reply = data.reply || '';
         if (!res.ok && !reply) {
-          append('bot', data.error || 'Request failed (' + res.status + ')');
+          const errMsg = data.error || 'Request failed (' + res.status + ')';
+          if (fromHero) {
+            appendHeroChatTurn(message, errMsg);
+            setHeroBannerStatus(errMsg, 'warning');
+            filterEvents();
+          } else {
+            append('bot', errMsg);
+          }
           chatHistory.pop();
           activeConversation.messages.pop();
           upsertActiveConversation();
         } else {
-          append('bot', reply || 'No reply');
-          chatHistory.push({ role: 'assistant', content: reply || 'No reply' });
-          activeConversation.messages.push({ role: 'assistant', content: reply || 'No reply' });
+          const botText = reply || 'No reply';
+          if (fromHero) {
+            appendHeroChatTurn(message, botText);
+            append('user', message);
+            append('bot', botText);
+          } else {
+            append('bot', botText);
+          }
+          chatHistory.push({ role: 'assistant', content: botText });
+          activeConversation.messages.push({ role: 'assistant', content: botText });
           while (chatHistory.length > 24) chatHistory.shift();
-          // Each new chat turn shows only the events for the LATEST question.
-          // Clearing first prevents stale events from previous rounds from
-          // bleeding into the panel and looking like wrong matches for the new query.
-          clearEventsZone();
-          if (Array.isArray(data.events) && data.events.length) {
-            appendEventsInline(data.events, message);
-            eventRounds.unshift({
-              id: Date.now(),
-              userMessage: message,
-              events: data.events.slice(),
-            });
-            while (eventRounds.length > 10) eventRounds.pop();
-            activeConversation.rounds = eventRounds.map(function (r) {
-              return { id: r.id, userMessage: r.userMessage, events: r.events };
-            });
+          const apiEvents = Array.isArray(data.events) ? data.events : [];
+          eventRounds.unshift({
+            id: Date.now(),
+            userMessage: message,
+            events: apiEvents.slice(),
+          });
+          while (eventRounds.length > 10) eventRounds.pop();
+          activeConversation.rounds = eventRounds.map(function (r) {
+            return { id: r.id, userMessage: r.userMessage, events: r.events };
+          });
+          if (fromHero) {
+            applyChatEventsToGrid(apiEvents, message);
+            if (apiEvents.length) {
+              setHeroBannerStatus(
+                apiEvents.length +
+                  ' event' +
+                  (apiEvents.length !== 1 ? 's' : '') +
+                  ' matched — scroll down to explore.',
+                '',
+              );
+            } else {
+              setHeroBannerStatus('No events matched — try different dates or keywords.', 'warning');
+            }
+          } else {
+            clearEventsZone();
+            if (apiEvents.length) appendEventsInline(apiEvents, message);
           }
           upsertActiveConversation();
         }
       } catch (e) {
-        append('bot', 'Cannot reach the server. Open via http://localhost (run npm run server), not as a file.');
+        const netErr =
+          'Cannot reach the server. Open via http://localhost (run npm run server), not as a file.';
+        if (fromHero) {
+          appendHeroChatTurn(message, netErr);
+          setHeroBannerStatus(netErr, 'warning');
+          filterEvents();
+        } else {
+          append('bot', netErr);
+        }
         chatHistory.pop();
         activeConversation.messages.pop();
         upsertActiveConversation();
@@ -5307,7 +5685,6 @@
       }
       setHeroBannerStatus('Eventra is scanning Malaysia events and travel signals...', 'thinking');
       lastLaunchFromHero = true;
-      openDrawer();
       messageEl.value = q;
       if (heroAiInputEl) heroAiInputEl.value = '';
       sendChat();
@@ -5339,6 +5716,11 @@
 
   const searchInput = document.getElementById('search');
   if (searchInput) searchInput.addEventListener('input', scheduleFilterEvents);
+
+  const eventsChatBannerClear = document.getElementById('events-chat-banner-clear');
+  if (eventsChatBannerClear) {
+    eventsChatBannerClear.addEventListener('click', clearChatFilter);
+  }
 
   loadEvents();
 
