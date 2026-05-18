@@ -185,6 +185,11 @@ app.get('/eventra-ticket-theme.css', (req, res) => {
   res.sendFile(path.join(__dirname, 'eventra-ticket-theme.css'));
 });
 
+app.get('/premium-ui.css', (req, res) => {
+  res.type('text/css');
+  res.sendFile(path.join(__dirname, 'premium-ui.css'));
+});
+
 app.get('/flight-search.js', (req, res) => {
   res.type('application/javascript');
   res.sendFile(path.join(__dirname, 'flight-search.js'));

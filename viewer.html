@@ -6,30 +6,42 @@
   <title>🎟️ Scraped Events Viewer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@400;500;600;700&family=Jost:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
   <style>
     /* ── DESIGN TOKENS ───────────────────────────────── */
     :root {
-      --pg-ivory:   #F8F4EE;
-      --pg-parch:   #EFE8DC;
-      --pg-sand:    #E2D5C3;
-      --pg-rule:    #DCC7AE;
-      --pg-forest:  #1E3A2F;
-      --pg-forest2: #2C5040;
-      --pg-gold:    #C8A96E;
-      --pg-ink:     #1A1A18;
-      --pg-muted:   #7A6F63;
-      --pg-warm:    #A8987E;
+      --premium-bg: #fbfaf8;
+      --premium-surface: #ffffff;
+      --premium-text: #0f1724;
+      --premium-muted: #6b6f76;
+      --premium-accent: #cda34e;
+      --premium-accent-deep: #b8862b;
+      --premium-accent-soft: rgba(205, 163, 78, 0.18);
+      --premium-radius-sm: 8px;
+      --premium-radius-md: 12px;
+      --premium-ease: cubic-bezier(0.2, 0.9, 0.3, 1);
+      --premium-card-elevation: 0 8px 24px rgba(16, 24, 40, 0.08);
+      --premium-font-display: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+      --premium-font-body: "Inter", "Jost", system-ui, sans-serif;
+      --pg-ivory:   var(--premium-bg);
+      --pg-parch:   #f3f0ea;
+      --pg-sand:    #e8e2d8;
+      --pg-rule:    rgba(15, 23, 36, 0.1);
+      --pg-forest:  #1e3a2f;
+      --pg-forest2: #2c5040;
+      --pg-gold:    var(--premium-accent);
+      --pg-ink:     var(--premium-text);
+      --pg-muted:   var(--premium-muted);
+      --pg-warm:    #8a9099;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Jost', 'Segoe UI', system-ui, sans-serif;
+      font-family: var(--premium-font-body);
       font-size: 16.5px;
-      background: var(--pg-ivory);
-      color: var(--pg-ink);
+      background: var(--premium-bg);
+      color: var(--premium-text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -63,7 +75,7 @@
       color: #fff;
     }
     header h1 {
-      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-family: var(--premium-font-display);
       font-size: 2rem;
       font-weight: 400;
       color: var(--pg-ivory);
@@ -218,15 +230,15 @@
 
     /* ── EVENT CARD ────────────────────────────────── */
     .card {
-      background: #FFFFFF;
-      border-radius: 10px;
+      background: var(--premium-surface);
+      border-radius: var(--premium-radius-md);
       border: 1px solid var(--pg-rule);
       overflow: hidden;
       position: relative;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 4px 18px rgba(30,58,47,.10), 0 1px 4px rgba(30,58,47,.07);
-      transition: transform .22s ease, box-shadow .22s ease, background .22s;
+      box-shadow: var(--premium-card-elevation);
+      transition: transform 0.28s var(--premium-ease), box-shadow 0.28s var(--premium-ease), background 0.22s;
     }
     .card::after {
       content: '';
@@ -240,9 +252,9 @@
       z-index: 1;
     }
     .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 16px 48px rgba(30,58,47,.16), 0 6px 16px rgba(30,58,47,.10);
-      background: #FFFDF9;
+      transform: translateY(-6px);
+      box-shadow: 0 18px 36px rgba(16, 24, 40, 0.12);
+      background: #fffefb;
     }
     .card:hover::after { transform: scaleX(1); }
 
@@ -266,8 +278,8 @@
     }
 
     .card-title {
-      font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: 1.2rem;
+      font-family: var(--premium-font-display);
+      font-size: 1.28rem;
       font-weight: 500;
       margin-bottom: 8px;
       color: var(--pg-forest);
@@ -317,11 +329,11 @@
     .card-link {
       display: block;
       margin-top: auto;
-      padding: 11px;
+      padding: 11px 14px;
       text-align: center;
-      background: var(--pg-forest);
-      border-radius: 3px;
-      color: var(--pg-gold);
+      background: linear-gradient(180deg, var(--premium-accent), var(--premium-accent-deep));
+      border-radius: 999px;
+      color: #1a1408;
       text-decoration: none;
       font-family: 'Jost', system-ui, sans-serif;
       font-size: .73rem;
@@ -330,7 +342,7 @@
       text-transform: uppercase;
       transition: background .2s;
     }
-    .card-link:hover { background: var(--pg-forest2); }
+    .card-link:hover { filter: brightness(1.05); }
 
     .empty {
       grid-column: 1/-1;
@@ -461,10 +473,10 @@
     }
 
     mark.chat-highlight {
-      background: rgba(200, 169, 110, 0.42);
+      background: var(--premium-accent-soft);
       color: inherit;
-      padding: 0 2px;
-      border-radius: 3px;
+      padding: 0.05rem 0.18rem;
+      border-radius: 4px;
       font-weight: 600;
     }
 
@@ -3519,7 +3531,7 @@
       background: var(--pg-gold);
     }
     .hero-banner-title {
-      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-family: var(--premium-font-display);
       font-size: clamp(3rem, 5.5vw, 5.2rem);
       font-weight: 300;
       color: var(--pg-ivory);
@@ -3635,10 +3647,10 @@
       background: var(--pg-gold);
     }
     .grid-sec-title {
-      font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: 1.9rem;
-      font-weight: 400;
-      color: var(--pg-forest);
+      font-family: var(--premium-font-display);
+      font-size: clamp(1.6rem, 3vw, 2rem);
+      font-weight: 500;
+      color: var(--premium-text);
       line-height: 1.1;
     }
     .grid-sec-title em { font-style: italic; }
@@ -4347,6 +4359,7 @@
     }
   </style>
   <link rel="stylesheet" href="/eventra-ticket-theme.css" />
+  <link rel="stylesheet" href="/premium-ui.css" />
 </head>
 <body class="theme-eventra">
 
