@@ -32,3 +32,12 @@ The hero badge and list listen to these events (and `storage` for other tabs).
 Hero submit does **not** open the drawer. It calls `/api/chat`, filters the main `#grid`, scrolls to `#events-section` (with sticky header offset), highlights matched terms, and announces via `#events-announcer` (`role="status"`, `aria-live="polite"`).
 
 No backend or trip-planner APIs were changed for this flow.
+
+## GoLive Asia images
+
+| File | Role |
+|------|------|
+| `data/goliveasia-image-map.json` | Event id → fresh HTTPS image URL (from last successful scrape) |
+| `GET /api/golive-image/:id` | Streams the image using the map, then live API |
+
+Re-run when images break (URLs expire ~10h): `npm run scrape:goliveasia`
