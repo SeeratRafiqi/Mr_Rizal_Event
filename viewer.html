@@ -398,6 +398,12 @@
     }
     .events-chat-banner-clear:hover { border-color: var(--pg-gold); background: var(--pg-parch); }
 
+    .empty--chat .empty--chat-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.25rem;
+      color: var(--pg-forest);
+      margin: 0 0 8px;
+    }
     .empty--chat .empty--chat-sub {
       font-family: 'Jost', system-ui, sans-serif;
       font-size: 0.95rem;
@@ -448,22 +454,269 @@
       100% { background-position: -100% 0; }
     }
 
-    .hero-ai-conversation .hero-chat-turn {
-      margin-top: 12px;
+    :root {
+      --hero-chat-text: #f5fbff;
+      --hero-chat-text-muted: rgba(245, 251, 255, 0.9);
+      --hero-chat-panel-bg: rgba(6, 18, 14, 0.78);
+    }
+
+    mark.chat-highlight {
+      background: rgba(200, 169, 110, 0.42);
+      color: inherit;
+      padding: 0 2px;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+
+    .ai-command-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 2px 4px 0;
+    }
+    .ai-command-head .command-question {
+      flex: 1;
+      min-width: 0;
+      padding: 7px 8px 11px 8px;
+    }
+
+    .hero-history-btn {
+      position: relative;
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      margin-top: 4px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 220, 235, 0.14);
+      color: #f5fbff;
+      cursor: pointer;
+      display: inline-grid;
+      place-items: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .hero-history-btn:hover {
+      transform: translateY(-2px);
+      border-color: rgba(200, 169, 110, 0.55);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+    }
+    .hero-history-btn:focus-visible {
+      outline: 2px solid var(--pg-gold);
+      outline-offset: 2px;
+    }
+    .hero-history-btn-icon {
+      font-size: 1.05rem;
+      line-height: 1;
+      opacity: 0.95;
+    }
+    .hero-history-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: var(--pg-gold);
+      color: #1a2e26;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.62rem;
+      font-weight: 700;
+      display: inline-grid;
+      place-items: center;
+      line-height: 1;
+    }
+
+    .hero-history-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1200;
+      display: flex;
+      justify-content: flex-end;
+      pointer-events: none;
+    }
+    .hero-history-overlay.is-open {
+      pointer-events: auto;
+    }
+    .hero-history-overlay[hidden] {
+      display: none !important;
+    }
+    .hero-history-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 14, 12, 0.42);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .hero-history-overlay.is-open .hero-history-backdrop {
+      opacity: 1;
+    }
+    .hero-history-panel {
+      position: relative;
+      width: min(360px, 100vw);
+      max-width: 100%;
+      height: 100%;
+      background: var(--pg-ivory);
+      border-left: 1px solid var(--pg-rule);
+      box-shadow: -12px 0 40px rgba(12, 21, 16, 0.18);
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.28s ease;
+    }
+    .hero-history-overlay.is-open .hero-history-panel {
+      transform: translateX(0);
+    }
+    .hero-history-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--pg-rule);
+    }
+    .hero-history-panel-head h3 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.35rem;
+      font-weight: 500;
+      color: var(--pg-forest);
+      margin: 0;
+    }
+    .hero-history-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--pg-rule);
+      background: #fff;
+      color: var(--pg-forest);
+      cursor: pointer;
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+    .hero-history-close:focus-visible {
+      outline: 2px solid var(--pg-gold);
+      outline-offset: 2px;
+    }
+    .hero-history-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 14px 20px;
+    }
+    .hero-history-item {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--pg-rule);
+      border-radius: 10px;
+      background: #fff;
       padding: 12px 14px;
-      border-radius: 8px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      color: var(--pg-ink);
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .hero-history-item:hover {
+      border-color: var(--pg-gold);
+      background: var(--pg-parch);
+    }
+    .hero-history-item:focus-visible {
+      outline: 2px solid var(--pg-gold);
+      outline-offset: 2px;
+    }
+    .hero-history-item-meta {
+      display: block;
+      margin-top: 6px;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--pg-muted);
+    }
+    .hero-history-empty {
+      padding: 24px 8px;
+      text-align: center;
+      color: var(--pg-muted);
       font-family: 'Jost', system-ui, sans-serif;
       font-size: 0.9rem;
       line-height: 1.55;
     }
+    .hero-history-foot {
+      padding: 12px 14px 18px;
+      border-top: 1px solid var(--pg-rule);
+    }
+    .hero-history-clear {
+      width: 100%;
+      min-height: 44px;
+      border-radius: 999px;
+      border: 1px solid var(--pg-rule);
+      background: transparent;
+      color: var(--pg-forest);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .hero-history-clear:hover {
+      border-color: #c45c5c;
+      color: #9a3b3b;
+      background: rgba(196, 92, 92, 0.06);
+    }
+
+    .hero-ai-conversation {
+      margin-top: 10px;
+      padding: 10px 12px 12px;
+      border-radius: 10px;
+      background: var(--hero-chat-panel-bg);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .hero-ai-conversation .hero-chat-turn {
+      margin-top: 10px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.92rem;
+      line-height: 1.55;
+      color: var(--hero-chat-text);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+    }
+    .hero-ai-conversation .hero-chat-turn:first-child {
+      margin-top: 0;
+    }
     .hero-ai-conversation .hero-chat-turn--user {
-      background: rgba(30, 58, 47, 0.08);
-      color: var(--pg-ink);
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--hero-chat-text);
     }
     .hero-ai-conversation .hero-chat-turn--bot {
-      background: rgba(200, 169, 110, 0.12);
-      border: 1px solid rgba(200, 169, 110, 0.25);
-      color: var(--pg-forest);
+      background: rgba(200, 169, 110, 0.22);
+      border: 1px solid rgba(200, 169, 110, 0.38);
+      color: var(--hero-chat-text-muted);
+    }
+
+    @media (max-width: 720px) {
+      .hero-history-overlay.is-open {
+        justify-content: stretch;
+      }
+      .hero-history-panel {
+        width: 100%;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-history-btn,
+      .hero-history-panel,
+      .hero-history-backdrop {
+        transition: none;
+      }
+      .hero-history-btn:hover {
+        transform: none;
+      }
     }
     .no-img {
       width: 100%;
@@ -4082,6 +4335,8 @@
     }
     .card-enter.card-visible { opacity: 1; transform: translateY(0); }
 
+    body.hero-history-open { overflow: hidden; }
+
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
       .card-enter { transition: none; opacity: 1; transform: none; }
@@ -4115,7 +4370,13 @@
       <h2 class="hero-banner-title">What's on<br /><em>in Malaysia</em></h2>
       <p class="hero-banner-sub">Every event worth attending — music, culture, food, sports and more — scraped fresh from across the web and delivered here.</p>
       <div class="ai-command">
-        <div class="command-question">What kind of event experience are you looking for in Malaysia?</div>
+        <div class="ai-command-head">
+          <div class="command-question">What kind of event experience are you looking for in Malaysia?</div>
+          <button type="button" class="hero-history-btn" id="hero-history-btn" aria-label="Open search history" aria-haspopup="dialog" aria-expanded="false" aria-controls="hero-history-panel">
+            <span class="hero-history-btn-icon" aria-hidden="true">◷</span>
+            <span class="hero-history-badge" id="hero-history-badge" hidden>0</span>
+          </button>
+        </div>
         <div class="ai-command-inner">
           <input id="hero-ai-input" type="search" placeholder="I'm coming from Singapore and want a K-pop concert in KL" autocomplete="off" />
           <button class="primary" id="hero-ai-btn" type="button">Ask Eventra</button>
@@ -4223,7 +4484,7 @@
 
 <div class="stats" id="stats" style="display:none;">Loading events...</div>
 
-<div id="events-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+<div id="events-announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <!-- GRID SECTION HEAD -->
 <div class="grid-section-head" id="events-section" tabindex="-1">
@@ -4245,6 +4506,21 @@
   </div>
 </div>
 
+</div>
+
+
+<div id="hero-history-overlay" class="hero-history-overlay" hidden>
+  <div class="hero-history-backdrop" id="hero-history-backdrop" aria-hidden="true"></div>
+  <aside id="hero-history-panel" class="hero-history-panel" role="dialog" aria-modal="true" aria-labelledby="hero-history-title" tabindex="-1">
+    <div class="hero-history-panel-head">
+      <h3 id="hero-history-title">Past searches</h3>
+      <button type="button" class="hero-history-close" id="hero-history-close" aria-label="Close history">×</button>
+    </div>
+    <div class="hero-history-list" id="hero-history-list" role="list"></div>
+    <div class="hero-history-foot">
+      <button type="button" class="hero-history-clear" id="hero-history-clear">Clear history</button>
+    </div>
+  </aside>
 </div>
 
 <div id="ai-overlay" class="ai-overlay" aria-hidden="true">
@@ -4821,6 +5097,259 @@
     }, 50);
   }
 
+  const AI_CONVERSATIONS_STORAGE_KEY = 'ticket_scraper_ai_conversations_v2';
+
+  function getFixedHeaderOffset() {
+    const header = document.querySelector('header');
+    return header ? header.offsetHeight : 0;
+  }
+
+  function formatResultsAnnouncement(count, query) {
+    const q = String(query || '').trim();
+    const label = q ? " for '" + q + "'" : '';
+    if (!count) return 'No results' + label + '.';
+    return 'Showing ' + count + ' result' + (count !== 1 ? 's' : '') + label + '.';
+  }
+
+  function clearChatHighlights() {
+    document.querySelectorAll('#grid mark.chat-highlight').forEach(function (m) {
+      m.replaceWith(document.createTextNode(m.textContent));
+    });
+  }
+
+  function highlightTextNode(textNode, re) {
+    const text = textNode.textContent;
+    const reCopy = new RegExp(re.source, re.flags);
+    if (!reCopy.test(text)) return;
+    reCopy.lastIndex = 0;
+    const frag = document.createDocumentFragment();
+    let last = 0;
+    let m;
+    while ((m = reCopy.exec(text)) !== null) {
+      if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+      const mark = document.createElement('mark');
+      mark.className = 'chat-highlight';
+      mark.textContent = m[0];
+      frag.appendChild(mark);
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    textNode.parentNode.replaceChild(frag, textNode);
+  }
+
+  function highlightElementText(el, re) {
+    if (!el) return;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(function (tn) {
+      highlightTextNode(tn, re);
+    });
+  }
+
+  function buildHighlightRegex(query) {
+    const q = String(query || '').trim();
+    if (!q) return null;
+    const words = q.split(/\s+/).filter(function (w) {
+      return w.length >= 2;
+    });
+    const parts = (words.length ? words : [q]).map(function (w) {
+      return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    });
+    if (!parts.length) return null;
+    return new RegExp('(' + parts.join('|') + ')', 'ig');
+  }
+
+  function applyChatHighlightsToGrid(query) {
+    clearChatHighlights();
+    const re = buildHighlightRegex(query);
+    if (!re) return;
+    document
+      .querySelectorAll('#grid .card .card-title, #grid .card .card-meta, #grid .card .card-summary')
+      .forEach(function (el) {
+        highlightElementText(el, re);
+      });
+  }
+
+  function collectQueryHistoryFromStorage() {
+    const items = [];
+    try {
+      const raw = window.localStorage.getItem(AI_CONVERSATIONS_STORAGE_KEY);
+      if (!raw) return items;
+      const convs = JSON.parse(raw);
+      if (!Array.isArray(convs)) return items;
+      convs.forEach(function (c) {
+        const at = c.updatedAt || c.createdAt || '';
+        (c.messages || []).forEach(function (m) {
+          if (m && m.role === 'user' && m.content) {
+            const text = String(m.content).trim();
+            if (text) items.push({ text: text, at: at });
+          }
+        });
+        (c.rounds || []).forEach(function (r) {
+          if (r && r.userMessage) {
+            const text = String(r.userMessage).trim();
+            if (text) items.push({ text: text, at: at });
+          }
+        });
+      });
+    } catch (_) {}
+    const seen = new Map();
+    items.forEach(function (it) {
+      const key = it.text.toLowerCase();
+      const prev = seen.get(key);
+      if (!prev || String(it.at) > String(prev.at)) seen.set(key, it);
+    });
+    return Array.from(seen.values())
+      .sort(function (a, b) {
+        return String(b.at).localeCompare(String(a.at));
+      })
+      .slice(0, 40);
+  }
+
+  function initHeroChatHistory(onSelectQuery) {
+    const btn = document.getElementById('hero-history-btn');
+    const overlay = document.getElementById('hero-history-overlay');
+    const panel = document.getElementById('hero-history-panel');
+    const list = document.getElementById('hero-history-list');
+    const badge = document.getElementById('hero-history-badge');
+    const closeBtn = document.getElementById('hero-history-close');
+    const backdrop = document.getElementById('hero-history-backdrop');
+    const clearBtn = document.getElementById('hero-history-clear');
+    if (!btn || !overlay || !panel || !list) return;
+
+    let lastFocus = null;
+    let trapHandler = null;
+    let historyEntries = [];
+
+    function renderBadgeAndList() {
+      const entries = collectQueryHistoryFromStorage();
+      historyEntries = entries;
+      if (badge) {
+        if (entries.length) {
+          badge.hidden = false;
+          badge.removeAttribute('hidden');
+          badge.textContent = entries.length > 9 ? '9+' : String(entries.length);
+        } else {
+          badge.hidden = true;
+          badge.setAttribute('hidden', '');
+        }
+      }
+      if (!entries.length) {
+        list.innerHTML =
+          '<p class="hero-history-empty">No past searches yet.<br/>Ask Eventra a question and it will appear here.</p>';
+        return;
+      }
+      list.innerHTML = entries
+        .map(function (entry, idx) {
+          const dt = entry.at ? new Date(entry.at) : null;
+          const when =
+            dt && !Number.isNaN(dt.getTime())
+              ? dt.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+              : '';
+          return (
+            '<button type="button" class="hero-history-item" role="listitem" data-hero-query-idx="' +
+            idx +
+            '">' +
+            escapeHtml(entry.text.length > 120 ? entry.text.slice(0, 120) + '…' : entry.text) +
+            (when ? '<span class="hero-history-item-meta">' + escapeHtml(when) + '</span>' : '') +
+            '</button>'
+          );
+        })
+        .join('');
+    }
+
+    function closePanel() {
+      overlay.classList.remove('is-open');
+      overlay.setAttribute('hidden', '');
+      overlay.setAttribute('aria-hidden', 'true');
+      btn.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('hero-history-open');
+      if (trapHandler) {
+        panel.removeEventListener('keydown', trapHandler);
+        trapHandler = null;
+      }
+      if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+      lastFocus = null;
+    }
+
+    function openPanel() {
+      renderBadgeAndList();
+      lastFocus = document.activeElement;
+      overlay.removeAttribute('hidden');
+      overlay.setAttribute('aria-hidden', 'false');
+      overlay.classList.add('is-open');
+      btn.setAttribute('aria-expanded', 'true');
+      document.body.classList.add('hero-history-open');
+      const first = panel.querySelector('button');
+      if (first) first.focus();
+      trapHandler = function (e) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          closePanel();
+          return;
+        }
+        if (e.key !== 'Tab') return;
+        const focusables = panel.querySelectorAll(
+          'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        if (!focusables.length) return;
+        const firstEl = focusables[0];
+        const lastEl = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === firstEl) {
+          e.preventDefault();
+          lastEl.focus();
+        } else if (!e.shiftKey && document.activeElement === lastEl) {
+          e.preventDefault();
+          firstEl.focus();
+        }
+      };
+      panel.addEventListener('keydown', trapHandler);
+    }
+
+    btn.addEventListener('click', function () {
+      if (overlay.classList.contains('is-open')) closePanel();
+      else openPanel();
+    });
+    if (closeBtn) closeBtn.addEventListener('click', closePanel);
+    if (backdrop) backdrop.addEventListener('click', closePanel);
+
+    list.addEventListener('click', function (e) {
+      const item = e.target.closest('[data-hero-query-idx]');
+      if (!item) return;
+      const idx = Number(item.getAttribute('data-hero-query-idx'));
+      const q = historyEntries[idx] && historyEntries[idx].text;
+      closePanel();
+      if (q && typeof onSelectQuery === 'function') onSelectQuery(q);
+    });
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function () {
+        if (
+          !window.confirm(
+            'Clear all chat history? This removes past searches from the hero panel and the assistant drawer.',
+          )
+        )
+          return;
+        try {
+          window.localStorage.removeItem(AI_CONVERSATIONS_STORAGE_KEY);
+        } catch (_) {}
+        window.dispatchEvent(new CustomEvent('ticket-scraper:conversations-cleared'));
+        renderBadgeAndList();
+        closePanel();
+      });
+    }
+
+    window.addEventListener('storage', function (e) {
+      if (e.key === AI_CONVERSATIONS_STORAGE_KEY) renderBadgeAndList();
+    });
+    window.addEventListener('ticket-scraper:conversations-updated', renderBadgeAndList);
+    window.addEventListener('ticket-scraper:conversations-cleared', renderBadgeAndList);
+
+    renderBadgeAndList();
+  }
+
   function enrichChatEvent(e) {
     if (!e || typeof e !== 'object') return e;
     const id = e.id != null ? String(e.id) : '';
@@ -4905,6 +5434,7 @@
     chatResultsMode = false;
     chatResultsPool = [];
     lastChatQuery = '';
+    clearChatHighlights();
     const banner = document.getElementById('events-chat-banner');
     if (banner) {
       banner.hidden = true;
@@ -4925,7 +5455,7 @@
     const q = String(userMessage || '').trim();
     grid.innerHTML =
       '<div class="empty empty--chat" role="status">' +
-      '<p>No events match your search.</p>' +
+      '<p class="empty--chat-title">' + escapeHtml(formatResultsAnnouncement(0, userMessage)) + '</p>' +
       '<p class="empty--chat-sub">Try different dates, a broader location, or another keyword.</p>' +
       (q ? '<p class="empty--chat-query">Your question: “' + escapeHtml(q) + '”</p>' : '') +
       '</div>';
@@ -4941,14 +5471,19 @@
 
   function scrollToEventsSection(focusFirst) {
     const section = document.getElementById('events-section');
-    const behavior = prefersReducedMotion() ? 'auto' : 'smooth';
-    if (section && section.scrollIntoView) {
-      section.scrollIntoView({ behavior: behavior, block: 'start' });
-    }
+    if (!section) return;
+    const offset = getFixedHeaderOffset() + 12;
+    const top = section.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({
+      top: Math.max(0, top),
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    });
     if (!focusFirst) return;
     window.setTimeout(function () {
       const grid = document.getElementById('grid');
-      const first = grid && grid.querySelector('.card[data-ev-idx]');
+      const first =
+        (grid && grid.querySelector('.card[data-ev-idx] a.card-link')) ||
+        (grid && grid.querySelector('.card[data-ev-idx]'));
       if (first && typeof first.focus === 'function') first.focus();
     }, prefersReducedMotion() ? 80 : 420);
   }
@@ -4961,7 +5496,7 @@
     setChatResultsBanner(lastChatQuery, enriched.length);
     if (!enriched.length) {
       renderChatNoResults(lastChatQuery);
-      announceEvents('No events match your search. Try different dates or keywords.');
+      announceEvents(formatResultsAnnouncement(0, lastChatQuery) + ' Try different dates or keywords.');
       scrollToEventsSection(false);
       return;
     }
@@ -4976,12 +5511,7 @@
         (enriched.length !== 1 ? 'es' : '') +
         ' from your assistant search';
     }
-    announceEvents(
-      enriched.length +
-        ' event' +
-        (enriched.length !== 1 ? 's' : '') +
-        ' match your search. Results are listed below.',
-    );
+    announceEvents(formatResultsAnnouncement(enriched.length, lastChatQuery));
     scrollToEventsSection(true);
   }
 
@@ -5209,6 +5739,7 @@
       grid.appendChild(note);
     }
     setupCardAnimations();
+    if (chatResultsMode && lastChatQuery) applyChatHighlightsToGrid(lastChatQuery);
   }
 
   function escapeHtml(str) {
@@ -5257,7 +5788,7 @@
     const heroAiStatusEl = document.getElementById('hero-ai-status');
     let lastLaunchFromHero = false;
 
-    const AI_CONVERSATIONS_KEY = 'ticket_scraper_ai_conversations_v2';
+    const AI_CONVERSATIONS_KEY = AI_CONVERSATIONS_STORAGE_KEY;
     const historyBtn = document.getElementById('ai-history-btn');
     const newChatBtn = document.getElementById('ai-new-chat-btn');
     const historyPanel = document.getElementById('ai-history-panel');
@@ -5311,6 +5842,7 @@
     function persistConversations() {
       try {
         window.localStorage.setItem(AI_CONVERSATIONS_KEY, JSON.stringify(conversations.slice(0, 24)));
+        window.dispatchEvent(new CustomEvent('ticket-scraper:conversations-updated'));
       } catch (_) {}
     }
 
@@ -5710,6 +6242,28 @@
       });
     }
 
+    window.addEventListener('ticket-scraper:conversations-cleared', function () {
+      conversations = [];
+      activeConversation = {
+        id: Date.now(),
+        title: 'New chat',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messages: [],
+        rounds: [],
+      };
+      chatHistory.length = 0;
+      eventRounds = [];
+      logEl.innerHTML = '';
+      errEl.textContent = '';
+      clearEventsZone();
+      renderHistory();
+    });
+
+    initHeroChatHistory(function (query) {
+      if (heroAiInputEl) heroAiInputEl.value = query;
+      launchAssistantFromHero();
+    });
   }
 
   initAiAssistant();
