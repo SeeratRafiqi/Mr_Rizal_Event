@@ -5079,6 +5079,7 @@
   let chatResultsMode = false;
   let chatResultsPool = [];
   let lastChatQuery = '';
+  let heroChatHistory = [];
 
   function prefersReducedMotion() {
     try {
@@ -5181,16 +5182,22 @@
       if (!Array.isArray(convs)) return items;
       convs.forEach(function (c) {
         const at = c.updatedAt || c.createdAt || '';
-        (c.messages || []).forEach(function (m) {
-          if (m && m.role === 'user' && m.content) {
-            const text = String(m.content).trim();
-            if (text) items.push({ text: text, at: at });
-          }
-        });
         (c.rounds || []).forEach(function (r) {
           if (r && r.userMessage) {
             const text = String(r.userMessage).trim();
-            if (text) items.push({ text: text, at: at });
+            if (text) {
+              items.push({
+                text: text,
+                at: at,
+                events: Array.isArray(r.events) ? r.events.slice() : [],
+              });
+            }
+          }
+        });
+        (c.messages || []).forEach(function (m) {
+          if (m && m.role === 'user' && m.content) {
+            const text = String(m.content).trim();
+            if (text) items.push({ text: text, at: at, events: [] });
           }
         });
       });
@@ -5199,7 +5206,16 @@
     items.forEach(function (it) {
       const key = it.text.toLowerCase();
       const prev = seen.get(key);
-      if (!prev || String(it.at) > String(prev.at)) seen.set(key, it);
+      if (!prev) {
+        seen.set(key, it);
+        return;
+      }
+      const prevEv = (prev.events && prev.events.length) || 0;
+      const nextEv = (it.events && it.events.length) || 0;
+      const prefer =
+        nextEv > prevEv ||
+        (nextEv === prevEv && String(it.at) > String(prev.at));
+      if (prefer) seen.set(key, it);
     });
     return Array.from(seen.values())
       .sort(function (a, b) {
@@ -5253,7 +5269,14 @@
             idx +
             '">' +
             escapeHtml(entry.text.length > 120 ? entry.text.slice(0, 120) + '…' : entry.text) +
-            (when ? '<span class="hero-history-item-meta">' + escapeHtml(when) + '</span>' : '') +
+            (when || (entry.events && entry.events.length)
+              ? '<span class="hero-history-item-meta">' +
+                (entry.events && entry.events.length
+                  ? entry.events.length + ' event' + (entry.events.length !== 1 ? 's' : '') + ' · '
+                  : '') +
+                (when ? escapeHtml(when) : '') +
+                '</span>'
+              : '') +
             '</button>'
           );
         })
@@ -5319,9 +5342,9 @@
       const item = e.target.closest('[data-hero-query-idx]');
       if (!item) return;
       const idx = Number(item.getAttribute('data-hero-query-idx'));
-      const q = historyEntries[idx] && historyEntries[idx].text;
+      const entry = historyEntries[idx];
       closePanel();
-      if (q && typeof onSelectQuery === 'function') onSelectQuery(q);
+      if (entry && typeof onSelectQuery === 'function') onSelectQuery(entry.text, entry);
     });
 
     if (clearBtn) {
@@ -6090,9 +6113,12 @@
       if (fromHero && heroAiBtnEl) {
         heroAiBtnEl.disabled = true;
         heroAiBtnEl.textContent = 'Thinking...';
+        chatResultsMode = false;
+        chatResultsPool = [];
+        clearChatHighlights();
         showGridChatLoading();
       }
-      const historyPrior = chatHistory.map(function (h) {
+      const historyPrior = (fromHero ? heroChatHistory : chatHistory).map(function (h) {
         return { role: h.role, content: h.content };
       });
       if (!fromHero) append('user', message);
@@ -6147,6 +6173,9 @@
             return { id: r.id, userMessage: r.userMessage, events: r.events };
           });
           if (fromHero) {
+            heroChatHistory.push({ role: 'user', content: message });
+            heroChatHistory.push({ role: 'assistant', content: botText });
+            while (heroChatHistory.length > 24) heroChatHistory.shift();
             applyChatEventsToGrid(apiEvents, message);
             if (apiEvents.length) {
               setHeroBannerStatus(
@@ -6208,6 +6237,33 @@
       heroAiStatusEl.className = ('hero-ai-status ' + (tone || '')).trim();
     }
 
+    function applyHeroHistoryEntry(query, events) {
+      const q = String(query || '').trim();
+      if (!q) return;
+      setHeroBannerStatus('Restoring results for your past search…', 'thinking');
+      chatResultsMode = false;
+      chatResultsPool = [];
+      clearChatHighlights();
+      showGridChatLoading();
+      window.setTimeout(
+        function () {
+          applyChatEventsToGrid(events, q);
+          if (events.length) {
+            setHeroBannerStatus(
+              events.length +
+                ' event' +
+                (events.length !== 1 ? 's' : '') +
+                ' from this past search.',
+              'success',
+            );
+          } else {
+            setHeroBannerStatus('No saved events for this search — try asking again.', 'warning');
+          }
+        },
+        prefersReducedMotion() ? 0 : 100,
+      );
+    }
+
     function launchAssistantFromHero() {
       if (sendBtn.disabled) return;
       var q = (heroAiInputEl && heroAiInputEl.value || '').trim();
@@ -6253,6 +6309,7 @@
         rounds: [],
       };
       chatHistory.length = 0;
+      heroChatHistory.length = 0;
       eventRounds = [];
       logEl.innerHTML = '';
       errEl.textContent = '';
@@ -6260,7 +6317,13 @@
       renderHistory();
     });
 
-    initHeroChatHistory(function (query) {
+    initHeroChatHistory(function (query, entry) {
+      if (entry && entry.events && entry.events.length) {
+        if (heroAiInputEl) heroAiInputEl.value = '';
+        applyHeroHistoryEntry(query, entry.events);
+        return;
+      }
+      heroChatHistory.length = 0;
       if (heroAiInputEl) heroAiInputEl.value = query;
       launchAssistantFromHero();
     });

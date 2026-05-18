@@ -15,6 +15,8 @@ Both UIs read and write this key. Clearing history from the hero **Past searches
 - **Button:** circular **◷** control in the chat card header (`#hero-history-btn`)
 - **Panel:** `#hero-history-overlay` (slide-over; full width on small screens)
 - **Entries:** deduplicated user messages from all stored conversations, newest first (max 40)
+- **Events per entry:** each item prefers the `rounds[].events` snapshot saved for that query. Tapping a row restores **that search’s grid results** (not the latest search).
+- If no events were saved for a query, a fresh `/api/chat` call runs with an empty hero context (`heroChatHistory` only — not the full drawer thread).
 
 ## Events
 
