@@ -1,6 +1,7 @@
 'use strict';
 
 const axios = require('axios');
+const { getSessionUserId } = require('./auth-routes');
 
 /** Wikimedia blocks requests without a descriptive User-Agent (often 403). */
 const WIKI_HTTP_HEADERS = {
@@ -854,7 +855,58 @@ Rules:
 - First trip date is arrival: prefer hotel check-in and one welcome dinner in evening; avoid packing morning/afternoon with tours.
 - Last trip date is departure: keep only light morning items (breakfast, short nearby stop); avoid afternoon/evening adventures.
 - Warnings array: use objects {"type":"overlap","severity":"info","message":"..."} when needed; can be empty.
-- If an ACCENT paragraph is given in the user message, bias the route mix toward it while still respecting geography, pacing, arrival/departure rules, and the main event date.`;
+- If an ACCENT paragraph is given in the user message, bias the route mix toward it while still respecting geography, pacing, arrival/departure rules, and the main event date.
+- If a TRAVELLER PROFILE or SELECTED OUTBOUND FLIGHT / SELECTED PREFERRED HOTEL block appears in the user message, follow budget tier for realistic MYR costs, meal tiers, and hotel suggestions; use flight timing only as soft context for first-day energy (do not invent flight numbers).`;
+
+function profileQuestionnaireBlock(profile, selectedFlight, selectedHotel) {
+  const p = profile && typeof profile === 'object' ? profile : {};
+  const lvlRaw = Number(p.budgetLevel);
+  const lvl = Number.isFinite(lvlRaw) ? Math.min(4, Math.max(1, Math.round(lvlRaw))) : 2;
+  const budgetGuide = {
+    1: 'Tier 1 — keep suggestions cheap: street food, hawker centres, hostels/budget stays, public transport, many free walks and parks. Quote modest MYR.',
+    2: 'Tier 2 — balanced spend: mix local cafes and mid restaurants, 3-star style hotels, Grab/taxis sometimes, paid tickets where worth it.',
+    3: 'Tier 3 — comfortable: nicer restaurants, 4-star style stays, more paid attractions, occasional splurge meal.',
+    4: 'Tier 4 — luxury-leaning: fine dining options, 5-star class stays where realistic, private transfers when sensible, exclusive experiences.',
+  };
+  const lines = [
+    'TRAVELLER PROFILE (saved questionnaire — follow closely):',
+    `- Home airport IATA: ${String(p.homeIata || '').trim() || 'unknown'}`,
+    `- Based near: ${String(p.locationCity || '').trim() || '—'}, ${String(p.locationCountry || '').trim() || '—'}`,
+    `- Event genres they like: ${JSON.stringify(Array.isArray(p.genres) ? p.genres : [])}`,
+    `- Trip interests: ${JSON.stringify(Array.isArray(p.activityInterests) ? p.activityInterests : [])}`,
+    `- Adventure style (activity boldness, not money): ${String(p.adventureLevel || 'medium')}`,
+    `- Trip pace: ${String(p.pacePreference || 'balanced')}`,
+    `- Spending tier (1–4, separate from adventure): ${lvl} — ${budgetGuide[lvl]}`,
+    `- Preferred language: ${String(p.language || '').trim() || 'not specified'}`,
+    `- Extra notes: ${String(p.notes || '').trim() || '(none)'}`,
+    '',
+    'INTEREST-SPECIFIC HINTS:',
+    '- If they like Food: name specific dishes where possible.',
+    '- Nature: parks, trails, beaches, gardens.',
+    '- Culture / History: museums, heritage walks, craft quarters.',
+    '- Shopping: markets, boutiques, malls.',
+    '- Adventure: active/outdoor blocks with realistic recovery time.',
+    '- Religious sites: only where appropriate to destination; be respectful.',
+    '',
+    'PACE HINTS:',
+    '- slow: max 2–3 meaningful stops per day, longer dwell time, rest breaks.',
+    '- balanced: 3–4 stops typical.',
+    '- packed: denser days but still respect first/last day arrival rules.',
+  ];
+  if (selectedFlight && typeof selectedFlight === 'object' && Object.keys(selectedFlight).length) {
+    lines.push('');
+    lines.push('SELECTED OUTBOUND FLIGHT (use times as soft context for Day 1 energy; never invent new flight numbers):');
+    lines.push(JSON.stringify(selectedFlight));
+  }
+  if (selectedHotel && typeof selectedHotel === 'object' && String(selectedHotel.name || '').trim()) {
+    lines.push('');
+    lines.push(
+      'SELECTED PREFERRED HOTEL (traveller chose this listing — use as primary stay anchor for check-in rhythm and area; still diversify daily stops; do not rename or substitute a different property):',
+    );
+    lines.push(JSON.stringify(selectedHotel));
+  }
+  return lines.join('\n');
+}
 
 function buildUserPrompt({
   city,
@@ -867,6 +919,7 @@ function buildUserPrompt({
   contextEventsNational,
   prefs,
   variantAccent,
+  profileBlock = '',
 }) {
   const nationalSlice = Array.isArray(contextEventsNational) ? contextEventsNational.slice(0, 28) : [];
   return [
@@ -879,7 +932,8 @@ function buildUserPrompt({
     nationalSlice.length
       ? `Other events **anywhere in Malaysia** during their trip dates (ideas for multi-state days; optional): ${JSON.stringify(nationalSlice)}`
       : '',
-    `User preferences: adventureLevel=${prefs.adventureLevel}, interests=${JSON.stringify(prefs.interests)}, travelPace=${prefs.travelPace}`,
+    `User form selections (this request): adventureLevel=${prefs.adventureLevel}, interests=${JSON.stringify(prefs.interests)}, travelPace=${prefs.travelPace}, budgetTier=${prefs.budgetLevel != null ? prefs.budgetLevel : 'n/a'}`,
+    profileBlock ? String(profileBlock) : '',
     ...(variantAccent
       ? [
           '',
@@ -1508,6 +1562,8 @@ async function regenerateSingleDay(sb, opts) {
 function registerItineraryRoutes(app, deps) {
   const getSupabase = deps && deps.getSupabase;
   const getMergedScrapedEvents = deps && deps.getMergedScrapedEvents;
+  const getSessionUserId = deps && deps.getSessionUserId;
+  const authStoreDep = deps && deps.authStore;
   if (typeof getSupabase !== 'function') {
     console.warn('[itinerary] getSupabase not passed; itinerary routes disabled');
     return;
@@ -1582,6 +1638,43 @@ function registerItineraryRoutes(app, deps) {
     const interests = Array.isArray(body.interests)
       ? body.interests.map((x) => String(x)).filter(Boolean).slice(0, 12)
       : [];
+
+    const selectedFlight =
+      body.selectedFlight && typeof body.selectedFlight === 'object' ? body.selectedFlight : null;
+    const flightOk =
+      selectedFlight &&
+      typeof selectedFlight.departure === 'object' &&
+      typeof selectedFlight.arrival === 'object';
+    if (!flightOk) {
+      return res.status(400).json({
+        error:
+          'Pick an outbound flight first — open the event card, use the Flights tab, search, then tap “Add to my itinerary”.',
+      });
+    }
+
+    const selectedHotel =
+      body.selectedHotel && typeof body.selectedHotel === 'object' ? body.selectedHotel : null;
+    const hotelOk = selectedHotel && String(selectedHotel.name || '').trim().length >= 2;
+    if (!hotelOk) {
+      return res.status(400).json({
+        error:
+          'Pick a hotel first — open the Hotels tab, search under Pick your stay, then tap “Add to my itinerary” beside a property.',
+      });
+    }
+
+    let accountProfile = null;
+    if (typeof getSessionUserId === 'function' && authStoreDep && typeof authStoreDep.findById === 'function') {
+      const uid = getSessionUserId(req);
+      if (uid) {
+        const u = await authStoreDep.findById(uid);
+        if (u && u.profile) accountProfile = { ...u.profile };
+      }
+    }
+    let budgetTier = 2;
+    if (accountProfile && Number.isFinite(Number(accountProfile.budgetLevel))) {
+      budgetTier = Math.min(4, Math.max(1, Math.round(Number(accountProfile.budgetLevel))));
+    }
+    const profileBlock = profileQuestionnaireBlock(accountProfile, selectedFlight, selectedHotel);
 
     const warnings = [];
 
@@ -1691,7 +1784,8 @@ function registerItineraryRoutes(app, deps) {
       mainEvent,
       contextEvents,
       contextEventsNational,
-      prefs: { adventureLevel, interests, travelPace },
+      prefs: { adventureLevel, interests, travelPace, budgetLevel: budgetTier },
+      profileBlock,
     };
 
     const settled = await Promise.allSettled(
@@ -1761,6 +1855,8 @@ function registerItineraryRoutes(app, deps) {
       city,
       warnings,
       variants,
+      selectedFlight,
+      selectedHotel,
       /** First variant as default suggestion for older clients — main UI ignores this. */
       guideSummary: variants[0].guideSummary,
       travelLinks: travelLinksForCity(city),
@@ -1797,6 +1893,8 @@ function registerItineraryRoutes(app, deps) {
       event: body.event || null,
       city: cityIn,
       variants: Array.isArray(body.variants) ? body.variants : [],
+      selectedFlight: body.selectedFlight && typeof body.selectedFlight === 'object' ? body.selectedFlight : null,
+      selectedHotel: body.selectedHotel && typeof body.selectedHotel === 'object' ? body.selectedHotel : null,
     };
 
     if (!payload.variants.length) {

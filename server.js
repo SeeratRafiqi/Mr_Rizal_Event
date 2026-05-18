@@ -153,8 +153,36 @@ const SUPABASE_TABLE_PAGE = Math.max(1, Number(process.env.SUPABASE_PAGE_SIZE) |
 
 app.use(express.json({ limit: '2mb' }));
 
+const { setupAuth, getSessionUserId } = require('./auth-routes');
+const authStore = require('./auth-store');
+setupAuth(app);
+
+app.get('/auth', (req, res) => {
+  res.sendFile(path.join(__dirname, 'auth.html'));
+});
+app.get('/onboarding', (req, res) => {
+  res.sendFile(path.join(__dirname, 'onboarding.html'));
+});
+app.get('/profile', (req, res) => {
+  res.sendFile(path.join(__dirname, 'profile.html'));
+});
+
+app.get('/auth-client.js', (req, res) => {
+  res.type('application/javascript');
+  res.sendFile(path.join(__dirname, 'auth-client.js'));
+});
+
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'viewer.html'));
+});
+
+app.get('/events', (req, res) => {
+  res.sendFile(path.join(__dirname, 'viewer.html'));
+});
+
+app.get('/eventra-ticket-theme.css', (req, res) => {
+  res.type('text/css');
+  res.sendFile(path.join(__dirname, 'eventra-ticket-theme.css'));
 });
 
 app.get('/flight-search.js', (req, res) => {
@@ -165,6 +193,101 @@ app.get('/flight-search.js', (req, res) => {
 app.get('/hotel-search.js', (req, res) => {
   res.type('application/javascript');
   res.sendFile(path.join(__dirname, 'hotel-search.js'));
+});
+
+app.get('/event-hub.js', (req, res) => {
+  res.type('application/javascript');
+  res.sendFile(path.join(__dirname, 'event-hub.js'));
+});
+
+app.get('/serp-flights-helpers.js', (req, res) => {
+  res.type('application/javascript');
+  res.sendFile(path.join(__dirname, 'serp-flights-helpers.js'));
+});
+
+app.get('/serp-hotels-helpers.js', (req, res) => {
+  res.type('application/javascript');
+  res.sendFile(path.join(__dirname, 'serp-hotels-helpers.js'));
+});
+
+/**
+ * SerpAPI Google Hotels — server-side proxy (same key as flights; never expose to browser).
+ * Query: q, check_in_date, check_out_date (YYYY-MM-DD), adults (1–9, default 2).
+ */
+app.get('/api/hotels', async (req, res) => {
+  const apiKey = (process.env.VITE_SERPAPI_KEY || process.env.SERPAPI_KEY || '').trim();
+  if (!apiKey) {
+    return res.status(503).json({
+      error:
+        'SerpAPI key not configured. Add VITE_SERPAPI_KEY (or SERPAPI_KEY) to .env — see .env.example.',
+      properties: [],
+    });
+  }
+  const q = String(req.query.q || '')
+    .trim()
+    .slice(0, 200);
+  const checkIn = String(req.query.check_in_date || req.query.checkIn || '')
+    .trim()
+    .slice(0, 10);
+  const checkOut = String(req.query.check_out_date || req.query.checkOut || '')
+    .trim()
+    .slice(0, 10);
+  const adults = Math.min(9, Math.max(1, parseInt(String(req.query.adults || '2'), 10) || 2));
+  if (q.length < 2) {
+    return res.status(400).json({ error: 'Destination (q) must be at least 2 characters.', properties: [] });
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(checkIn)) {
+    return res.status(400).json({ error: 'Invalid check_in_date (YYYY-MM-DD).', properties: [] });
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(checkOut)) {
+    return res.status(400).json({ error: 'Invalid check_out_date (YYYY-MM-DD).', properties: [] });
+  }
+  if (checkOut <= checkIn) {
+    return res.status(400).json({
+      error: 'check_out_date must be after check_in_date.',
+      properties: [],
+    });
+  }
+
+  const params = new URLSearchParams({
+    engine: 'google_hotels',
+    q,
+    check_in_date: checkIn,
+    check_out_date: checkOut,
+    currency: 'MYR',
+    hl: 'en',
+    gl: 'my',
+    adults: String(adults),
+    api_key: apiKey,
+  });
+
+  const url = `https://serpapi.com/search.json?${params.toString()}`;
+  try {
+    const { data } = await axios.get(url, {
+      timeout: 55000,
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'TicketScraper/1.0 (SerpAPI Google Hotels proxy)',
+      },
+    });
+    if (data && typeof data === 'object') {
+      if (data.search_parameters && typeof data.search_parameters === 'object') {
+        delete data.search_parameters.api_key;
+      }
+    }
+    if (data && data.error) {
+      return res.status(502).json(data);
+    }
+    res.set('Cache-Control', 'public, max-age=120');
+    return res.status(200).json(data);
+  } catch (err) {
+    const status = err.response?.status;
+    const body = err.response?.data;
+    const msg =
+      (body && (body.error || body.message)) || err.message || 'Failed to fetch hotels';
+    console.error('[serpapi hotels]', status || '', msg);
+    return res.status(500).json({ error: String(msg), properties: [] });
+  }
 });
 
 app.get('/chatbot', (req, res) => {
@@ -1314,9 +1437,100 @@ app.get('/api/airlabs/schedules', async (req, res) => {
 });
 
 /**
- * Nominatim reverse geocode (server-side User-Agent per OSM policy).
- * Query: lat, lng (or lon for compatibility)
+ * SerpAPI Google Flights — server-side proxy only (never expose VITE_SERPAPI_KEY to the browser).
+ * Query: from, to, date (YYYY-MM-DD), returnDate (optional), passengers (1–9), type (1=round trip, 2=one way).
  */
+app.get('/api/flights', async (req, res) => {
+  const apiKey = (process.env.VITE_SERPAPI_KEY || process.env.SERPAPI_KEY || '').trim();
+  if (!apiKey) {
+    return res.status(503).json({
+      error:
+        'SerpAPI key not configured. Add VITE_SERPAPI_KEY (or SERPAPI_KEY) to .env — see .env.example.',
+      best_flights: [],
+      other_flights: [],
+    });
+  }
+  const from = String(req.query.from || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '')
+    .slice(0, 3);
+  const to = String(req.query.to || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '')
+    .slice(0, 3);
+  const date = String(req.query.date || '').trim().slice(0, 10);
+  const returnDate = String(req.query.returnDate || req.query.return_date || '')
+    .trim()
+    .slice(0, 10);
+  const passengers = Math.min(9, Math.max(1, parseInt(String(req.query.passengers || '1'), 10) || 1));
+  let type = String(req.query.type || '2').trim();
+  if (type !== '1' && type !== '2') type = '2';
+  if (type === '1' && !returnDate) {
+    return res.status(400).json({
+      error: 'returnDate is required for round trip (type=1).',
+      best_flights: [],
+      other_flights: [],
+    });
+  }
+  if (!/^[A-Z]{3}$/.test(from) || !/^[A-Z]{3}$/.test(to) || from === to) {
+    return res.status(400).json({
+      error: 'Invalid from/to IATA codes (3 letters, different airports).',
+      best_flights: [],
+      other_flights: [],
+    });
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return res.status(400).json({ error: 'Invalid outbound date (YYYY-MM-DD).', best_flights: [], other_flights: [] });
+  }
+  if (returnDate && !/^\d{4}-\d{2}-\d{2}$/.test(returnDate)) {
+    return res.status(400).json({ error: 'Invalid return date (YYYY-MM-DD).', best_flights: [], other_flights: [] });
+  }
+
+  const params = new URLSearchParams({
+    engine: 'google_flights',
+    departure_id: from,
+    arrival_id: to,
+    outbound_date: date,
+    currency: 'MYR',
+    hl: 'en',
+    gl: 'my',
+    adults: String(passengers),
+    type,
+    api_key: apiKey,
+  });
+  if (returnDate) params.append('return_date', returnDate);
+
+  const url = `https://serpapi.com/search.json?${params.toString()}`;
+  try {
+    const { data } = await axios.get(url, {
+      timeout: 55000,
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'TicketScraper/1.0 (SerpAPI Google Flights proxy)',
+      },
+    });
+    if (data && typeof data === 'object') {
+      if (data.search_parameters && typeof data.search_parameters === 'object') {
+        delete data.search_parameters.api_key;
+      }
+    }
+    if (data && data.error) {
+      return res.status(502).json(data);
+    }
+    res.set('Cache-Control', 'public, max-age=120');
+    return res.status(200).json(data);
+  } catch (err) {
+    const status = err.response?.status;
+    const body = err.response?.data;
+    const msg =
+      (body && (body.error || body.message)) || err.message || 'Failed to fetch flights';
+    console.error('[serpapi flights]', status || '', msg);
+    return res.status(500).json({ error: String(msg), best_flights: [], other_flights: [] });
+  }
+});
+
 app.get('/api/geocode/reverse', async (req, res) => {
   const lat = Number(req.query.lat);
   const lng = Number(req.query.lng ?? req.query.lon);
@@ -1344,7 +1558,12 @@ app.get('/api/geocode/reverse', async (req, res) => {
 });
 
 const { registerItineraryRoutes } = require('./itinerary-routes');
-registerItineraryRoutes(app, { getSupabase, getMergedScrapedEvents: getCachedMergedScrapedEvents });
+registerItineraryRoutes(app, {
+  getSupabase,
+  getMergedScrapedEvents: getCachedMergedScrapedEvents,
+  getSessionUserId,
+  authStore,
+});
 
 if (require.main === module) {
   app.listen(PORT, () => {

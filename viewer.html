@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
   <style>
     /* ── DESIGN TOKENS ───────────────────────────────── */
     :root {
@@ -48,7 +49,19 @@
       top: 0;
       z-index: 50;
     }
-    .header-brand { display: flex; flex-direction: column; gap: 2px; }
+    .header-brand {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .header-brand:hover .header-eyebrow {
+      color: rgba(200, 169, 110, 0.85);
+    }
+    .header-brand:hover h1 {
+      color: #fff;
+    }
     header h1 {
       font-family: 'Cormorant Garamond', Georgia, serif;
       font-size: 2rem;
@@ -71,6 +84,74 @@
       color: rgba(255,255,255,.32);
       text-align: right;
       max-width: 420px;
+    }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .header-auth {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .header-auth-link {
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(200, 169, 110, 0.9);
+      text-decoration: none;
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid rgba(200, 169, 110, 0.25);
+      transition: background 0.2s, color 0.2s;
+    }
+    .header-auth-link:hover {
+      background: rgba(200, 169, 110, 0.12);
+      color: var(--pg-ivory);
+    }
+    .header-auth-link--gold {
+      background: rgba(200, 169, 110, 0.18);
+      color: var(--pg-ivory);
+    }
+    .header-auth-name {
+      font-size: 0.88rem;
+      color: var(--pg-ivory);
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .header-auth-chip {
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(200, 169, 110, 0.85);
+      border: 1px solid rgba(200, 169, 110, 0.35);
+      padding: 5px 10px;
+      border-radius: 999px;
+    }
+    .header-auth-out {
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 8px 12px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 250, 243, 0.2);
+      background: transparent;
+      color: rgba(255, 250, 243, 0.75);
+      cursor: pointer;
+    }
+    .header-auth-out:hover {
+      border-color: rgba(200, 169, 110, 0.5);
+      color: var(--pg-ivory);
     }
 
     /* ── CONTROLS ──────────────────────────────────── */
@@ -795,24 +876,7 @@
     .viewer-fab-stack > button {
       pointer-events: auto;
     }
-    .itin-fab {
-      position: relative;
-      z-index: 2;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      border: 2px solid rgba(200,169,110,.35);
-      cursor: pointer;
-      font-size: 22px;
-      line-height: 1;
-      background: #1E3A2F;
-      color: #C8A96E;
-      box-shadow: 0 6px 24px rgba(30,58,47,.35);
-      transition: transform 0.2s, box-shadow 0.2s, background .2s;
-    }
-    .itin-fab:hover { transform: scale(1.06); background: #2C5040; box-shadow: 0 10px 32px rgba(30,58,47,.45); }
-    /* Chat FAB must stay in the stack — base .ai-fab uses position:fixed which removes it from
-       the flex column and stacks it on the corner on top of the Trip Planner button. */
+    /* Chat FAB: override fixed positioning so it sits in the corner stack. */
     .viewer-fab-stack .ai-fab {
       position: static !important;
       top: auto !important;
@@ -828,6 +892,11 @@
 
     body.itin-modal-open { overflow: hidden; }
 
+    /* Planner form lives in DOM for API wiring only — never show as UI */
+    #itin-form-section {
+      display: none !important;
+    }
+
     .itin-modal {
       display: none;
       position: fixed;
@@ -838,8 +907,9 @@
     .itin-modal-backdrop {
       position: absolute;
       inset: 0;
-      background: rgba(44, 36, 28, 0.55);
-      backdrop-filter: blur(6px);
+      background: rgba(26, 22, 18, 0.48);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       cursor: pointer;
     }
     .itin-modal-panel {
@@ -850,13 +920,727 @@
       width: min(1040px, 96vw);
       max-height: min(92vh, 920px);
       background: #f8f4ee;
-      border-radius: 4px;
-      box-shadow: 0 28px 70px rgba(20, 30, 20, 0.38);
+      border-radius: 14px;
+      box-shadow:
+        0 36px 90px rgba(20, 30, 20, 0.32),
+        0 1px 0 rgba(255, 255, 255, 0.65) inset;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      border: 1px solid #dcc7ae;
+      border: 1px solid rgba(220, 199, 174, 0.95);
     }
+    /* Wider when viewing generated trip (MYEvents-style surface) */
+    #itin-modal.itin-modal--trip-view .itin-modal-panel {
+      width: min(1180px, 98vw);
+      max-height: min(94vh, 960px);
+    }
+    #itin-modal.itin-modal--trip-view .itin-modal-scroll {
+      background: linear-gradient(180deg, #ede8e0 0%, #e5dfd6 100%);
+    }
+
+    /* ── MYEvents-style trip surface (generated plan only) ───────── */
+    .itin-trip-surface {
+      --ts-bg: #080a09;
+      --ts-card: #101612;
+      --ts-line: rgba(200, 169, 110, 0.2);
+      --ts-gold: #c8a96e;
+      --ts-ink: rgba(248, 244, 238, 0.94);
+      --ts-muted: rgba(248, 244, 238, 0.52);
+      background: var(--ts-bg);
+      color: var(--ts-ink);
+      border-radius: 10px;
+      border: 1px solid rgba(200, 169, 110, 0.22);
+      overflow: hidden;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+      margin-top: 10px;
+    }
+    .itin-trip-surface[hidden] { display: none !important; }
+    .itin-trip-hero {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 22px 24px 18px;
+      border-bottom: 1px solid var(--ts-line);
+      background: linear-gradient(165deg, #141c17 0%, #0d100d 100%);
+    }
+    .itin-trip-eyebrow {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--ts-gold);
+      margin: 0 0 8px;
+      opacity: 0.9;
+    }
+    .itin-trip-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(1.65rem, 3.2vw, 2.35rem);
+      font-weight: 400;
+      letter-spacing: 0.03em;
+      margin: 0 0 10px;
+      line-height: 1.15;
+      color: var(--ts-ink);
+    }
+    .itin-trip-meta {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.88rem;
+      color: var(--ts-muted);
+      margin: 0;
+      line-height: 1.55;
+    }
+    .itin-trip-blurb {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.02rem;
+      font-style: italic;
+      font-weight: 300;
+      color: var(--ts-muted);
+      margin: 14px 0 0;
+      line-height: 1.55;
+      max-width: 52ch;
+    }
+    .itin-trip-blurb[hidden] { display: none !important; }
+    .itin-trip-hero-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+    }
+    .itin-trip-price-hint {
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ts-muted);
+    }
+    .itin-trip-book {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 28px;
+      border-radius: 3px;
+      border: none;
+      background: var(--ts-gold);
+      color: #0f1712;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 8px 28px rgba(200, 169, 110, 0.25);
+      transition: filter 0.15s ease, transform 0.15s ease;
+    }
+    .itin-trip-book:hover {
+      filter: brightness(1.06);
+      transform: translateY(-1px);
+    }
+    .itin-trip-book[hidden] { display: none !important; }
+    .itin-trip-tabs {
+      display: flex;
+      gap: 2px;
+      padding: 6px 8px 0;
+      border-bottom: 1px solid var(--ts-line);
+      background: linear-gradient(180deg, #121a16 0%, #0e1210 100%);
+    }
+    .itin-trip-tab {
+      flex: 1;
+      max-width: none;
+      padding: 14px 14px 12px;
+      border: none;
+      border-radius: 10px 10px 0 0;
+      border-bottom: none;
+      background: transparent;
+      color: var(--ts-muted);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      cursor: pointer;
+      position: relative;
+      transition: color 0.24s cubic-bezier(0.22, 1, 0.36, 1), background 0.24s ease;
+    }
+    .itin-trip-tab::after {
+      content: '';
+      position: absolute;
+      left: 12%;
+      right: 12%;
+      bottom: 0;
+      height: 3px;
+      background: var(--ts-gold);
+      border-radius: 2px;
+      transform: scaleX(0);
+      transform-origin: center;
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .itin-trip-tab:hover {
+      color: var(--ts-ink);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .itin-trip-tab--active {
+      color: var(--ts-gold);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .itin-trip-tab--active::after {
+      transform: scaleX(1);
+    }
+    .itin-trip-tab-panels {
+      padding: 0 22px 22px;
+      min-height: 200px;
+    }
+    .itin-trip-panel[hidden] { display: none !important; }
+
+    #itin-modal.itin-modal--trip-view .itin-trip-tab-panels {
+      max-height: min(54vh, 640px);
+      overflow-y: auto;
+      overflow-x: hidden;
+      scroll-behavior: smooth;
+      scroll-padding: 10px 0 20px;
+      scrollbar-gutter: stable;
+    }
+
+    .itin-trip-warnings {
+      margin: 16px 0 0;
+    }
+    .itin-trip-surface .itin-warn {
+      border-radius: 6px;
+    }
+    .itin-trip-surface .itin-warn--info {
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #bae6fd;
+    }
+    .itin-trip-surface .itin-warn--warn {
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      color: #fde68a;
+    }
+    .itin-day-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 18px 0 6px;
+    }
+    .itin-day-pill {
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid rgba(200, 169, 110, 0.35);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--ts-muted);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, background 0.2s;
+    }
+    .itin-day-pill:hover {
+      border-color: var(--ts-gold);
+      color: var(--ts-ink);
+    }
+    .itin-day-pill--active {
+      border-color: var(--ts-gold);
+      color: var(--ts-gold);
+      background: rgba(200, 169, 110, 0.1);
+    }
+    .itin-trip-split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) min(300px, 32vw);
+      gap: 26px;
+      align-items: start;
+      margin-top: 10px;
+    }
+    @media (max-width: 900px) {
+      .itin-trip-split {
+        grid-template-columns: 1fr;
+      }
+    }
+    .itin-trip-main {
+      min-width: 0;
+    }
+    .itin-trip-aside {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .itin-side-card {
+      background: var(--ts-card);
+      border: 1px solid rgba(200, 169, 110, 0.15);
+      border-radius: 6px;
+      padding: 14px 16px;
+    }
+    .itin-side-card h4 {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ts-gold);
+      margin: 0 0 10px;
+      opacity: 0.95;
+    }
+    .itin-side-weather-line {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.35rem;
+      margin: 0 0 6px;
+      color: var(--ts-ink);
+    }
+    .itin-side-muted {
+      font-size: 0.82rem;
+      color: var(--ts-muted);
+      line-height: 1.45;
+      margin: 0;
+    }
+    .itin-side-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .itin-side-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.82rem;
+    }
+    .itin-side-list li:last-child {
+      border-bottom: none;
+    }
+    .itin-side-list span {
+      color: var(--ts-muted);
+    }
+    .itin-side-list strong {
+      color: var(--ts-ink);
+      font-weight: 500;
+      text-align: right;
+    }
+    .itin-side-tips {
+      margin: 0;
+      padding-left: 16px;
+      font-size: 0.82rem;
+      color: var(--ts-muted);
+      line-height: 1.55;
+    }
+    .itin-side-tips li {
+      margin-bottom: 6px;
+    }
+    .itin-side-card--weather {
+      background: linear-gradient(155deg, #132820 0%, #0c1512 55%, #0a100d 100%);
+      border-color: rgba(100, 170, 130, 0.28);
+    }
+    .itin-weather-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px 10px;
+      margin-top: 12px;
+    }
+    .itin-weather-grid[hidden] {
+      display: none !important;
+    }
+    .itin-weather-stat {
+      background: rgba(0, 0, 0, 0.22);
+      border-radius: 6px;
+      padding: 8px 8px 9px;
+      text-align: center;
+    }
+    .itin-weather-stat span {
+      display: block;
+      font-size: 0.55rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ts-muted);
+      margin-bottom: 4px;
+    }
+    .itin-weather-stat strong {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--ts-ink);
+    }
+    .itin-weather-locale {
+      margin-top: 6px !important;
+      font-size: 0.8rem !important;
+    }
+    .itin-weather-foot {
+      margin-top: 12px !important;
+      font-size: 0.72rem !important;
+      opacity: 0.85;
+    }
+    .itin-weather-foot a {
+      color: var(--ts-gold);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .itin-tl-day {
+      display: none;
+      padding-bottom: 8px;
+    }
+    .itin-tl-day.is-active {
+      display: block;
+      animation: itinFadeUp 0.4s ease both;
+    }
+    .itin-tl-day-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--ts-line);
+    }
+    .itin-tl-day-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.35rem;
+      font-weight: 400;
+      margin: 0;
+      color: var(--ts-ink);
+    }
+    .itin-tl-day-sub {
+      font-size: 0.85rem;
+      color: var(--ts-muted);
+      margin: 4px 0 0;
+    }
+    .itin-tl-list {
+      position: relative;
+      padding-left: 32px;
+    }
+    .itin-tl-list::before {
+      content: '';
+      position: absolute;
+      left: 9px;
+      top: 8px;
+      bottom: 12px;
+      width: 1px;
+      background: linear-gradient(180deg, rgba(200, 169, 110, 0.45) 0%, rgba(200, 169, 110, 0.12) 100%);
+    }
+    .itin-tl-row {
+      position: relative;
+      display: grid;
+      grid-template-columns: 84px 76px minmax(0, 1fr);
+      gap: 16px 18px;
+      align-items: center;
+      padding: 14px 16px 14px 12px;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(255, 255, 255, 0.03);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+    }
+    .itin-tl-row:last-child {
+      margin-bottom: 0;
+    }
+    .itin-tl-row::before {
+      content: '';
+      position: absolute;
+      left: -24px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 9px;
+      height: 9px;
+      background: var(--ts-bg);
+      border: 2px solid var(--ts-gold);
+      border-radius: 2px;
+      z-index: 1;
+      box-shadow: 0 0 0 3px rgba(200, 169, 110, 0.12);
+    }
+    .itin-tl-thumb {
+      width: 84px;
+      height: 84px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: linear-gradient(145deg, #1a221c 0%, #121814 100%);
+      border: 1px solid rgba(200, 169, 110, 0.25);
+      flex-shrink: 0;
+    }
+    .itin-tl-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .itin-tl-thumb-fallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      opacity: 0.55;
+    }
+    .itin-tl-time {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.74rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: var(--ts-gold);
+      line-height: 1.25;
+    }
+    .itin-tl-body {
+      min-width: 0;
+    }
+    .itin-tl-name {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.22rem;
+      font-weight: 500;
+      color: var(--ts-ink);
+      margin: 0 0 6px;
+      letter-spacing: 0.02em;
+    }
+    .itin-tl-desc {
+      font-size: 0.86rem;
+      color: var(--ts-muted);
+      line-height: 1.5;
+      margin: 0 0 10px;
+    }
+    .itin-tl-cat {
+      display: inline-block;
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(200, 169, 110, 0.75);
+      border: 1px solid rgba(200, 169, 110, 0.25);
+      padding: 3px 8px;
+      border-radius: 999px;
+    }
+    .itin-tl-row--click {
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+      transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+    }
+    .itin-tl-row--click:hover {
+      border-color: rgba(200, 169, 110, 0.28);
+      background: rgba(255, 255, 255, 0.055);
+    }
+    .itin-tl-row--click:hover .itin-tl-name {
+      color: var(--ts-gold);
+    }
+    .itin-tl-row--click:focus-visible {
+      outline: 2px solid var(--ts-gold);
+      outline-offset: 2px;
+    }
+    .itin-tl-notes {
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.82rem;
+      color: var(--ts-muted);
+    }
+    .itin-tl-notes h5 {
+      font-size: 0.58rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--ts-gold);
+      margin: 10px 0 6px;
+    }
+    .itin-tl-notes h5:first-child {
+      margin-top: 0;
+    }
+    .itin-tl-notes ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+    .itin-trip-routebar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin: 18px 0 12px;
+      padding: 16px;
+      background: var(--ts-card);
+      border: 1px solid rgba(200, 169, 110, 0.15);
+      border-radius: 6px;
+    }
+    .itin-route-label {
+      font-size: 0.58rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ts-muted);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .itin-route-line {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.25rem;
+      color: var(--ts-ink);
+    }
+    .itin-route-dates {
+      font-size: 0.82rem;
+      color: var(--ts-muted);
+      margin-top: 4px;
+    }
+    .itin-trip-searchbtn {
+      padding: 11px 20px;
+      border-radius: 3px;
+      border: none;
+      background: var(--ts-gold);
+      color: #0f1712;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: filter 0.18s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease, background 0.2s ease;
+    }
+    .itin-trip-searchbtn:active:not(:disabled) {
+      transform: scale(0.985);
+    }
+    .itin-trip-searchbtn--ghost {
+      background: transparent;
+      color: var(--ts-gold);
+      border: 1px solid rgba(200, 169, 110, 0.45);
+    }
+    .itin-trip-iata-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 14px 18px;
+      margin: 16px 0 8px;
+    }
+    .itin-trip-iata-field label {
+      display: block;
+      font-size: 0.58rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ts-muted);
+      margin-bottom: 6px;
+    }
+    .itin-trip-iata {
+      width: 100%;
+      max-width: 120px;
+      padding: 10px 12px;
+      border-radius: 4px;
+      border: 1px solid rgba(200, 169, 110, 0.25);
+      background: rgba(0, 0, 0, 0.25);
+      color: var(--ts-ink);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+    }
+    .itin-trip-muted {
+      font-size: 0.8rem;
+      color: var(--ts-muted);
+      margin: 0 0 12px;
+      line-height: 1.45;
+    }
+    .itin-trip-muted code {
+      font-size: 0.72em;
+      opacity: 0.85;
+    }
+    .itin-trip-flinks {
+      margin-top: 14px;
+    }
+    .itin-trip-flinks h4 {
+      display: none;
+    }
+    .itin-trip-surface .itin-links-row {
+      margin-top: 0;
+      gap: 12px;
+    }
+    .itin-trip-surface .itin-link-btn,
+    .itin-trip-surface .itin-link-btn--alt {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--ts-gold);
+      border: 1px solid rgba(200, 169, 110, 0.35);
+    }
+    .itin-trip-surface .itin-link-btn:hover,
+    .itin-trip-surface .itin-link-btn--alt:hover {
+      background: rgba(200, 169, 110, 0.15);
+    }
+    .itin-trip-surface .eh-flight-list {
+      margin: 12px 0 0;
+    }
+    .itin-trip-footer {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px 16px;
+      padding: 18px 22px 20px;
+      border-top: 1px solid var(--ts-line);
+      background: linear-gradient(180deg, rgba(14, 18, 16, 0.55) 0%, #080a09 55%, #060807 100%);
+    }
+    .itin-trip-footer-save {
+      padding: 12px 22px;
+      border-radius: 3px;
+      border: none;
+      background: var(--ts-gold);
+      color: #0f1712;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      margin-right: auto;
+      transition: filter 0.18s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+    }
+    .itin-trip-footer-save:active:not(:disabled) {
+      transform: scale(0.985);
+    }
+    .itin-trip-footer-save:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .itin-trip-footer-link {
+      padding: 8px 6px;
+      border: none;
+      background: transparent;
+      color: var(--ts-muted);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .itin-trip-footer-link:hover {
+      color: var(--ts-gold);
+    }
+    .itin-trip-footer-link--right {
+      margin-left: auto;
+      text-decoration: none;
+      border: 1px solid rgba(200, 169, 110, 0.35);
+      border-radius: 999px;
+      padding: 8px 16px;
+    }
+    .itin-trip-footer-link--right:hover {
+      border-color: var(--ts-gold);
+    }
+
+    .itin-trip-surface .itin-day-regen {
+      flex-shrink: 0;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(200, 169, 110, 0.4);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--ts-gold);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .itin-trip-surface .itin-day-regen:hover:not(:disabled) {
+      background: rgba(200, 169, 110, 0.12);
+    }
+    .itin-trip-surface .itin-day-regen:disabled {
+      opacity: 0.45;
+      cursor: wait;
+    }
+
     .itin-modal-header {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
@@ -983,6 +1767,8 @@
       flex: 1;
       min-height: 0;
       font-size: 15px;
+      scroll-behavior: smooth;
+      scroll-padding-bottom: 24px;
     }
     .itin-alert {
       padding: 12px 14px;
@@ -1101,10 +1887,124 @@
       text-transform: uppercase;
       cursor: pointer;
       box-shadow: 0 4px 16px rgba(30,58,47,.25);
-      transition: background .2s, color .2s;
+      transition: background 0.2s ease, color 0.2s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
     }
     .itin-primary:disabled { opacity: 0.5; cursor: not-allowed; }
     .itin-primary:hover:not(:disabled) { background: #2C5040; color: #D4B47A; }
+    .itin-primary:active:not(:disabled) {
+      transform: scale(0.985);
+    }
+    .itin-primary--disabled {
+      opacity: 0.55;
+    }
+    .itin-preflight {
+      margin-top: 20px;
+      padding: 16px 18px;
+      border-radius: 10px;
+      border: 1px solid rgba(30, 58, 47, 0.2);
+      background: rgba(248, 244, 238, 0.65);
+    }
+    .itin-preflight-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.25rem;
+      color: #1e3a2f;
+      margin-bottom: 8px;
+    }
+    .itin-preflight-hint {
+      font-size: 13px;
+      color: #5c5348;
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+    .itin-form-flights-host {
+      margin-top: 8px;
+    }
+    .itin-form-flights-host .eh-flight-row {
+      flex-wrap: wrap;
+    }
+    .itin-form-flights-host .eh-flight-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+    .itin-form-flights-host .itin-add-flight-btn {
+      margin-top: 0;
+      width: auto;
+      max-width: none;
+    }
+    .itin-selected-flight-card {
+      margin-top: 16px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: #0c1510;
+      color: #f8f4ee;
+      border: 1px solid rgba(200, 169, 110, 0.35);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .itin-selected-flight-card .itin-sf-body {
+      flex: 1 1 220px;
+      min-width: 0;
+    }
+    .itin-selected-flight-card .itin-sf-k {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(200, 169, 110, 0.85);
+      margin-bottom: 6px;
+    }
+    .itin-selected-flight-card .itin-sf-line {
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .itin-selected-flight-card .itin-sf-meta {
+      font-size: 13px;
+      color: rgba(248, 244, 238, 0.75);
+      margin-top: 6px;
+    }
+    .itin-sf-remove {
+      flex-shrink: 0;
+      border: none;
+      background: rgba(255, 250, 243, 0.1);
+      color: #f8f4ee;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 18px;
+      line-height: 1;
+    }
+    .itin-sf-remove:hover {
+      background: rgba(200, 100, 100, 0.35);
+    }
+    .itin-trip-flight-banner {
+      margin-bottom: 16px;
+      padding: 14px 16px;
+      border-radius: 10px;
+      background: rgba(12, 21, 16, 0.06);
+      border: 1px solid rgba(200, 169, 110, 0.35);
+    }
+    .itin-trip-flight-banner .itin-sf-k {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #8a7d6e;
+      margin-bottom: 6px;
+    }
+    .itin-trip-flight-banner .itin-sf-line {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #1a1a18;
+    }
+    .itin-trip-flight-banner .itin-sf-meta {
+      font-size: 13px;
+      color: #5c5348;
+      margin-top: 6px;
+    }
 
     .itin-summary-row {
       display: grid;
@@ -1887,6 +2787,204 @@
     }
     .fs-card-meta span { margin-right: 10px; }
 
+    .fs-actions-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: stretch;
+      margin: 14px 0 4px;
+    }
+    .fs-actions-row .itin-primary {
+      flex: 1 1 220px;
+      min-height: 44px;
+    }
+    .fs-actions-row .fs-btn-airasia {
+      flex: 1 1 140px;
+      min-height: 44px;
+      justify-content: center;
+    }
+    .fs-trip-field {
+      grid-column: 1 / -1;
+    }
+    .fs-trip-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: #57534e;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .fs-segment {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .fs-seg-btn {
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: 1px solid #cbb59a;
+      background: #fffdf8;
+      color: #44403c;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s, color .15s, border-color .15s;
+    }
+    .fs-seg-btn.is-active {
+      background: #1c1917;
+      color: #fff;
+      border-color: #1c1917;
+    }
+    .fs-seg-btn:hover:not(.is-active) {
+      background: #faf7f2;
+    }
+    .fs-return-wrap[hidden] {
+      display: none !important;
+    }
+    .fs-serp-toolbar {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px 16px;
+      align-items: end;
+      margin: 18px 0 8px;
+      padding: 14px 16px;
+      background: #fff9;
+      border: 1px solid #e7e5e4;
+      border-radius: 12px;
+    }
+    .fs-toolbar-field label {
+      margin-bottom: 6px;
+    }
+    .fs-check-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #44403c;
+      padding-bottom: 4px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .fs-check-label input {
+      width: 18px;
+      height: 18px;
+      accent-color: #ea580c;
+    }
+    @keyframes fs-sk-pulse {
+      from { opacity: 0.45; }
+      to { opacity: 1; }
+    }
+    .fs-sk-card {
+      height: 118px;
+      border-radius: 12px;
+      background: #e7e5e4;
+      animation: fs-sk-pulse 0.9s ease-in-out infinite alternate;
+    }
+    .fs-serp-card {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 18px;
+      background: #fffdf8;
+      border: 1px solid #cbb59a;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .fs-serp-card-main {
+      flex: 1 1 220px;
+      min-width: 0;
+    }
+    .fs-serp-airline {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .fs-serp-logo {
+      width: 40px;
+      height: 40px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px solid #e7e5e4;
+      flex-shrink: 0;
+    }
+    .fs-serp-logo--ph {
+      background: #e7e5e4;
+      border: none;
+    }
+    .fs-serp-names {
+      font-weight: 700;
+      font-size: 15px;
+      color: #1c1917;
+      line-height: 1.3;
+    }
+    .fs-serp-nums {
+      font-size: 12px;
+      color: #78716c;
+      margin-top: 2px;
+    }
+    .fs-serp-route {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+    .fs-serp-time {
+      font-size: 15px;
+      color: #44403c;
+    }
+    .fs-serp-ap {
+      font-size: 12px;
+      color: #78716c;
+      letter-spacing: 0.02em;
+    }
+    .fs-serp-meta {
+      font-size: 13px;
+      color: #57534e;
+    }
+    .fs-serp-side {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 10px;
+      min-width: 120px;
+    }
+    .fs-serp-price {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #0f766e;
+      letter-spacing: 0.02em;
+    }
+    .fs-serp-side .fs-book-btn {
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      line-height: 1.2;
+    }
+    .fs-empty--error {
+      border-color: #fecaca;
+      background: #fef2f2;
+      color: #991b1b;
+    }
+    @media (max-width: 520px) {
+      .fs-serp-side {
+        align-items: stretch;
+        width: 100%;
+      }
+      .fs-serp-side .fs-book-btn {
+        width: 100%;
+        text-align: center;
+      }
+    }
+
     .itin-place-overlay {
       display: none;
       position: fixed;
@@ -2215,6 +3313,656 @@
       margin-top: 3px;
     }
 
+    /* ── EVENT HUB (event → plan trip) ─────────────────────── */
+    body.event-hub-open { overflow: hidden; }
+    .event-hub-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 2150;
+    }
+    .event-hub-modal.is-open { display: block; }
+    .event-hub-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 12, 10, 0.62);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .event-hub-panel {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: min(960px, min(96vw, 96dvw));
+      max-height: min(96dvh, 1100px);
+      height: min(96dvh, 1100px);
+      background: linear-gradient(180deg, #0f1712 0%, #16261d 42%, #1a2e22 100%);
+      border: 1px solid rgba(200, 169, 110, 0.35);
+      border-radius: 14px;
+      box-shadow:
+        0 44px 100px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(200, 169, 110, 0.12) inset;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      color: #f8f4ee;
+      min-height: 0;
+    }
+    .event-hub-top {
+      display: flex;
+      justify-content: flex-end;
+      padding: 6px 12px 0;
+      flex-shrink: 0;
+    }
+    .event-hub-hero {
+      display: grid;
+      grid-template-columns: minmax(200px, 0.95fr) minmax(0, 1.15fr);
+      gap: 14px;
+      padding: 0 22px 10px;
+      border-bottom: 1px solid rgba(200, 169, 110, 0.2);
+      flex: 0 0 auto;
+      min-height: 0;
+      overflow: hidden;
+      align-items: stretch;
+    }
+    @media (max-width: 720px) {
+      .event-hub-hero {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+    }
+    .event-hub-hero-img-wrap {
+      border-radius: 10px;
+      overflow: hidden;
+      width: 100%;
+      height: clamp(120px, 14dvh, 168px);
+      min-height: 120px;
+      max-height: 168px;
+      background: #0c1510;
+      border: 1px solid rgba(255, 250, 243, 0.12);
+      display: block;
+      position: relative;
+    }
+    .event-hub-hero-img-wrap img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+    }
+    .event-hub-hero-placeholder {
+      width: 100%;
+      height: 100%;
+      min-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      background: linear-gradient(135deg, #1e3a2f, #0c1510);
+    }
+    .event-hub-eyebrow {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 10px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #c8a96e;
+      margin: 0 0 8px;
+    }
+    .event-hub-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(1.45rem, 3.2vw, 1.95rem);
+      font-weight: 400;
+      color: #f8f4ee;
+      margin: 0 0 6px;
+      line-height: 1.15;
+    }
+    .event-hub-meta {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 12px;
+      color: rgba(248, 244, 238, 0.78);
+      line-height: 1.45;
+      margin: 0 0 8px;
+    }
+    .event-hub-cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+    .eh-btn {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 12px 20px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      transition:
+        filter 0.18s ease,
+        transform 0.2s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.2s ease;
+    }
+    .eh-btn:active:not(:disabled) {
+      transform: scale(0.98);
+      transition-duration: 0.08s;
+    }
+    .eh-btn--gold {
+      background: linear-gradient(135deg, #d4a574, #c8a96e);
+      color: #0f1712;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+    .eh-btn--gold:hover { filter: brightness(1.05); transform: translateY(-1px); }
+    .eh-btn--ghost {
+      background: transparent;
+      color: #f8f4ee;
+      border: 1px solid rgba(248, 244, 238, 0.35);
+    }
+    .eh-btn--ghost:hover { border-color: #c8a96e; color: #fff; }
+    /* Tabs + scroll share all space below trip strip (tabs stay fixed, content scrolls). */
+    .event-hub-main {
+      flex: 1 1 0;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .event-hub-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 6px 14px 0;
+      background: rgba(0, 0, 0, 0.32);
+      border-bottom: 1px solid rgba(200, 169, 110, 0.16);
+      flex: 0 0 auto;
+      flex-shrink: 0;
+    }
+    .eh-tab {
+      position: relative;
+      flex: 1;
+      max-width: none;
+      padding: 12px 12px 10px;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(248, 244, 238, 0.52);
+      background: transparent;
+      border: none;
+      border-radius: 10px 10px 0 0;
+      border-bottom: none;
+      cursor: pointer;
+      transition: color 0.24s cubic-bezier(0.22, 1, 0.36, 1), background 0.24s ease;
+    }
+    .eh-tab::after {
+      content: '';
+      position: absolute;
+      left: 14%;
+      right: 14%;
+      bottom: 0;
+      height: 2px;
+      background: #c8a96e;
+      border-radius: 2px;
+      transform: scaleX(0);
+      transform-origin: center;
+      transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .eh-tab:hover {
+      color: rgba(248, 244, 238, 0.92);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .eh-tab--active {
+      color: #f8f4ee;
+      background: rgba(255, 255, 255, 0.07);
+    }
+    .eh-tab--active::after {
+      transform: scaleX(1);
+    }
+    .eh-trip-strip {
+      padding: 8px 18px 10px;
+      border-bottom: 1px solid rgba(255, 250, 243, 0.1);
+      background: rgba(0, 0, 0, 0.12);
+      flex: 0 0 auto;
+      flex-shrink: 0;
+    }
+    .eh-trip-strip h3 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.05rem;
+      font-weight: 500;
+      margin: 0 0 6px;
+      color: #f8f4ee;
+    }
+    .eh-trip-strip > p:not([hidden]) {
+      font-size: 13px;
+      line-height: 1.45;
+      margin: 0 0 8px;
+    }
+    .eh-trip-strip .eh-trip-strip-hint {
+      font-size: 12px;
+      line-height: 1.4;
+      margin: 6px 0 0;
+      color: rgba(248, 244, 238, 0.65);
+    }
+    .eh-hub-flight-summary {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(200, 169, 110, 0.35);
+      background: rgba(200, 169, 110, 0.1);
+      font-size: 13px;
+      line-height: 1.45;
+      color: rgba(248, 244, 238, 0.88);
+    }
+    .eh-btn[disabled],
+    .eh-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .event-hub-scroll .eh-flight-meta {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px 12px;
+      max-width: min(100%, 300px);
+    }
+    .event-hub-scroll .eh-serp-add-itin {
+      margin-top: 0;
+    }
+    .event-hub-scroll .eh-serp-book {
+      margin-top: 0;
+    }
+    .event-hub-scroll .eh-price {
+      margin-top: 0;
+      flex: 1 1 100%;
+      text-align: right;
+    }
+    .event-hub-scroll .eh-flight-row,
+    .event-hub-scroll .eh-hotel-row {
+      padding: 12px 14px;
+      align-items: flex-start;
+    }
+    .event-hub-scroll {
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 12px 20px max(20px, env(safe-area-inset-bottom, 0px));
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+      scroll-padding-bottom: 24px;
+      scrollbar-gutter: stable;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(200, 169, 110, 0.45) rgba(0, 0, 0, 0.2);
+    }
+    .event-hub-scroll::-webkit-scrollbar {
+      width: 10px;
+    }
+    .event-hub-scroll::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+    }
+    .event-hub-scroll::-webkit-scrollbar-thumb {
+      background: rgba(200, 169, 110, 0.35);
+      border-radius: 8px;
+    }
+    .event-hub-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(200, 169, 110, 0.5);
+    }
+    .event-hub-scroll .eh-panel h3 {
+      font-size: 1.1rem;
+      margin: 0 0 6px;
+    }
+    .event-hub-scroll .eh-panel > .eh-muted {
+      font-size: 13px;
+      line-height: 1.45;
+      margin: 0 0 8px;
+    }
+    .event-hub-scroll .eh-route-bar {
+      margin-bottom: 4px;
+    }
+    .event-hub-scroll .eh-field-row {
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    /* Short viewports: still tall, slightly tighter chrome. */
+    @media (max-height: 820px) {
+      .event-hub-panel {
+        height: min(94dvh, 900px);
+        max-height: min(94dvh, 900px);
+      }
+      .event-hub-hero-img-wrap {
+        height: clamp(108px, 12dvh, 148px);
+        min-height: 108px;
+        max-height: 148px;
+      }
+      .event-hub-title {
+        font-size: clamp(1.35rem, 4vw, 1.85rem);
+      }
+      .event-hub-meta {
+        margin-bottom: 6px;
+      }
+      .eh-trip-strip {
+        padding: 8px 16px 10px;
+      }
+      .eh-trip-strip h3 {
+        font-size: 1.05rem;
+        margin-bottom: 6px;
+      }
+    }
+    @media (max-height: 720px) {
+      .event-hub-hero-img-wrap {
+        height: clamp(96px, 11dvh, 132px);
+        min-height: 96px;
+        max-height: 132px;
+      }
+      .event-hub-hero-placeholder {
+        font-size: 28px;
+      }
+    }
+    .eh-event-desc {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 13px;
+      line-height: 1.55;
+      color: rgba(248, 244, 238, 0.82);
+      margin: 0 0 18px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.22);
+      border: 1px solid rgba(200, 169, 110, 0.14);
+      max-height: 10.5em;
+      overflow-y: auto;
+    }
+    .eh-event-desc[hidden] {
+      display: none !important;
+    }
+    .eh-panel h3 {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.25rem;
+      font-weight: 400;
+      color: #f8f4ee;
+      margin: 0 0 12px;
+    }
+    .eh-panel p,
+    .eh-muted {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.55;
+      color: rgba(248, 244, 238, 0.72);
+      margin: 0 0 12px;
+    }
+    .eh-field-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 16px;
+      align-items: flex-end;
+    }
+    .eh-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .eh-field label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #c8a96e;
+    }
+    .eh-field input {
+      width: 72px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 250, 243, 0.2);
+      background: rgba(255, 250, 243, 0.06);
+      color: #f8f4ee;
+      font-family: 'Jost', system-ui, sans-serif;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+    .eh-field input:focus {
+      outline: none;
+      border-color: rgba(200, 169, 110, 0.55);
+      box-shadow: 0 0 0 3px rgba(200, 169, 110, 0.16);
+      background: rgba(255, 250, 243, 0.09);
+    }
+    .eh-field input.eh-iata {
+      width: 86px;
+      text-transform: uppercase;
+    }
+    .eh-field.eh-field--grow {
+      flex: 1 1 220px;
+      min-width: 180px;
+    }
+    .eh-field input.eh-hotel-q {
+      width: 100%;
+      min-width: 200px;
+      max-width: 100%;
+      text-transform: none;
+    }
+    .eh-serp-logo--hotel {
+      object-fit: cover;
+      border-radius: 6px;
+    }
+    .eh-hotel-row {
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: rgba(255, 253, 251, 0.06);
+      border: 1px solid rgba(255, 250, 243, 0.1);
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .eh-route-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: rgba(12, 21, 16, 0.85);
+      border: 1px solid rgba(200, 169, 110, 0.25);
+      margin-bottom: 16px;
+      transition: border-color 0.22s ease, box-shadow 0.22s ease;
+    }
+    .eh-route-bar strong {
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      color: #c8a96e;
+    }
+    .eh-route-line {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.35rem;
+      color: #f8f4ee;
+    }
+    .eh-route-dates {
+      font-size: 12px;
+      color: rgba(248, 244, 238, 0.75);
+    }
+    .eh-route-bar--stack {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .eh-route-bar strong.eh-route-kicker {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      color: rgba(248, 244, 238, 0.55);
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    .eh-serp-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .eh-serp-left {
+      display: flex;
+      gap: 12px;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    .eh-serp-mid {
+      min-width: 0;
+    }
+    .eh-serp-logo {
+      width: 36px;
+      height: 36px;
+      object-fit: contain;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.92);
+      flex-shrink: 0;
+    }
+    .eh-serp-logo--ph {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 250, 243, 0.12);
+    }
+    .eh-serp-book {
+      margin-top: 8px;
+      display: inline-block;
+      font-size: 11px;
+      text-decoration: none;
+      text-align: center;
+    }
+    .eh-flight-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .eh-flight-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: 8px;
+      background: rgba(255, 253, 251, 0.06);
+      border: 1px solid rgba(255, 250, 243, 0.1);
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .eh-flight-row:hover,
+    .eh-hotel-row:hover {
+      background: rgba(255, 253, 251, 0.1);
+      border-color: rgba(200, 169, 110, 0.22);
+    }
+    .eh-flight-sub {
+      display: block;
+      font-size: 12px;
+      color: rgba(248, 244, 238, 0.65);
+      margin-top: 4px;
+    }
+    .eh-flight-meta {
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .eh-price {
+      display: block;
+      font-weight: 700;
+      color: #c8a96e;
+      margin-top: 6px;
+    }
+    .eh-tag {
+      display: inline-block;
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(200, 169, 110, 0.45);
+      color: rgba(248, 244, 238, 0.85);
+      margin-right: 6px;
+    }
+    .eh-tag--gold {
+      border-color: #c8a96e;
+      background: rgba(200, 169, 110, 0.15);
+    }
+    .eh-footnote {
+      font-size: 12px;
+      color: rgba(248, 244, 238, 0.5);
+      margin-top: 14px;
+    }
+    .eh-loading { color: #c8a96e; font-size: 14px; }
+
+    /* ── Modal entrance + motion (prefers-reduced-motion aware) ───── */
+    @keyframes flow-backdrop-in {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes flow-eh-panel-in {
+      from {
+        opacity: 0;
+        transform: translate(-50%, calc(-50% + 14px)) scale(0.985);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+    @keyframes flow-itin-panel-in {
+      from {
+        opacity: 0;
+        transform: translate(-50%, calc(-50% + 12px)) scale(0.99);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+    @keyframes flow-soft-pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.86; }
+    }
+
+    .event-hub-modal.is-open .event-hub-backdrop {
+      animation: flow-backdrop-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .event-hub-modal.is-open .event-hub-panel {
+      animation: flow-eh-panel-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .itin-modal.is-open .itin-modal-backdrop {
+      animation: flow-backdrop-in 0.26s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .itin-modal.is-open .itin-modal-panel {
+      animation: flow-itin-panel-in 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .itin-loading-msg:not([hidden]) {
+      animation: flow-soft-pulse 2.5s ease-in-out infinite;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .event-hub-modal.is-open .event-hub-backdrop,
+      .event-hub-modal.is-open .event-hub-panel,
+      .itin-modal.is-open .itin-modal-backdrop,
+      .itin-modal.is-open .itin-modal-panel {
+        animation: none !important;
+      }
+      .itin-loading-msg:not([hidden]) {
+        animation: none !important;
+      }
+      .event-hub-scroll,
+      .itin-modal-scroll,
+      #itin-modal.itin-modal--trip-view .itin-trip-tab-panels {
+        scroll-behavior: auto !important;
+      }
+    }
+
+    #grid .card[data-ev-idx] {
+      cursor: pointer;
+    }
+    #grid .card[data-ev-idx]:focus-visible {
+      outline: 2px solid #c8a96e;
+      outline-offset: 3px;
+    }
+    #grid .card[data-ev-idx] .card-link {
+      position: relative;
+      z-index: 2;
+    }
+
     /* ── CARD ENTRANCE ANIMATION ──────────────────────────── */
     .card-enter {
       opacity: 0;
@@ -2223,15 +3971,19 @@
     }
     .card-enter.card-visible { opacity: 1; transform: translateY(0); }
   </style>
+  <link rel="stylesheet" href="/eventra-ticket-theme.css" />
 </head>
-<body>
+<body class="theme-eventra">
 
 <header>
-  <div class="header-brand">
+  <a href="/events" class="header-brand" aria-label="Event Explorer — home">
     <span class="header-eyebrow">Malaysia &middot; Live Events &amp; Culture</span>
     <h1>Event Explorer</h1>
+  </a>
+  <div class="header-actions">
+    <div class="header-auth" id="header-auth" aria-live="polite"></div>
+    <span id="last-updated">Loading...</span>
   </div>
-  <span id="last-updated">Loading...</span>
 </header>
 
 <!-- HERO BANNER -->
@@ -2242,6 +3994,20 @@
       <p class="hero-banner-eyebrow">Discover &middot; Explore &middot; Experience</p>
       <h2 class="hero-banner-title">What's on<br /><em>in Malaysia</em></h2>
       <p class="hero-banner-sub">Every event worth attending — music, culture, food, sports and more — scraped fresh from across the web and delivered here.</p>
+      <div class="ai-command">
+        <div class="command-question">What kind of event experience are you looking for in Malaysia?</div>
+        <div class="ai-command-inner">
+          <input id="hero-ai-input" type="search" placeholder="I'm coming from Singapore and want a K-pop concert in KL" autocomplete="off" />
+          <button class="primary" id="hero-ai-btn" type="button">Ask Eventra</button>
+        </div>
+        <div class="prompt-chips">
+          <button type="button" data-prompt="Plan me a 3-day trip around a music festival in Malaysia">3-day music trip</button>
+          <button type="button" data-prompt="Find me a comedy show worth travelling for">Comedy show</button>
+          <button type="button" data-prompt="What event should I travel to Malaysia for next month?">Tourist-worthy event</button>
+        </div>
+        <div class="hero-ai-status" id="hero-ai-status">Try a travel-style question, or just say hello and Eventra will guide you.</div>
+        <div class="hero-ai-conversation" id="hero-ai-conversation" aria-live="polite"></div>
+      </div>
       <div class="hero-stats-row">
         <div class="hero-stat-box">
           <span class="hero-stat-num" id="hero-total">—</span>
@@ -2398,8 +4164,117 @@
   </div>
 </div>
 
+<!-- Event hub: plan trip from a listing card (tabs: itinerary / flights / hotels) -->
+<div id="event-hub-modal" class="event-hub-modal" aria-hidden="true">
+  <div class="event-hub-backdrop" id="eh-modal-backdrop"></div>
+  <div class="event-hub-panel" role="dialog" aria-labelledby="eh-hero-title" aria-modal="true">
+    <div class="event-hub-top">
+      <button type="button" class="itin-icon-btn" id="eh-modal-close" aria-label="Close event details">×</button>
+    </div>
+    <div class="event-hub-hero">
+      <div class="event-hub-hero-img-wrap">
+        <img id="eh-hero-img" alt="" hidden />
+        <div id="eh-hero-placeholder" class="event-hub-hero-placeholder" hidden>🎟️</div>
+      </div>
+      <div>
+        <p class="event-hub-eyebrow">Plan your visit</p>
+        <h2 id="eh-hero-title" class="event-hub-title">Event</h2>
+        <p id="eh-hero-meta" class="event-hub-meta"></p>
+        <div class="event-hub-cta-row">
+          <a class="eh-btn eh-btn--gold" id="eh-book-btn" href="#" target="_blank" rel="noopener noreferrer">Book tickets</a>
+        </div>
+      </div>
+    </div>
+    <div class="eh-trip-strip">
+      <h3>Trip dates</h3>
+      <p id="eh-event-desc" class="eh-event-desc" hidden></p>
+      <p>Days before and after the event (max 14-day trip).</p>
+      <div class="eh-field-row">
+        <div class="eh-field">
+          <label for="eh-days-before">Days before event</label>
+          <input type="number" id="eh-days-before" min="0" max="14" value="1" />
+        </div>
+        <div class="eh-field">
+          <label for="eh-days-after">Days after event</label>
+          <input type="number" id="eh-days-after" min="0" max="14" value="1" />
+        </div>
+        <button type="button" class="eh-btn eh-btn--ghost" id="eh-apply-dates">Update trip</button>
+      </div>
+      <p id="eh-trip-summary" class="eh-muted"></p>
+      <p class="eh-muted eh-trip-strip-hint">Flights → Hotels: tap <strong>Add to my itinerary</strong> once each, then <strong>Itinerary</strong>.</p>
+    </div>
+    <div class="event-hub-main">
+    <div class="event-hub-tabs" role="tablist">
+      <button type="button" class="eh-tab eh-tab--active" id="eh-tab-flights" role="tab" aria-selected="true">Flights</button>
+      <button type="button" class="eh-tab" id="eh-tab-hotels" role="tab" aria-selected="false">Hotels</button>
+      <button type="button" class="eh-tab" id="eh-tab-itin" role="tab" aria-selected="false">Itinerary</button>
+    </div>
+    <div class="event-hub-scroll">
+      <div id="eh-panel-flights" class="eh-panel" role="tabpanel">
+        <h3>Flights</h3>
+        <p class="eh-muted">Uses the <strong>arrival</strong> date from the strip above.</p>
+        <div class="eh-route-bar eh-route-bar--stack">
+          <div>
+            <strong class="eh-route-kicker">Trip window</strong>
+            <div id="eh-route-line" class="eh-route-line">—</div>
+            <div id="eh-route-dates" class="eh-route-dates">—</div>
+          </div>
+        </div>
+        <div class="eh-field-row" style="margin-top: 16px;">
+          <div class="eh-field">
+            <label for="eh-flight-from">From (IATA)</label>
+            <input type="text" id="eh-flight-from" class="eh-iata" maxlength="3" placeholder="e.g. KUL" autocomplete="off" />
+          </div>
+          <div class="eh-field">
+            <label for="eh-flight-to">To (IATA)</label>
+            <input type="text" id="eh-flight-to" class="eh-iata" maxlength="3" placeholder="e.g. PEN" autocomplete="off" />
+          </div>
+        </div>
+        <p class="eh-muted" style="font-size: 12px;">3-letter IATA codes — we pre-fill from the event; change if needed.</p>
+        <div class="event-hub-cta-row" style="margin-top: 8px; margin-bottom: 14px;">
+          <button type="button" class="eh-btn eh-btn--gold" id="eh-google-flights-btn">Search Google Flights</button>
+        </div>
+        <div id="eh-flights-results"></div>
+      </div>
+      <div id="eh-panel-hotels" class="eh-panel" role="tabpanel" hidden>
+        <h3>Hotels</h3>
+        <p class="eh-muted"><strong>Pick your stay</strong> — search, then <strong>Add to my itinerary</strong>. Check-in/out follow the trip strip.</p>
+        <div class="eh-route-bar eh-route-bar--stack">
+          <div>
+            <strong class="eh-route-kicker">Stay window</strong>
+            <div id="eh-hotel-route-line" class="eh-route-line">—</div>
+            <div id="eh-hotel-route-dates" class="eh-route-dates">—</div>
+          </div>
+        </div>
+        <div class="eh-field-row" style="margin-top: 16px;">
+          <div class="eh-field eh-field--grow">
+            <label for="eh-hotel-q">Destination</label>
+            <input type="text" id="eh-hotel-q" class="eh-hotel-q" maxlength="200" placeholder="e.g. venue, city" autocomplete="off" />
+          </div>
+        </div>
+        <p class="eh-muted" style="font-size: 12px;">Query is pre-filled — edit if you like.</p>
+        <div class="event-hub-cta-row" style="margin-top: 8px; margin-bottom: 14px;">
+          <button type="button" class="eh-btn eh-btn--gold" id="eh-google-hotels-btn">Search Google Hotels</button>
+          <button type="button" class="eh-btn eh-btn--ghost" id="eh-open-hotels">Booking.com</button>
+        </div>
+        <div id="eh-hotels-results"></div>
+      </div>
+      <div id="eh-panel-itin" class="eh-panel" role="tabpanel" hidden>
+        <h3>Itinerary</h3>
+        <p class="eh-muted">After one flight and one hotel are added, summaries appear below — then tap Generate.</p>
+        <p id="eh-gen-hint" class="eh-muted" style="margin-top: 10px;"></p>
+        <div id="eh-hub-flight-summary" class="eh-hub-flight-summary" hidden></div>
+        <div id="eh-hub-hotel-summary" class="eh-hub-flight-summary" hidden style="margin-top: 10px;"></div>
+        <div class="event-hub-cta-row" style="margin-top: 18px;">
+          <button type="button" class="eh-btn eh-btn--gold" id="eh-gen-itin" disabled title="Pick a flight and a hotel, then generate">Generate AI itinerary</button>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+
 <div class="viewer-fab-stack" aria-label="Quick actions">
-  <button type="button" class="itin-fab" id="itin-fab" aria-label="Open trip planner" title="Trip planner">📅</button>
   <button type="button" class="ai-fab" id="ai-fab" aria-label="Open event assistant" title="Event assistant">💬</button>
 </div>
 
@@ -2409,11 +4284,11 @@
     <header class="itin-modal-header">
       <button type="button" class="itin-header-back" id="itin-back-btn" hidden aria-label="Back">← Back</button>
       <div class="itin-modal-header-center">
-        <h1 id="itin-modal-title">Trip Planner</h1>
+        <h1 id="itin-modal-title">Your itineraries</h1>
       </div>
       <div class="itin-header-right">
         <button type="button" class="itin-header-chip" id="itin-history-open">History</button>
-        <button type="button" class="itin-icon-btn" id="itin-modal-close" aria-label="Close trip planner">×</button>
+        <button type="button" class="itin-icon-btn" id="itin-modal-close" aria-label="Close">×</button>
       </div>
     </header>
     <div class="itin-modal-scroll">
@@ -2424,11 +4299,11 @@
         <p class="itin-history-intro">Saved itineraries</p>
         <p class="itin-history-caption">Open a saved plan to revisit your chosen route — you can edit days again after loading.</p>
         <div id="itin-history-status" class="itin-loading-msg itin-history-status" hidden>Loading saved trips…</div>
-        <p id="itin-history-empty" class="itin-history-caption" hidden>No saves yet — curate journeys and tap <strong>Save itinerary</strong> when you’re happy.</p>
+        <p id="itin-history-empty" class="itin-history-caption" hidden>No saves yet — curate journeys and tap <strong>Save full trip</strong> when you’re happy.</p>
         <ul id="itin-history-ul" class="itin-history-ul" hidden></ul>
       </section>
 
-      <section id="itin-form-section">
+      <section id="itin-form-section" hidden>
         <div class="itin-form-grid">
           <div class="itin-field">
             <label for="itin-date-depart">Departure date</label>
@@ -2475,31 +4350,146 @@
             <label><input type="checkbox" class="itin-interest" value="wellness" /> Wellness</label>
           </div>
         </div>
-        <button type="button" class="itin-primary" id="itin-generate">Curate three journeys</button>
+        <div id="itin-preflight-block" class="itin-preflight" hidden>
+          <h3 class="itin-preflight-title">Pick your inbound flight</h3>
+          <p class="itin-preflight-hint">We search <strong>Google Flights</strong> for outbound on your <strong>departure date</strong>, from your home airport to the airport we infer from the event. Choose one option, then generate your itineraries.</p>
+          <div id="itin-form-flights-host" class="itin-form-flights-host"></div>
+          <div id="itin-selected-flight-card" class="itin-selected-flight-card" hidden></div>
+        </div>
+        <button type="button" class="itin-primary" id="itin-generate">Generate My Itinerary 🚀</button>
       </section>
 
       <section id="itin-result-section" hidden>
         <div id="itin-variant-stage" class="itin-variant-stage" hidden></div>
         <div id="itin-plan-toolbar" class="itin-plan-toolbar" hidden></div>
-        <div class="itin-plan-actions" id="itin-plan-actions" hidden>
-          <button type="button" class="itin-save-trip" id="itin-save-trip">Save itinerary</button>
+
+        <div id="itin-trip-surface" class="itin-trip-surface" hidden>
+          <div class="itin-trip-hero">
+            <div class="itin-trip-hero-copy">
+              <p class="itin-trip-eyebrow" id="itin-trip-eyebrow">Your trip</p>
+              <h2 class="itin-trip-title" id="itin-trip-title">—</h2>
+              <p class="itin-trip-meta" id="itin-trip-meta"></p>
+              <p class="itin-trip-blurb" id="itin-trip-blurb" hidden></p>
+            </div>
+            <div class="itin-trip-hero-actions">
+              <span class="itin-trip-price-hint" id="itin-trip-price-hint" hidden></span>
+              <a class="itin-trip-book" id="itin-trip-book" href="#" target="_blank" rel="noopener noreferrer" hidden>Book tickets</a>
+            </div>
+          </div>
+
+          <nav class="itin-trip-tabs" role="tablist" aria-label="Trip sections">
+            <button type="button" class="itin-trip-tab itin-trip-tab--active" id="itin-trip-tab-itin" data-trip-tab="itin" role="tab" aria-selected="true">Itinerary</button>
+            <button type="button" class="itin-trip-tab" id="itin-trip-tab-flights" data-trip-tab="flights" role="tab" aria-selected="false">Flights</button>
+            <button type="button" class="itin-trip-tab" id="itin-trip-tab-hotels" data-trip-tab="hotels" role="tab" aria-selected="false">Hotels</button>
+          </nav>
+
+          <div class="itin-trip-tab-panels">
+            <div id="itin-panel-trip-itin" class="itin-trip-panel" role="tabpanel" aria-labelledby="itin-trip-tab-itin">
+              <div id="itin-trip-flight-banner" class="itin-trip-flight-banner" hidden></div>
+              <div id="itin-warnings" class="itin-trip-warnings"></div>
+              <div id="itin-day-pills" class="itin-day-pills"></div>
+              <div class="itin-trip-split">
+                <div class="itin-trip-main">
+                  <div id="itin-days-container" class="itin-days-timeline-host"></div>
+                </div>
+                <aside class="itin-trip-aside" aria-label="Trip context">
+                  <div class="itin-side-card itin-side-card--weather">
+                    <h4>Weather</h4>
+                    <p class="itin-side-weather-line" id="itin-weather-headline">—</p>
+                    <p class="itin-side-muted itin-weather-locale" id="itin-weather-locale"></p>
+                    <div id="itin-weather-grid" class="itin-weather-grid" hidden>
+                      <div class="itin-weather-stat"><span>Rain</span><strong id="itin-wx-rain">—</strong></div>
+                      <div class="itin-weather-stat"><span>Humidity</span><strong id="itin-wx-hum">—</strong></div>
+                      <div class="itin-weather-stat"><span>Wind</span><strong id="itin-wx-wind">—</strong></div>
+                    </div>
+                    <p class="itin-side-muted itin-weather-foot" id="itin-weather-foot">
+                      Forecast from <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open‑Meteo</a> for your trip start date (or today if earlier).
+                    </p>
+                  </div>
+                  <div class="itin-side-card">
+                    <h4>Trip summary</h4>
+                    <ul class="itin-side-list">
+                      <li><span>Dates</span><strong id="itin-side-dates">—</strong></li>
+                      <li><span>Duration</span><strong id="itin-side-duration">—</strong></li>
+                      <li><span>Places</span><strong id="itin-side-places">—</strong></li>
+                      <li><span>Main event</span><strong id="itin-side-eventdate">—</strong></li>
+                    </ul>
+                  </div>
+                  <div class="itin-side-card" id="itin-side-tips-card" hidden>
+                    <h4>Local tips</h4>
+                    <ul id="itin-side-tips" class="itin-side-tips"></ul>
+                  </div>
+                </aside>
+              </div>
+            </div>
+
+            <div id="itin-panel-trip-flights" class="itin-trip-panel eh-panel" role="tabpanel" aria-labelledby="itin-trip-tab-flights" hidden>
+              <h3>Flights</h3>
+              <p class="eh-muted">Trip dates follow the <strong>Itinerary</strong> tab (arrive / depart around the event). Outbound search uses the <strong>arrival</strong> date.</p>
+              <div class="eh-route-bar eh-route-bar--stack">
+                <div>
+                  <strong class="eh-route-kicker">Trip window</strong>
+                  <div id="itin-eh-route-line" class="eh-route-line">—</div>
+                  <div id="itin-eh-route-dates" class="eh-route-dates">—</div>
+                </div>
+              </div>
+              <div class="eh-field-row" style="margin-top: 16px;">
+                <div class="eh-field">
+                  <label for="itin-trip-from">From (IATA)</label>
+                  <input type="text" id="itin-trip-from" class="eh-iata" maxlength="3" placeholder="e.g. KUL" autocomplete="off" />
+                </div>
+                <div class="eh-field">
+                  <label for="itin-trip-to">To (IATA)</label>
+                  <input type="text" id="itin-trip-to" class="eh-iata" maxlength="3" placeholder="e.g. PEN" autocomplete="off" />
+                </div>
+              </div>
+              <p class="eh-muted" style="font-size: 12px;">Enter three-letter airport codes. We guess them from the event city — change if needed.</p>
+              <div class="event-hub-cta-row" style="margin-top: 8px; margin-bottom: 14px;">
+                <button type="button" class="eh-btn eh-btn--gold" id="itin-trip-google-btn">Search Google Flights</button>
+              </div>
+              <div id="itin-trip-flights-inline"></div>
+              <div id="itin-trip-flights-links" class="itin-trip-flinks"></div>
+            </div>
+
+            <div id="itin-panel-trip-hotels" class="itin-trip-panel eh-panel" role="tabpanel" aria-labelledby="itin-trip-tab-hotels" hidden>
+              <h3>Hotels</h3>
+              <p class="eh-muted">Stay dates follow your trip (check-in and check-out). One-night minimum for search if arrival and departure are the same day.</p>
+              <div class="eh-route-bar eh-route-bar--stack">
+                <div>
+                  <strong class="eh-route-kicker">Stay window</strong>
+                  <div id="itin-hotel-route-line" class="eh-route-line">—</div>
+                  <div id="itin-hotel-route-dates" class="eh-route-dates">—</div>
+                </div>
+              </div>
+              <div class="eh-field-row" style="margin-top: 16px;">
+                <div class="eh-field eh-field--grow">
+                  <label for="itin-hotel-q">Destination</label>
+                  <input type="text" id="itin-hotel-q" class="eh-hotel-q" maxlength="200" placeholder="e.g. venue, city" autocomplete="off" />
+                </div>
+              </div>
+              <p class="eh-muted" style="font-size: 12px;">We pre-fill from the event — edit if needed.</p>
+              <div class="event-hub-cta-row" style="margin-top: 8px; margin-bottom: 14px;">
+                <button type="button" class="eh-btn eh-btn--gold" id="itin-google-hotels-btn">Search Google Hotels</button>
+                <button type="button" class="eh-btn eh-btn--ghost" id="itin-trip-hotel-btn">Booking.com</button>
+              </div>
+              <div id="itin-hotels-inline"></div>
+            </div>
+          </div>
+
+          <footer class="itin-trip-footer">
+            <button type="button" class="itin-trip-footer-save" id="itin-save-trip">Save full trip</button>
+            <button type="button" class="itin-trip-footer-link" id="itin-share-trip">Share</button>
+            <button type="button" class="itin-trip-footer-link" id="itin-pdf-trip">PDF</button>
+            <button type="button" class="itin-trip-footer-link" id="itin-wa-trip">WhatsApp</button>
+            <button type="button" class="itin-trip-footer-link itin-trip-footer-link--right" id="itin-edit-trip">Close</button>
+          </footer>
         </div>
-        <p id="itin-guide-summary" class="itin-guide-summary" hidden></p>
-        <div id="itin-warnings" hidden></div>
-        <div class="itin-summary-row" id="itin-summary-row-wrap" hidden>
-          <div class="itin-summary-card"><span>Duration</span><strong id="itin-summary-duration">—</strong></div>
-          <div class="itin-summary-card"><span>Main event</span><strong id="itin-summary-eventdate">—</strong></div>
-          <div class="itin-summary-card"><span>Places</span><strong id="itin-summary-places">—</strong></div>
-        </div>
-        <div id="itin-days-container"></div>
-        <div id="itin-travel-links"></div>
-        <button type="button" class="itin-ghost" id="itin-edit-trip">Edit trip &amp; regenerate</button>
       </section>
     </div>
   </div>
 </div>
 
-<!-- Flight search (AirLabs routes + AirAsia booking deep link) -->
+<!-- Flight search: Google Flights (SerpAPI proxy) + AirAsia deep link -->
 <div id="fs-modal" class="itin-modal fs-modal" aria-hidden="true">
   <div class="itin-modal-backdrop" id="fs-modal-backdrop"></div>
   <div class="itin-modal-panel" role="dialog" aria-labelledby="fs-modal-title">
@@ -2509,9 +4499,9 @@
     </header>
     <div class="itin-modal-scroll">
       <p class="fs-disclaimer">
-        Enter your route and date, then <strong>Search flights</strong> opens AirAsia's live booking page in a new tab
-        with your inputs pre-filled. AirAsia sells partner flights too, so you'll see multiple carriers and real
-        prices there.
+        <strong>Search Google Flights</strong> loads live options (MYR) through our server — your SerpAPI key is never
+        sent to the browser. <strong>Open AirAsia</strong> opens AirAsia’s booking site in a new tab with your route
+        pre-filled (they also show partner airlines).
       </p>
       <div class="itin-field">
         <label>Popular routes</label>
@@ -2527,8 +4517,19 @@
           <input type="text" id="fs-to" maxlength="3" placeholder="SIN" autocomplete="off" />
         </div>
         <div class="itin-field">
-          <label for="fs-date">Travel date</label>
+          <label for="fs-date">Outbound date</label>
           <input type="date" id="fs-date" />
+        </div>
+        <div class="itin-field fs-return-wrap" id="fs-return-wrap" hidden>
+          <label for="fs-return-date">Return date</label>
+          <input type="date" id="fs-return-date" />
+        </div>
+        <div class="itin-field fs-trip-field">
+          <span class="fs-trip-label">Trip type</span>
+          <div class="fs-segment" role="group" aria-label="Trip type">
+            <button type="button" class="fs-seg-btn is-active" id="fs-trip-oneway" aria-pressed="true">One way</button>
+            <button type="button" class="fs-seg-btn" id="fs-trip-round" aria-pressed="false">Round trip</button>
+          </div>
         </div>
         <div class="itin-field">
           <label for="fs-pax">Passengers</label>
@@ -2547,9 +4548,30 @@
       </div>
       <button type="button" class="itin-ghost" id="fs-detect">Use my location (set From)</button>
       <div id="fs-detect-hint" class="fs-hint" aria-live="polite"></div>
-      <button type="button" class="itin-primary" id="fs-search">Search flights</button>
+      <div class="fs-actions-row">
+        <button type="button" class="itin-primary" id="fs-search-serp">Search Google Flights</button>
+        <button type="button" class="itin-ghost fs-btn-airasia" id="fs-search">Open AirAsia</button>
+      </div>
+      <div id="fs-serp-toolbar" class="fs-serp-toolbar" aria-label="Sort and filter results">
+        <div class="itin-field fs-toolbar-field">
+          <label for="fs-sort">Sort by</label>
+          <select id="fs-sort">
+            <option value="price" selected>Price</option>
+            <option value="duration">Duration</option>
+            <option value="departure">Departure time</option>
+          </select>
+        </div>
+        <label class="fs-check-label">
+          <input type="checkbox" id="fs-filter-nonstop" />
+          Nonstop only
+        </label>
+        <div class="itin-field fs-toolbar-field">
+          <label for="fs-filter-maxprice">Max price (MYR)</label>
+          <input type="number" id="fs-filter-maxprice" min="0" step="50" placeholder="Any" inputmode="numeric" />
+        </div>
+      </div>
       <div id="fs-alert" class="itin-alert" hidden></div>
-      <div id="fs-loading" class="itin-loading-msg" hidden>Opening AirAsia…</div>
+      <div id="fs-loading" class="itin-loading-msg" hidden>Searching…</div>
       <div id="fs-results" class="fs-results"></div>
     </div>
   </div>
@@ -2642,9 +4664,13 @@
   </div>
 </div>
 
+<script src="/auth-client.js" defer></script>
+<script src="/serp-flights-helpers.js" defer></script>
+<script src="/serp-hotels-helpers.js" defer></script>
 <script src="/itinerary-modal.js" defer></script>
 <script type="module" src="/flight-search.js"></script>
 <script type="module" src="/hotel-search.js"></script>
+<script src="/event-hub.js" defer></script>
 <script>
   let allEvents = [];
   let filterDebounceTimer = null;
@@ -2658,9 +4684,9 @@
     }, 200);
   }
 
-  function eventCardHtml(e, animDelay = 0) {
+  function eventCardHtml(e, animDelay = 0, idx = 0) {
     return `
-      <div class="card card-enter" data-anim-delay="${animDelay}">
+      <div class="card card-enter" data-anim-delay="${animDelay}" data-ev-idx="${idx}" role="button" tabindex="0" aria-label="Open event details and plan your trip">
         <div class="card-img-wrap">
           ${e.image
             ? `<img src="${e.image}" alt="${e.title}" width="400" height="240" loading="lazy" decoding="async" fetchpriority="low" onerror="this.outerHTML='<div class=\\'no-img\\'>🎟️</div>'" />`
@@ -2680,7 +4706,7 @@
           </div>
           ${e.summary ? `<div class="card-summary">${e.summary}</div>` : ''}
           <div style="flex:1;min-height:14px;"></div>
-          ${e.url ? `<a class="card-link" href="${e.url}" target="_blank">View Event &rarr;</a>` : ''}
+          ${e.url ? `<a class="card-link" href="${e.url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">View Event &rarr;</a>` : ''}
         </div>
       </div>
     `;
@@ -2822,9 +4848,10 @@
     }
 
     const slice = events.length > MAX_CARDS ? events.slice(0, MAX_CARDS) : events;
+    window.__lastRenderedEventSlice = slice;
     grid.innerHTML = slice.map((e, i) => {
       const delay = Math.min(i % 8, 7) * 55;
-      return eventCardHtml(e, delay);
+      return eventCardHtml(e, delay, i);
     }).join('');
     if (events.length > MAX_CARDS) {
       const note = document.createElement('div');
@@ -2881,6 +4908,11 @@
     const eventsZoneMetaEl = document.getElementById('ai-events-zone-meta');
     const eventsZoneClearBtn = document.getElementById('ai-events-zone-clear');
     if (!aiOverlay || !fab || !logEl || !messageEl || !sendBtn) return;
+
+    const heroAiBtnEl = document.getElementById('hero-ai-btn');
+    const heroAiInputEl = document.getElementById('hero-ai-input');
+    const heroAiStatusEl = document.getElementById('hero-ai-status');
+    let lastLaunchFromHero = false;
 
     const AI_CONVERSATIONS_KEY = 'ticket_scraper_ai_conversations_v2';
     const historyBtn = document.getElementById('ai-history-btn');
@@ -3179,6 +5211,10 @@
       const message = (messageEl.value || '').trim();
       if (!message) return;
       errEl.textContent = '';
+      if (lastLaunchFromHero && heroAiBtnEl) {
+        heroAiBtnEl.disabled = true;
+        heroAiBtnEl.textContent = 'Thinking...';
+      }
       const historyPrior = chatHistory.map(function (h) {
         return { role: h.role, content: h.content };
       });
@@ -3234,6 +5270,17 @@
         upsertActiveConversation();
       } finally {
         sendBtn.disabled = false;
+        if (lastLaunchFromHero) {
+          lastLaunchFromHero = false;
+          if (heroAiStatusEl) {
+            heroAiStatusEl.textContent = 'Try a travel-style question, or just say hello and Eventra will guide you.';
+            heroAiStatusEl.className = 'hero-ai-status';
+          }
+          if (heroAiBtnEl) {
+            heroAiBtnEl.disabled = false;
+            heroAiBtnEl.textContent = 'Ask Eventra';
+          }
+        }
       }
     }
 
@@ -3244,6 +5291,47 @@
         sendChat();
       }
     });
+
+    function setHeroBannerStatus(msg, tone) {
+      if (!heroAiStatusEl) return;
+      heroAiStatusEl.textContent = msg || '';
+      heroAiStatusEl.className = ('hero-ai-status ' + (tone || '')).trim();
+    }
+
+    function launchAssistantFromHero() {
+      if (sendBtn.disabled) return;
+      var q = (heroAiInputEl && heroAiInputEl.value || '').trim();
+      if (!q) {
+        setHeroBannerStatus('Type what you want, for example: "I am coming from Singapore for a concert weekend."', 'warning');
+        return;
+      }
+      setHeroBannerStatus('Eventra is scanning Malaysia events and travel signals...', 'thinking');
+      lastLaunchFromHero = true;
+      openDrawer();
+      messageEl.value = q;
+      if (heroAiInputEl) heroAiInputEl.value = '';
+      sendChat();
+    }
+
+    if (heroAiBtnEl) heroAiBtnEl.addEventListener('click', launchAssistantFromHero);
+    if (heroAiInputEl) {
+      heroAiInputEl.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          launchAssistantFromHero();
+        }
+      });
+    }
+    var promptChipsHost = document.querySelector('.hero-banner .prompt-chips');
+    if (promptChipsHost) {
+      promptChipsHost.addEventListener('click', function (e) {
+        var btn = e.target.closest('button[data-prompt]');
+        if (!btn) return;
+        var text = btn.getAttribute('data-prompt') || '';
+        if (heroAiInputEl) heroAiInputEl.value = text;
+        launchAssistantFromHero();
+      });
+    }
 
   }
 

@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Your profile · Event Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500&family=Jost:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ivory: #f8f4ee;
+      --forest: #0c1510;
+      --gold: #c8a96e;
+      --muted: rgba(248, 244, 238, 0.62);
+      --rule: rgba(200, 169, 110, 0.28);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font-family: 'Jost', system-ui, sans-serif;
+      background: radial-gradient(120% 90% at 50% -10%, #243d30 0%, var(--forest) 42%, #050807 100%);
+      color: var(--ivory);
+      padding: 28px 16px 48px;
+    }
+    .pf-wrap { max-width: 560px; margin: 0 auto; }
+    .pf-brand { text-align: center; margin-bottom: 22px; }
+    .pf-brand a { color: inherit; text-decoration: none; }
+    .pf-eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(200, 169, 110, 0.75);
+    }
+    .pf-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.65rem;
+      font-weight: 400;
+      margin-top: 6px;
+    }
+    .pf-card {
+      background: rgba(12, 21, 16, 0.94);
+      border: 1px solid var(--rule);
+      border-radius: 16px;
+      padding: 24px 22px 28px;
+      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.5);
+    }
+    .pf-section { margin-top: 22px; }
+    .pf-section:first-of-type { margin-top: 0; }
+    .pf-q {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.2rem;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+    .pf-sub {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.45;
+      margin-bottom: 12px;
+    }
+    .pf-field { margin-bottom: 12px; }
+    .pf-field label {
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(200, 169, 110, 0.85);
+      display: block;
+      margin-bottom: 6px;
+    }
+    .pf-field input, .pf-field select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 250, 243, 0.18);
+      background: rgba(255, 250, 243, 0.06);
+      color: var(--ivory);
+      font-family: inherit;
+      font-size: 0.95rem;
+    }
+    .pf-field input:read-only { opacity: 0.75; }
+    .pf-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (max-width: 480px) { .pf-grid { grid-template-columns: 1fr; } }
+    .pf-tile {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 250, 243, 0.12);
+      background: rgba(255, 250, 243, 0.05);
+      color: var(--ivory);
+      font-family: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .pf-tile:hover {
+      border-color: rgba(200, 169, 110, 0.45);
+      background: rgba(255, 250, 243, 0.09);
+    }
+    .pf-tile.is-selected {
+      border-color: rgba(200, 169, 110, 0.85);
+      background: rgba(200, 169, 110, 0.14);
+    }
+    .pf-tile .pf-k {
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(200, 169, 110, 0.9);
+      margin-bottom: 4px;
+    }
+    .pf-tile .pf-v { font-weight: 600; }
+    .pf-tile .pf-s { display: block; font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+    .pf-chip-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pf-chip {
+      padding: 9px 13px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 250, 243, 0.14);
+      background: rgba(255, 250, 243, 0.04);
+      color: var(--ivory);
+      font-family: inherit;
+      font-size: 0.84rem;
+      cursor: pointer;
+    }
+    .pf-chip:hover { border-color: rgba(200, 169, 110, 0.4); }
+    .pf-chip.is-on {
+      border-color: var(--gold);
+      background: rgba(200, 169, 110, 0.16);
+    }
+    .pf-other-row { margin-top: 12px; display: none; }
+    .pf-other-row.is-open { display: block; }
+    .pf-notes {
+      width: 100%;
+      min-height: 80px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 250, 243, 0.18);
+      background: rgba(255, 250, 243, 0.06);
+      color: var(--ivory);
+      font-family: inherit;
+      font-size: 0.92rem;
+      resize: vertical;
+    }
+    .pf-yesno { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .pf-yesno .pf-tile { text-align: center; }
+    .pf-actions {
+      margin-top: 26px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .pf-btn {
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 12px 18px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 250, 243, 0.2);
+      background: transparent;
+      color: rgba(255, 250, 243, 0.85);
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+    .pf-btn:hover { border-color: rgba(200, 169, 110, 0.5); color: var(--ivory); }
+    .pf-btn--gold {
+      border: none;
+      background: linear-gradient(135deg, #d4b97a, var(--gold));
+      color: var(--forest);
+    }
+    .pf-btn--gold:disabled { opacity: 0.45; cursor: not-allowed; }
+    .pf-msg {
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      display: none;
+    }
+    .pf-msg.is-ok {
+      display: block;
+      background: rgba(80, 140, 100, 0.2);
+      border: 1px solid rgba(120, 200, 140, 0.35);
+      color: #d8f0dc;
+    }
+    .pf-msg.is-err {
+      display: block;
+      background: rgba(180, 60, 60, 0.2);
+      border: 1px solid rgba(220, 120, 120, 0.35);
+      color: #f5d0d0;
+    }
+    .pf-loading { text-align: center; padding: 40px 16px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="pf-wrap">
+    <div class="pf-brand">
+      <a href="/events">
+        <div class="pf-eyebrow">Event Explorer</div>
+        <div class="pf-title">Your profile</div>
+      </a>
+    </div>
+
+    <div id="pf-loading" class="pf-loading">Loading your preferences…</div>
+
+    <div id="pf-app" class="pf-card" hidden>
+      <p class="pf-sub" style="margin-top:0">
+        Here is what we have saved for recommendations, flights, and trip planning. Update anything below and tap <strong>Save changes</strong>.
+      </p>
+
+      <div class="pf-section">
+        <p class="pf-q">Account</p>
+        <div class="pf-field">
+          <label for="pf-email">Email</label>
+          <input id="pf-email" type="email" readonly autocomplete="username" />
+        </div>
+        <div class="pf-field">
+          <label for="pf-display">Display name</label>
+          <input id="pf-display" type="text" maxlength="80" placeholder="How we greet you" />
+        </div>
+      </div>
+
+      <div class="pf-section">
+        <p class="pf-q">Home airport</p>
+        <p class="pf-sub">Used as the default “From” airport when you generate an itinerary from an event.</p>
+        <div class="pf-grid" id="pf-airports"></div>
+        <div class="pf-other-row" id="pf-other-wrap">
+          <div class="pf-field">
+            <label for="pf-iata-other">3-letter IATA code</label>
+            <input id="pf-iata-other" maxlength="3" placeholder="e.g. LGK" autocomplete="off" />
+          </div>
+          <div class="pf-grid">
+            <div class="pf-field">
+              <label for="pf-city">City / area label</label>
+              <input id="pf-city" type="text" maxlength="120" />
+            </div>
+            <div class="pf-field">
+              <label for="pf-country">Country</label>
+              <input id="pf-country" type="text" maxlength="80" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pf-section">
+        <p class="pf-q">Event types you like</p>
+        <p class="pf-sub">At least one — we use this to tune listings and ideas.</p>
+        <div class="pf-chip-grid" id="pf-genres"></div>
+      </div>
+
+      <div class="pf-section">
+        <p class="pf-q">When you travel, what do you chase?</p>
+        <p class="pf-sub">Optional — helps match trip ideas.</p>
+        <div class="pf-chip-grid" id="pf-interests"></div>
+      </div>
+
+      <div class="pf-section">
+        <p class="pf-q">Trip energy</p>
+        <p class="pf-sub">How bold you like activities (separate from spending below).</p>
+        <div class="pf-grid" id="pf-adventure"></div>
+      </div>
+
+      <div class="pf-section">
+        <p class="pf-q">Spending when travelling</p>
+        <p class="pf-sub">Budget vibe for itineraries and tips.</p>
+        <div class="pf-grid" id="pf-budget"></div>
+      </div>
+
+      <div class="pf-section">
+        <p class="pf-q">Day pace</p>
+        <div class="pf-grid" id="pf-pace"></div>
+      </div>
+
+      <div class="pf-section">
+        <p class="pf-q">Tips by email</p>
+        <div class="pf-yesno" id="pf-marketing"></div>
+        <div class="pf-field" style="margin-top:16px">
+          <label for="pf-lang">Preferred language (optional)</label>
+          <input id="pf-lang" type="text" maxlength="40" placeholder="e.g. English, Bahasa Melayu" />
+        </div>
+        <div class="pf-field" style="margin-top:12px">
+          <label for="pf-notes">Notes (optional)</label>
+          <textarea id="pf-notes" class="pf-notes" maxlength="500" placeholder="Favourite artists, venues, anything that helps us curate."></textarea>
+        </div>
+      </div>
+
+      <div class="pf-actions">
+        <a class="pf-btn" href="/events">← Back to events</a>
+        <button type="button" class="pf-btn pf-btn--gold" id="pf-save">Save changes</button>
+      </div>
+      <div id="pf-msg" class="pf-msg" role="alert"></div>
+    </div>
+  </div>
+
+  <script src="/auth-client.js" defer></script>
+  <script>
+    (function () {
+      var AIRPORTS = [
+        { iata: 'KUL', city: 'KL & Klang Valley', country: 'Malaysia' },
+        { iata: 'PEN', city: 'Penang & north', country: 'Malaysia' },
+        { iata: 'JHB', city: 'Johor & south', country: 'Malaysia' },
+        { iata: 'BKI', city: 'Kota Kinabalu / east', country: 'Malaysia' },
+        { iata: 'KCH', city: 'Kuching / Sarawak', country: 'Malaysia' },
+        { iata: 'SIN', city: 'Singapore', country: 'Singapore' },
+        { iata: 'OTHER', city: 'Somewhere else', country: '' },
+      ];
+      var GENRES = [
+        { id: 'music', label: 'Music & concerts' },
+        { id: 'comedy', label: 'Comedy & stand-up' },
+        { id: 'sports', label: 'Sports & fitness' },
+        { id: 'arts', label: 'Arts & theatre' },
+        { id: 'family', label: 'Family & kids' },
+        { id: 'food', label: 'Food & markets' },
+        { id: 'nightlife', label: 'Nightlife' },
+        { id: 'tech', label: 'Tech & talks' },
+        { id: 'wellness', label: 'Wellness & outdoors' },
+      ];
+      var INTERESTS = [
+        { id: 'food', label: 'Food' },
+        { id: 'culture', label: 'Culture' },
+        { id: 'nature', label: 'Nature' },
+        { id: 'adventure', label: 'Adventure' },
+        { id: 'shopping', label: 'Shopping' },
+        { id: 'nightlife', label: 'Nightlife' },
+        { id: 'family', label: 'Family' },
+        { id: 'wellness', label: 'Wellness' },
+      ];
+
+      var state = {
+        email: '',
+        displayName: '',
+        locationCity: '',
+        locationCountry: 'Malaysia',
+        homeIata: 'KUL',
+        genres: [],
+        activityInterests: [],
+        adventureLevel: 'medium',
+        budgetLevel: 2,
+        pacePreference: 'balanced',
+        marketingOptIn: false,
+        language: '',
+        notes: '',
+      };
+      var otherMode = false;
+
+      function showMsg(t, kind) {
+        var m = document.getElementById('pf-msg');
+        m.textContent = t || '';
+        m.className = 'pf-msg' + (kind === 'ok' ? ' is-ok' : kind === 'err' ? ' is-err' : '');
+        if (!t) m.className = 'pf-msg';
+      }
+
+      function renderAirports() {
+        var host = document.getElementById('pf-airports');
+        var hi = String(state.homeIata || '').toUpperCase().slice(0, 3);
+        var known = AIRPORTS.some(function (a) {
+          return a.iata !== 'OTHER' && a.iata === hi;
+        });
+        otherMode = !known && hi.length === 3;
+        document.getElementById('pf-other-wrap').classList.toggle('is-open', otherMode);
+        if (otherMode) {
+          document.getElementById('pf-iata-other').value = hi;
+        }
+        host.innerHTML = '';
+        AIRPORTS.forEach(function (a) {
+          var sel =
+            (a.iata !== 'OTHER' && a.iata === hi) || (a.iata === 'OTHER' && otherMode);
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'pf-tile' + (sel ? ' is-selected' : '');
+          b.setAttribute('data-iata', a.iata);
+          b.innerHTML =
+            '<span class="pf-k">' +
+            (a.iata === 'OTHER' ? 'Custom' : a.iata) +
+            '</span><span class="pf-v">' +
+            a.city +
+            '</span><span class="pf-s">' +
+            (a.country || 'enter code') +
+            '</span>';
+          b.addEventListener('click', function () {
+            host.querySelectorAll('.pf-tile').forEach(function (x) {
+              x.classList.remove('is-selected');
+            });
+            b.classList.add('is-selected');
+            otherMode = a.iata === 'OTHER';
+            document.getElementById('pf-other-wrap').classList.toggle('is-open', otherMode);
+            if (!otherMode) {
+              state.homeIata = a.iata;
+              state.locationCity = a.city;
+              state.locationCountry = a.country || 'Malaysia';
+              document.getElementById('pf-city').value = state.locationCity;
+              document.getElementById('pf-country').value = state.locationCountry;
+            }
+          });
+          host.appendChild(b);
+        });
+      }
+
+      function renderChips(hostId, items, arrKey) {
+        var host = document.getElementById(hostId);
+        host.innerHTML = '';
+        items.forEach(function (it) {
+          var on = state[arrKey].indexOf(it.id) >= 0;
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'pf-chip' + (on ? ' is-on' : '');
+          b.textContent = it.label;
+          b.setAttribute('data-id', it.id);
+          b.addEventListener('click', function () {
+            var list = state[arrKey];
+            var i = list.indexOf(it.id);
+            if (i >= 0) {
+              list.splice(i, 1);
+              b.classList.remove('is-on');
+            } else {
+              list.push(it.id);
+              b.classList.add('is-on');
+            }
+          });
+          host.appendChild(b);
+        });
+      }
+
+      function renderTiles(hostId, opts, key, current) {
+        var host = document.getElementById(hostId);
+        host.innerHTML = '';
+        opts.forEach(function (o) {
+          var val = o.v;
+          var sel = key === 'budgetLevel' ? Number(current) === Number(val) : current === val;
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'pf-tile' + (sel ? ' is-selected' : '');
+          b.innerHTML = '<span class="pf-v">' + o.t + '</span><span class="pf-s">' + o.s + '</span>';
+          b.addEventListener('click', function () {
+            state[key] = val;
+            renderTiles(hostId, opts, key, val);
+          });
+          host.appendChild(b);
+        });
+      }
+
+      function renderMarketing() {
+        var host = document.getElementById('pf-marketing');
+        host.innerHTML = '';
+        function mk(yes) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'pf-tile' + (state.marketingOptIn === yes ? ' is-selected' : '');
+          b.textContent = yes ? 'Yes, surprise me' : 'No thanks';
+          b.addEventListener('click', function () {
+            state.marketingOptIn = yes;
+            renderMarketing();
+          });
+          return b;
+        }
+        host.appendChild(mk(true));
+        host.appendChild(mk(false));
+      }
+
+      function renderAll() {
+        document.getElementById('pf-display').value = state.displayName;
+        document.getElementById('pf-city').value = state.locationCity;
+        document.getElementById('pf-country').value = state.locationCountry || 'Malaysia';
+        document.getElementById('pf-lang').value = state.language || '';
+        document.getElementById('pf-notes').value = state.notes || '';
+        renderAirports();
+        renderChips('pf-genres', GENRES, 'genres');
+        renderChips('pf-interests', INTERESTS, 'activityInterests');
+        renderTiles(
+          'pf-adventure',
+          [
+            { v: 'easy', t: 'Easy-going', s: 'Chill plans' },
+            { v: 'medium', t: 'Balanced', s: 'A bit of everything' },
+            { v: 'hard', t: 'Full send', s: 'Stack the day' },
+          ],
+          'adventureLevel',
+          state.adventureLevel,
+        );
+        renderTiles(
+          'pf-budget',
+          [
+            { v: 1, t: '🎒 Keep it cheap', s: 'Street food & budget stays' },
+            { v: 2, t: '✈️ Fair balance', s: 'Comfort without overspending' },
+            { v: 3, t: '🏨 Treat yourself', s: 'Good hotels & dining' },
+            { v: 4, t: '💎 Go all out', s: 'Only the best' },
+          ],
+          'budgetLevel',
+          state.budgetLevel,
+        );
+        renderTiles(
+          'pf-pace',
+          [
+            { v: 'slow', t: 'Slow', s: 'One highlight, long breaks' },
+            { v: 'balanced', t: 'Balanced', s: 'Steady rhythm' },
+            { v: 'packed', t: 'Packed', s: 'See it all' },
+          ],
+          'pacePreference',
+          state.pacePreference,
+        );
+        renderMarketing();
+      }
+
+      function collectBody() {
+        state.displayName = document.getElementById('pf-display').value.trim();
+        state.locationCity = document.getElementById('pf-city').value.trim();
+        state.locationCountry = document.getElementById('pf-country').value.trim() || 'Malaysia';
+        if (otherMode) {
+          state.homeIata = document.getElementById('pf-iata-other').value.trim().toUpperCase().slice(0, 3);
+        }
+        state.language = document.getElementById('pf-lang').value.trim();
+        state.notes = document.getElementById('pf-notes').value.trim();
+        return {
+          displayName: state.displayName,
+          locationCity: state.locationCity,
+          locationCountry: state.locationCountry,
+          homeIata: state.homeIata,
+          genres: state.genres.slice(),
+          activityInterests: state.activityInterests.slice(),
+          adventureLevel: state.adventureLevel,
+          pacePreference: state.pacePreference,
+          budgetLevel: state.budgetLevel,
+          marketingOptIn: state.marketingOptIn,
+          language: state.language,
+          notes: state.notes,
+        };
+      }
+
+      function boot(user) {
+        document.getElementById('pf-loading').hidden = true;
+        document.getElementById('pf-app').hidden = false;
+        document.getElementById('pf-app').removeAttribute('hidden');
+        state.email = user.email || '';
+        var p = user.profile || {};
+        state.displayName = p.displayName || '';
+        state.locationCity = p.locationCity || '';
+        state.locationCountry = p.locationCountry || 'Malaysia';
+        state.homeIata = (p.homeIata || 'KUL').toString().toUpperCase().slice(0, 3);
+        state.genres = Array.isArray(p.genres) ? p.genres.slice() : [];
+        state.activityInterests = Array.isArray(p.activityInterests) ? p.activityInterests.slice() : [];
+        state.adventureLevel = p.adventureLevel || 'medium';
+        state.budgetLevel = Number.isFinite(Number(p.budgetLevel)) ? Math.min(4, Math.max(1, Math.round(Number(p.budgetLevel)))) : 2;
+        state.pacePreference = p.pacePreference || 'balanced';
+        state.marketingOptIn = Boolean(p.marketingOptIn);
+        state.language = p.language || '';
+        state.notes = p.notes || '';
+        document.getElementById('pf-email').value = state.email;
+        renderAll();
+      }
+
+      function init() {
+        fetch('/api/auth/me', { credentials: 'same-origin' })
+          .then(function (r) {
+            return r.json().then(function (j) {
+              return { ok: r.ok, j: j };
+            });
+          })
+          .then(function (x) {
+            if (!x.ok || !x.j.user) {
+              window.location.replace('/auth');
+              return;
+            }
+            var u = x.j.user;
+            if (!u.profile || u.profile.onboardingComplete !== true) {
+              window.location.replace('/onboarding');
+              return;
+            }
+            boot(u);
+          })
+          .catch(function () {
+            window.location.replace('/auth');
+          });
+
+        document.getElementById('pf-save').addEventListener('click', function () {
+          var btn = document.getElementById('pf-save');
+          showMsg('');
+          btn.disabled = true;
+          var payload = collectBody();
+          fetch('/api/auth/profile', {
+            method: 'PATCH',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+            .then(function (r) {
+              return r.json().then(function (j) {
+                return { ok: r.ok, j: j };
+              });
+            })
+            .then(function (x) {
+              if (!x.ok) {
+                showMsg(x.j.error || 'Could not save', 'err');
+                return;
+              }
+              showMsg('Saved — your picks are updated everywhere on the site.', 'ok');
+              if (typeof window.__refreshAuth === 'function') {
+                return window.__refreshAuth();
+              }
+            })
+            .catch(function () {
+              showMsg('Network error — try again.', 'err');
+            })
+            .finally(function () {
+              btn.disabled = false;
+            });
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</body>
+</html>

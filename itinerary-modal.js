@@ -11,6 +11,30 @@
   const ITIN_IMG_STATIC_FALLBACK =
     'https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&w=400&q=70';
 
+  /** Same hints as event-hub.js — prefill flight “To” from event city / venue. */
+  const CITY_HINT_TO_IATA = [
+    [/kuala\s*lumpur|kl\b/i, 'KUL'],
+    [/penang|george\s*town|pulau\s*pinang/i, 'PEN'],
+    [/johor|jb\b|johor\s*bahru/i, 'JHB'],
+    [/kota\s*kinabalu|sabah/i, 'BKI'],
+    [/kuching|sarawak/i, 'KCH'],
+    [/langkawi/i, 'LGK'],
+    [/melaka|malacca/i, 'MKZ'],
+    [/ipoh/i, 'IPH'],
+    [/kota\s*bharu|kelantan/i, 'KBR'],
+    [/terengganu|kuala\s*terengganu/i, 'TGG'],
+    [/miri/i, 'MYY'],
+    [/singapore/i, 'SIN'],
+  ];
+
+  function guessDestIata(city, venue) {
+    const blob = `${city || ''} ${venue || ''}`;
+    for (let i = 0; i < CITY_HINT_TO_IATA.length; i++) {
+      if (CITY_HINT_TO_IATA[i][0].test(blob)) return CITY_HINT_TO_IATA[i][1];
+    }
+    return 'KUL';
+  }
+
   let selectedEvent = null;
   /** Full API envelope (multi-variant trips). */
   let tripEnvelope = null;
@@ -20,6 +44,12 @@
   let lastPayload = null;
   let lastAcEvents = [];
   let acTimer = null;
+  let plannerSelectedFlight = null;
+  let plannerSelectedHotel = null;
+  let lastPlannerFlightRows = [];
+  let plannerFlightSearchSerial = 0;
+  let plannerPreflightTimer = null;
+  let lastPreflightSearchKey = '';
 
   /** Stashed planner UI when opening History — restored by Back. */
   let stashBeforeHistory = null;
@@ -27,6 +57,35 @@
 
   function $(id) {
     return document.getElementById(id);
+  }
+
+  function scrollMotionBehavior() {
+    try {
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        return 'auto';
+      }
+    } catch (e) {
+      /* ignore */
+    }
+    return 'smooth';
+  }
+
+  function scrollItinModalMainToTop() {
+    const modal = $('itin-modal');
+    if (!modal) return;
+    const sc = modal.querySelector('.itin-modal-scroll');
+    if (sc && typeof sc.scrollTo === 'function') {
+      sc.scrollTo({ top: 0, behavior: scrollMotionBehavior() });
+    }
+  }
+
+  function scrollTripTabPanelsToTop() {
+    const modal = $('itin-modal');
+    if (!modal) return;
+    const panels = modal.querySelector('.itin-trip-tab-panels');
+    if (panels && typeof panels.scrollTo === 'function') {
+      panels.scrollTo({ top: 0, behavior: scrollMotionBehavior() });
+    }
   }
 
   function getActiveVariant() {
@@ -43,6 +102,8 @@
     if (raw && raw.schemaVersion === 2 && Array.isArray(raw.variants) && raw.variants.length) {
       return Object.assign({}, raw, {
         warnings: Array.isArray(raw.warnings) ? raw.warnings : [],
+        selectedFlight: raw.selectedFlight != null ? raw.selectedFlight : null,
+        selectedHotel: raw.selectedHotel != null ? raw.selectedHotel : null,
       });
     }
     return {
@@ -50,6 +111,8 @@
       event: raw.event,
       city: raw.city,
       warnings: raw.warnings || [],
+      selectedFlight: raw.selectedFlight != null ? raw.selectedFlight : null,
+      selectedHotel: raw.selectedHotel != null ? raw.selectedHotel : null,
       variants: [
         {
           key: 'classic',
@@ -103,6 +166,22 @@
     return x.toISOString().slice(0, 10);
   }
 
+  function addDaysIso(iso, delta) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || '').slice(0, 10));
+    if (!m) return '';
+    const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+    d.setUTCDate(d.getUTCDate() + delta);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function suggestHotelQueryFromEvent(ev, cityFallback) {
+    if (!ev || typeof ev !== 'object') return String(cityFallback || '').trim() || 'Malaysia';
+    const city = String(ev.city || cityFallback || '').trim();
+    const venue = String(ev.venue || '').trim();
+    if (venue && city) return venue + ', ' + city;
+    return city || venue || 'Malaysia';
+  }
+
   function tripInclusiveDays(startIso, endIso) {
     if (!startIso || !endIso || endIso < startIso) return 0;
     const a = new Date(startIso + 'T12:00:00Z');
@@ -112,6 +191,841 @@
 
   function todayMalaysiaISO() {
     return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' });
+  }
+
+  function formatOneDateLine(iso) {
+    const s = String(iso || '').slice(0, 10);
+    const d = /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(s + 'T12:00:00') : new Date(iso);
+    if (Number.isNaN(d.getTime())) return s || '—';
+    return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function formatSideDates(dep, ret) {
+    const a = String(dep || '').slice(0, 10);
+    const b = String(ret || '').slice(0, 10);
+    if (!a && !b) return '—';
+    if (a && !b) return formatOneDateLine(a);
+    if (!a && b) return formatOneDateLine(b);
+    if (a === b) return formatOneDateLine(a);
+    return formatOneDateLine(a) + ' – ' + formatOneDateLine(b);
+  }
+
+  function setTripTab(name) {
+    const t = name === 'flights' || name === 'hotels' ? name : 'itin';
+    ['itin', 'flights', 'hotels'].forEach(function (key) {
+      const btn = $('itin-trip-tab-' + key);
+      const panel = $('itin-panel-trip-' + key);
+      const on = key === t;
+      if (btn) {
+        btn.classList.toggle('itin-trip-tab--active', on);
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      }
+      if (panel) {
+        if (on) {
+          panel.hidden = false;
+          panel.removeAttribute('hidden');
+          if (key === 'hotels') updateTripHotelPanel();
+        } else {
+          panel.hidden = true;
+          panel.setAttribute('hidden', '');
+        }
+      }
+    });
+    scrollTripTabPanelsToTop();
+  }
+
+  function populateTripHero(act) {
+    const ev = (tripEnvelope && tripEnvelope.event) || {};
+    const city = String(ev.city || tripEnvelope.city || '').trim();
+    const venue = String(ev.venue || '').trim();
+    const cat = String(ev.category || '').trim();
+    const title = String(ev.title || (act && act.title) || 'Your trip').trim();
+    const eventD = toIsoDate(ev.date);
+    const eyebrow = (cat ? cat.toUpperCase() + ' · ' : '') + (city ? city.toUpperCase() : 'YOUR TRIP');
+    const metaParts = [];
+    if (venue) metaParts.push(venue);
+    if (city && venue.toLowerCase().indexOf(city.toLowerCase()) === -1) metaParts.push(city);
+    if (eventD) metaParts.push(eventD);
+    const eb = $('itin-trip-eyebrow');
+    if (eb) eb.textContent = eyebrow || 'YOUR TRIP';
+    const ti = $('itin-trip-title');
+    if (ti) ti.textContent = title;
+    const me = $('itin-trip-meta');
+    if (me) me.textContent = metaParts.join(' · ') || '';
+    const blurb = $('itin-trip-blurb');
+    if (blurb) {
+      const gs = (act && act.guideSummary) || '';
+      blurb.textContent = gs;
+      if (gs) {
+        blurb.hidden = false;
+        blurb.removeAttribute('hidden');
+      } else {
+        blurb.hidden = true;
+        blurb.setAttribute('hidden', '');
+      }
+    }
+    const book = $('itin-trip-book');
+    const ticketUrl = String(ev.url || '').trim();
+    if (book) {
+      if (ticketUrl) {
+        book.href = ticketUrl;
+        book.hidden = false;
+        book.removeAttribute('hidden');
+      } else {
+        book.hidden = true;
+        book.setAttribute('hidden', '');
+      }
+    }
+    const ph = $('itin-trip-price-hint');
+    if (ph) {
+      const priceStr = String(ev.price || '').trim();
+      if (priceStr) {
+        ph.textContent = priceStr;
+        ph.hidden = false;
+        ph.removeAttribute('hidden');
+      } else if (ev.is_free) {
+        ph.textContent = 'Free event';
+        ph.hidden = false;
+        ph.removeAttribute('hidden');
+      } else {
+        ph.hidden = true;
+        ph.setAttribute('hidden', '');
+      }
+    }
+    const sc = $('itin-weather-locale');
+    if (sc) {
+      const parts = [];
+      if (city) parts.push(city);
+      if (venue && (!city || venue.toLowerCase().indexOf(city.toLowerCase()) === -1)) parts.push(venue);
+      sc.textContent = parts.length ? parts.join(' · ') : '—';
+    }
+  }
+
+  function wmoWeatherLabel(code) {
+    const c = Number(code);
+    const map = {
+      0: 'Clear',
+      1: 'Mainly clear',
+      2: 'Partly cloudy',
+      3: 'Overcast',
+      45: 'Foggy',
+      48: 'Fog',
+      51: 'Light drizzle',
+      53: 'Drizzle',
+      55: 'Heavy drizzle',
+      61: 'Light rain',
+      63: 'Rain',
+      65: 'Heavy rain',
+      71: 'Snow',
+      80: 'Rain showers',
+      81: 'Heavy showers',
+      82: 'Violent showers',
+      95: 'Thunderstorm',
+      96: 'Thunderstorm & hail',
+      99: 'Severe thunderstorm',
+    };
+    if (map[c]) return map[c];
+    if (c > 80 && c < 85) return 'Showers';
+    if (c >= 71 && c <= 77) return 'Snow';
+    return 'Mixed';
+  }
+
+  async function refreshTripWeather() {
+    const headline = $('itin-weather-headline');
+    const grid = $('itin-weather-grid');
+    const rainEl = $('itin-wx-rain');
+    const humEl = $('itin-wx-hum');
+    const windEl = $('itin-wx-wind');
+    if (!headline) return;
+    const city = String((tripEnvelope && tripEnvelope.city) || (tripEnvelope && tripEnvelope.event && tripEnvelope.event.city) || '').trim();
+    const dep = ($('itin-date-depart') && $('itin-date-depart').value) || '';
+    const today = todayMalaysiaISO();
+    const targetDate = dep && dep >= today ? dep.slice(0, 10) : today;
+    if (!city) {
+      headline.textContent = '—';
+      return;
+    }
+    headline.textContent = 'Loading…';
+    if (grid) grid.hidden = true;
+    if (grid) grid.setAttribute('hidden', '');
+    const footDefault =
+      'Forecast from <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open‑Meteo</a> for your trip start date (or today if earlier).';
+    const footEl = $('itin-weather-foot');
+    if (footEl) footEl.innerHTML = footDefault;
+    try {
+      const geoRes = await fetch(
+        'https://geocoding-api.open-meteo.com/v1/search?name=' +
+          encodeURIComponent(city) +
+          '&count=1&language=en&format=json',
+      );
+      const geo = await geoRes.json().catch(function () {
+        return {};
+      });
+      const hit = geo.results && geo.results[0];
+      if (!hit || hit.latitude == null || hit.longitude == null) {
+        headline.textContent = 'Location not found';
+        return;
+      }
+      const lat = hit.latitude;
+      const lon = hit.longitude;
+      const label = String(hit.name || city) + (hit.country ? ', ' + hit.country : '');
+      const loc = $('itin-weather-locale');
+      if (loc && !loc.textContent.trim()) loc.textContent = label;
+
+      const wxUrl =
+        'https://api.open-meteo.com/v1/forecast?latitude=' +
+        encodeURIComponent(String(lat)) +
+        '&longitude=' +
+        encodeURIComponent(String(lon)) +
+        '&daily=weathercode,temperature_2m_max,precipitation_probability_max,windspeed_10m_max,relative_humidity_2m_mean' +
+        '&timezone=Asia%2FSingapore' +
+        '&start_date=' +
+        encodeURIComponent(targetDate) +
+        '&end_date=' +
+        encodeURIComponent(targetDate) +
+        '&windspeed_unit=kmh';
+      const wxRes = await fetch(wxUrl);
+      const wx = await wxRes.json().catch(function () {
+        return {};
+      });
+      let d = wx.daily || {};
+      let idx = 0;
+      if (wx.error || !Array.isArray(d.time) || !d.time.length) {
+        const rollUrl =
+          'https://api.open-meteo.com/v1/forecast?latitude=' +
+          encodeURIComponent(String(lat)) +
+          '&longitude=' +
+          encodeURIComponent(String(lon)) +
+          '&daily=weathercode,temperature_2m_max,precipitation_probability_max,windspeed_10m_max,relative_humidity_2m_mean' +
+          '&timezone=Asia%2FSingapore' +
+          '&forecast_days=16' +
+          '&windspeed_unit=kmh';
+        const wx2 = await fetch(rollUrl).then(function (r) {
+          return r.json();
+        });
+        d = wx2.daily || {};
+        if (!Array.isArray(d.time) || !d.time.length) {
+          headline.textContent = 'Forecast unavailable';
+          return;
+        }
+        const t0 = new Date(today + 'T12:00:00Z');
+        const t1 = new Date(targetDate + 'T12:00:00Z');
+        let diff = Math.round((t1 - t0) / 86400000);
+        if (!Number.isFinite(diff)) diff = 0;
+        if (diff < 0) diff = 0;
+        if (diff >= d.time.length) diff = d.time.length - 1;
+        idx = diff;
+        const foot = $('itin-weather-foot');
+        if (foot && targetDate !== d.time[idx]) {
+          foot.textContent =
+            'Showing the nearest available day in the 16-day outlook (' +
+            String(d.time[idx]) +
+            '). Open‑Meteo does not serve free forecasts past that window.';
+        }
+      } else if (footEl) {
+        footEl.innerHTML = footDefault;
+      }
+      const tmax = Array.isArray(d.temperature_2m_max) ? d.temperature_2m_max[idx] : null;
+      const code = Array.isArray(d.weathercode) ? d.weathercode[idx] : null;
+      const rainP = Array.isArray(d.precipitation_probability_max) ? d.precipitation_probability_max[idx] : null;
+      const hum = Array.isArray(d.relative_humidity_2m_mean) ? d.relative_humidity_2m_mean[idx] : null;
+      const wind = Array.isArray(d.windspeed_10m_max) ? d.windspeed_10m_max[idx] : null;
+      if (tmax == null && code == null) {
+        headline.textContent = 'Forecast unavailable';
+        return;
+      }
+      const deg = tmax != null ? Math.round(Number(tmax)) + '°' : '';
+      const cond = wmoWeatherLabel(code != null ? code : 3);
+      headline.textContent = (deg ? deg + ' · ' : '') + cond;
+      if (rainEl) rainEl.textContent = rainP != null ? Math.round(Number(rainP)) + '%' : '—';
+      if (humEl) humEl.textContent = hum != null ? Math.round(Number(hum)) + '%' : '—';
+      if (windEl) windEl.textContent = wind != null ? Math.round(Number(wind)) + ' km/h' : '—';
+      if (grid) {
+        grid.hidden = false;
+        grid.removeAttribute('hidden');
+      }
+    } catch (e) {
+      headline.textContent = 'Weather offline';
+    }
+  }
+
+  function updateTripFlightPanel() {
+    const dep = ($('itin-date-depart') && $('itin-date-depart').value) || '';
+    const ret = ($('itin-date-return') && $('itin-date-return').value) || '';
+    const tf = $('itin-trip-from');
+    const tt = $('itin-trip-to');
+    const ev = tripEnvelope && tripEnvelope.event;
+    const home =
+      typeof window.__getHomeIataFromProfile === 'function' ? window.__getHomeIataFromProfile() : 'KUL';
+    if (tf && !String(tf.value || '').trim()) tf.value = home;
+    if (tt && !String(tt.value || '').trim() && ev) {
+      const origin = String((tf && tf.value) || home)
+        .trim()
+        .toUpperCase()
+        .slice(0, 3);
+      let g = guessDestIata(ev.city, ev.venue);
+      if (!g || g === origin) g = '';
+      tt.value = g;
+    }
+    const from = String((tf && tf.value) || '')
+      .trim()
+      .toUpperCase()
+      .slice(0, 3);
+    const to = String((tt && tt.value) || '')
+      .trim()
+      .toUpperCase()
+      .slice(0, 3);
+    const line = $('itin-eh-route-line');
+    if (line) {
+      if (dep) {
+        line.textContent = 'Outbound flight date: ' + dep;
+      } else {
+        line.textContent = 'Set trip dates (Edit trip → planner form) or open an event from listings.';
+      }
+    }
+    const datesEl = $('itin-eh-route-dates');
+    if (datesEl) {
+      datesEl.textContent =
+        dep && ret ? 'Arrive ' + dep + ' · Depart ' + ret : '—';
+    }
+  }
+
+  function formatFlightRm(price) {
+    const n = Number(price);
+    if (n !== n) return '—';
+    return 'RM ' + n.toLocaleString('en-MY', { maximumFractionDigits: 0 });
+  }
+
+  function scrollToGenerateButton() {
+    const btn = $('itin-generate');
+    if (btn && btn.scrollIntoView) {
+      btn.scrollIntoView({ behavior: scrollMotionBehavior(), block: 'nearest' });
+    }
+  }
+
+  function updateGenerateButtonState() {
+    const btn = $('itin-generate');
+    if (!btn) return;
+    const formSec = $('itin-form-section');
+    if (formSec && formSec.hidden) {
+      btn.disabled = false;
+      btn.removeAttribute('title');
+      btn.textContent = 'Generate My Itinerary 🚀';
+      btn.classList.remove('itin-primary--disabled');
+      return;
+    }
+    const ok = !!plannerSelectedFlight;
+    btn.disabled = !ok;
+    btn.title = ok
+      ? ''
+      : 'Please select a flight first so we can plan around your travel times';
+    btn.textContent = ok ? 'Generate My Itinerary 🚀' : 'Select a flight first ✈️';
+    btn.classList.toggle('itin-primary--disabled', !ok);
+  }
+
+  function updateSelectedFlightCard() {
+    const card = $('itin-selected-flight-card');
+    if (!card) return;
+    const sf = plannerSelectedFlight;
+    if (!sf || typeof sf !== 'object') {
+      card.hidden = true;
+      card.setAttribute('hidden', '');
+      card.innerHTML = '';
+      return;
+    }
+    const depName = (sf.departure && (sf.departure.name || sf.departure.id)) || '—';
+    const arrName = (sf.arrival && (sf.arrival.name || sf.arrival.id)) || '—';
+    const depT = (sf.departure && sf.departure.time) || '—';
+    const line1 =
+      'Your flight: ' +
+      escapeHtml(String(sf.airline || '').trim()) +
+      ' ' +
+      escapeHtml(String(sf.flightNumber || '').trim());
+    const line2 = escapeHtml(depName) + ' → ' + escapeHtml(arrName);
+    const line3 =
+      'Departs: ' +
+      escapeHtml(String(depT).slice(0, 24)) +
+      ' · Price: ' +
+      escapeHtml(formatFlightRm(sf.price));
+    card.innerHTML =
+      '<button type="button" class="itin-sf-remove" data-itin-clear-flight="1" aria-label="Remove flight">&times;</button>' +
+      '<div class="itin-sf-body">' +
+      '<span class="itin-sf-k">Selected outbound</span>' +
+      '<p class="itin-sf-line">' +
+      line1 +
+      '</p>' +
+      '<p class="itin-sf-line">' +
+      line2 +
+      '</p>' +
+      '<p class="itin-sf-meta">' +
+      line3 +
+      '</p></div>';
+    card.hidden = false;
+    card.removeAttribute('hidden');
+  }
+
+  function clearSelectedPlannerFlight() {
+    plannerSelectedFlight = null;
+    updateSelectedFlightCard();
+    updateGenerateButtonState();
+  }
+
+  function serializeSerpFlightForApi(f) {
+    const legs = f.flights || [];
+    const first = legs[0] || {};
+    const last = legs[legs.length - 1] || first;
+    const depRaw = first.departure_airport || {};
+    const arrRaw = last.arrival_airport || {};
+    const stops =
+      Array.isArray(f.layovers) && f.layovers.length
+        ? f.layovers.length
+        : Math.max(0, legs.length - 1);
+    return {
+      airline: String(first.airline || '').trim(),
+      flightNumber: String(first.flight_number || '').trim(),
+      departure: {
+        id: String(depRaw.id || '').trim(),
+        name: String(depRaw.name || depRaw.id || '').trim(),
+        time: String(depRaw.time || '').trim(),
+      },
+      arrival: {
+        id: String(arrRaw.id || '').trim(),
+        name: String(arrRaw.name || arrRaw.id || '').trim(),
+        time: String(arrRaw.time || '').trim(),
+      },
+      duration: f.total_duration,
+      price: f.price,
+      stops: stops,
+    };
+  }
+
+  function formatDurationSerp(min) {
+    const m = Math.round(Number(min) || 0);
+    if (m <= 0) return '—';
+    const h = Math.floor(m / 60);
+    const r = m % 60;
+    if (h <= 0) return r + 'm';
+    return r ? h + 'h ' + r + 'm' : h + 'h';
+  }
+
+  function timeOnlySerp(isoLike) {
+    const s = String(isoLike || '').trim();
+    const m = /\d{2}:\d{2}/.exec(s);
+    return m ? m[0] : '—';
+  }
+
+  function layoverSummarySerp(f) {
+    const lay = f.layovers;
+    if (lay && lay.length) {
+      const names = lay
+        .map(function (l) {
+          return l.id || l.name || '';
+        })
+        .filter(Boolean);
+      return (
+        lay.length +
+        ' stop' +
+        (lay.length === 1 ? '' : 's') +
+        (names.length ? ' (' + names.join(', ') + ')' : '')
+      );
+    }
+    const legs = f.flights || [];
+    if (legs.length <= 1) return 'Nonstop';
+    var n = Math.max(0, legs.length - 1);
+    return n + ' stop' + (n === 1 ? '' : 's');
+  }
+
+  function renderPlannerFormFlightRows(rows, bookUrl) {
+    const H = window.__serpFlightsHelpers;
+    const esc = H && H.escapeHtml ? H.escapeHtml : escapeHtml;
+    const href = esc(bookUrl || 'https://www.google.com/travel/flights');
+    return rows
+      .map(function (f, idx) {
+        const legs = f.flights || [];
+        const first = legs[0] || {};
+        const last = legs[legs.length - 1] || first;
+        const logo = esc(f.airline_logo || first.airline_logo || '');
+        const airlines =
+          legs
+            .map(function (l) {
+              return l.airline;
+            })
+            .filter(Boolean)
+            .filter(function (a, i, arr) {
+              return arr.indexOf(a) === i;
+            })
+            .join(', ') || '—';
+        const nums =
+          legs
+            .map(function (l) {
+              return l.flight_number;
+            })
+            .filter(Boolean)
+            .join(' · ') || '—';
+        const depName = (first.departure_airport && first.departure_airport.id) || '';
+        const arrName = (last.arrival_airport && last.arrival_airport.id) || '';
+        const depT = timeOnlySerp(first.departure_airport && first.departure_airport.time);
+        const arrT = timeOnlySerp(last.arrival_airport && last.arrival_airport.time);
+        const dur = formatDurationSerp(f.total_duration);
+        const stops = layoverSummarySerp(f);
+        const priceStr = formatFlightRm(f.price);
+        const logoBlock = logo
+          ? '<img class="eh-serp-logo" src="' +
+            logo +
+            '" alt="" width="36" height="36" loading="lazy" decoding="async" />'
+          : '<div class="eh-serp-logo eh-serp-logo--ph" aria-hidden="true"></div>';
+        return (
+          '<li class="eh-flight-row eh-serp-row">' +
+          '<div class="eh-serp-left">' +
+          logoBlock +
+          '<div class="eh-serp-mid">' +
+          '<div><strong>' +
+          esc(airlines) +
+          '</strong></div>' +
+          '<span class="eh-flight-sub">' +
+          esc(nums) +
+          '</span>' +
+          '<span class="eh-flight-sub"><strong>' +
+          esc(depT) +
+          '</strong> → <strong>' +
+          esc(arrT) +
+          '</strong> · ' +
+          esc(depName) +
+          ' → ' +
+          esc(arrName) +
+          '</span>' +
+          '<span class="eh-flight-sub">' +
+          esc(dur) +
+          ' · ' +
+          esc(stops) +
+          '</span>' +
+          '</div></div>' +
+          '<div class="eh-flight-meta">' +
+          '<span class="eh-price">' +
+          esc(priceStr) +
+          '</span>' +
+          '<button type="button" class="eh-btn eh-btn--gold itin-add-flight-btn" data-itin-add-flight="' +
+          idx +
+          '">Add to my itinerary</button>' +
+          '<a class="eh-btn eh-btn--ghost eh-serp-book" href="' +
+          href +
+          '" target="_blank" rel="noopener noreferrer">Book</a>' +
+          '</div></li>'
+        );
+      })
+      .join('');
+  }
+
+  function renderTripFlightBannerFromEnvelope() {
+    const ban = $('itin-trip-flight-banner');
+    if (!ban) return;
+    const sf = tripEnvelope && tripEnvelope.selectedFlight;
+    if (!sf || typeof sf !== 'object') {
+      ban.hidden = true;
+      ban.setAttribute('hidden', '');
+      ban.innerHTML = '';
+      return;
+    }
+    const depName = (sf.departure && (sf.departure.name || sf.departure.id)) || '—';
+    const arrName = (sf.arrival && (sf.arrival.name || sf.arrival.id)) || '—';
+    const depT = (sf.departure && sf.departure.time) || '—';
+    ban.innerHTML =
+      '<div class="itin-sf-body">' +
+      '<span class="itin-sf-k">Your flight</span>' +
+      '<p class="itin-sf-line">' +
+      escapeHtml(String(sf.airline || '').trim() + ' ' + String(sf.flightNumber || '').trim()) +
+      '</p>' +
+      '<p class="itin-sf-line">' +
+      escapeHtml(depName) +
+      ' → ' +
+      escapeHtml(arrName) +
+      '</p>' +
+      '<p class="itin-sf-meta">Departs: ' +
+      escapeHtml(String(depT).slice(0, 24)) +
+      ' · Price: ' +
+      escapeHtml(formatFlightRm(sf.price)) +
+      '</p></div>';
+    ban.hidden = false;
+    ban.removeAttribute('hidden');
+  }
+
+  function plannerPreflightBaseValid() {
+    if (!selectedEvent) return false;
+    const dep = ($('itin-date-depart') && $('itin-date-depart').value) || '';
+    const ret = ($('itin-date-return') && $('itin-date-return').value) || '';
+    const today = todayMalaysiaISO();
+    if (!dep || !ret || dep < today || ret < today || ret < dep) return false;
+    if (tripInclusiveDays(dep, ret) > 14) return false;
+    const evIso = toIsoDate(selectedEvent.date);
+    if (evIso && (evIso < dep || evIso > ret)) return false;
+    return true;
+  }
+
+  async function searchPlannerFormFlights() {
+    const host = $('itin-form-flights-host');
+    const H = window.__serpFlightsHelpers;
+    if (!host || !H) return;
+    const serial = ++plannerFlightSearchSerial;
+    const home =
+      typeof window.__getHomeIataFromProfile === 'function' ? window.__getHomeIataFromProfile() : 'KUL';
+    const dest = guessDestIata(selectedEvent.city, selectedEvent.venue);
+    const date = ($('itin-date-depart') && $('itin-date-depart').value) || '';
+    if (!/^[A-Z]{3}$/.test(home) || !/^[A-Z]{3}$/.test(dest) || home === dest || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      host.innerHTML = '<p class="eh-muted">Set dates and pick an event so we can infer airports.</p>';
+      return;
+    }
+    clearSelectedPlannerFlight();
+    lastPlannerFlightRows = [];
+    host.innerHTML = '<p class="eh-loading">Searching Google Flights…</p>';
+    try {
+      const data = await H.fetchSerpFlights(
+        { from: home, to: dest, date: date, passengers: 1, type: '2' },
+        undefined,
+      );
+      if (serial !== plannerFlightSearchSerial) return;
+      const rows = H.mergeSerpLists(data);
+      const book = H.bookUrlFromResponse(data);
+      lastPlannerFlightRows = rows;
+      if (!rows.length) {
+        host.innerHTML =
+          '<p class="eh-muted">No flights returned for this route and date. Try other dates.</p>';
+        return;
+      }
+      host.innerHTML =
+        '<ul class="eh-flight-list">' +
+        renderPlannerFormFlightRows(rows, book) +
+        '</ul>' +
+        '<p class="eh-footnote">Results from Google Flights (SerpAPI). Confirm times and prices before booking.</p>';
+    } catch (e) {
+      if (serial !== plannerFlightSearchSerial) return;
+      host.innerHTML = '<p class="eh-muted">' + escapeHtml(e.message || 'Flight search failed') + '</p>';
+    }
+  }
+
+  function schedulePlannerPreflightSearch() {
+    if (plannerPreflightTimer) clearTimeout(plannerPreflightTimer);
+    plannerPreflightTimer = setTimeout(function () {
+      plannerPreflightTimer = null;
+      void searchPlannerFormFlights();
+    }, 280);
+  }
+
+  function refreshPlannerPreflightVisibility() {
+    const formSec = $('itin-form-section');
+    if (formSec && formSec.hidden) return;
+    const wrap = $('itin-preflight-block');
+    const host = $('itin-form-flights-host');
+    if (!wrap || !host) return;
+    if (!plannerPreflightBaseValid()) {
+      wrap.hidden = true;
+      wrap.setAttribute('hidden', '');
+      host.innerHTML = '';
+      lastPlannerFlightRows = [];
+      plannerFlightSearchSerial += 1;
+      lastPreflightSearchKey = '';
+      clearSelectedPlannerFlight();
+      return;
+    }
+    const home =
+      typeof window.__getHomeIataFromProfile === 'function' ? window.__getHomeIataFromProfile() : 'KUL';
+    const dest = guessDestIata(selectedEvent.city, selectedEvent.venue);
+    const date = ($('itin-date-depart') && $('itin-date-depart').value) || '';
+    const evId = selectedEvent && selectedEvent.id != null ? String(selectedEvent.id) : '';
+    const key = [home, dest, date, evId].join('|');
+    wrap.hidden = false;
+    wrap.removeAttribute('hidden');
+    if (key !== lastPreflightSearchKey) {
+      lastPreflightSearchKey = key;
+      clearSelectedPlannerFlight();
+      schedulePlannerPreflightSearch();
+    }
+  }
+
+  function onPlannerFormFlightAdd(idx) {
+    const rows = lastPlannerFlightRows;
+    const f = rows && rows[idx];
+    if (!f) return;
+    plannerSelectedFlight = serializeSerpFlightForApi(f);
+    updateSelectedFlightCard();
+    updateGenerateButtonState();
+    showAlert('Flight added! Now generate your itinerary ✈️');
+    setTimeout(function () {
+      clearAlert();
+    }, 4200);
+    scrollToGenerateButton();
+  }
+
+  function renderTripTips(days) {
+    const tips = [];
+    (Array.isArray(days) ? days : []).forEach(function (day) {
+      (Array.isArray(day.tips) ? day.tips : []).forEach(function (t) {
+        if (tips.length >= 6) return;
+        const s = String(t || '').trim();
+        if (s) tips.push(s);
+      });
+    });
+    const ul = $('itin-side-tips');
+    const card = $('itin-side-tips-card');
+    if (!ul || !card) return;
+    if (!tips.length) {
+      ul.innerHTML = '';
+      card.hidden = true;
+      card.setAttribute('hidden', '');
+      return;
+    }
+    ul.innerHTML = tips.map(function (t) {
+      return '<li>' + escapeHtml(t) + '</li>';
+    }).join('');
+    card.hidden = false;
+    card.removeAttribute('hidden');
+  }
+
+  function activateTripDay(di) {
+    document.querySelectorAll('.itin-day-pill').forEach(function (p) {
+      const j = parseInt(p.getAttribute('data-go-day'), 10);
+      p.classList.toggle('itin-day-pill--active', j === di);
+    });
+    document.querySelectorAll('.itin-tl-day').forEach(function (sec) {
+      const j = parseInt(sec.getAttribute('data-tl-day'), 10);
+      sec.classList.toggle('is-active', j === di);
+    });
+  }
+
+  async function searchTripGoogleFlights() {
+    const host = $('itin-trip-flights-inline');
+    const H = window.__serpFlightsHelpers;
+    if (!host) return;
+    if (!H) {
+      host.innerHTML =
+        '<p class="eh-muted">Flight search script failed to load. Refresh the page and try again.</p>';
+      return;
+    }
+    const from = String($('itin-trip-from')?.value || '')
+      .trim()
+      .toUpperCase()
+      .slice(0, 3);
+    const to = String($('itin-trip-to')?.value || '')
+      .trim()
+      .toUpperCase()
+      .slice(0, 3);
+    const date = ($('itin-date-depart') && $('itin-date-depart').value) || '';
+    if (!/^[A-Z]{3}$/.test(from) || !/^[A-Z]{3}$/.test(to) || from === to) {
+      host.innerHTML =
+        '<p class="eh-muted">Enter two different 3-letter airport codes in From and To.</p>';
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      host.innerHTML =
+        '<p class="eh-muted">Pick trip dates in the Itinerary tab first (arrival / departure).</p>';
+      return;
+    }
+    host.innerHTML = '<p class="eh-loading">Searching Google Flights…</p>';
+    try {
+      const data = await H.fetchSerpFlights(
+        { from: from, to: to, date: date, passengers: 1, type: '2' },
+        undefined,
+      );
+      const rows = H.mergeSerpLists(data);
+      const book = H.bookUrlFromResponse(data);
+      if (!rows.length) {
+        host.innerHTML =
+          '<p class="eh-muted">No flights returned for this route and date. Try other dates or airports.</p>';
+        return;
+      }
+      host.innerHTML =
+        '<ul class="eh-flight-list">' +
+        H.renderSerpFlightListItems(rows, book) +
+        '</ul>' +
+        '<p class="eh-footnote">Results from Google Flights (SerpAPI). Confirm times and prices before booking.</p>';
+    } catch (e) {
+      host.innerHTML =
+        '<p class="eh-muted">' + escapeHtml(e.message || 'Flight search failed') + '</p>';
+    }
+  }
+
+  function updateTripHotelPanel() {
+    const dep = ($('itin-date-depart') && $('itin-date-depart').value) || '';
+    const ret = ($('itin-date-return') && $('itin-date-return').value) || '';
+    const hq = $('itin-hotel-q');
+    const ev = tripEnvelope && tripEnvelope.event;
+    const cityFb = (tripEnvelope && tripEnvelope.city) || '';
+    if (hq && !String(hq.value || '').trim() && ev) {
+      hq.value = suggestHotelQueryFromEvent(ev, cityFb);
+    }
+    const line = $('itin-hotel-route-line');
+    if (line) {
+      if (dep) {
+        line.textContent = 'Check-in: ' + dep;
+      } else {
+        line.textContent = 'Set trip dates (Edit trip → planner form).';
+      }
+    }
+    const datesEl = $('itin-hotel-route-dates');
+    if (datesEl) {
+      datesEl.textContent =
+        dep && ret ? 'Check-in ' + dep + ' · Check-out ' + ret : '—';
+    }
+  }
+
+  async function searchTripGoogleHotels() {
+    const host = $('itin-hotels-inline');
+    const H = window.__serpHotelsHelpers;
+    if (!host) return;
+    if (!H) {
+      host.innerHTML =
+        '<p class="eh-muted">Hotel search script failed to load. Refresh the page and try again.</p>';
+      return;
+    }
+    let checkIn = ($('itin-date-depart') && $('itin-date-depart').value) || '';
+    let checkOut = ($('itin-date-return') && $('itin-date-return').value) || '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(checkIn)) {
+      host.innerHTML =
+        '<p class="eh-muted">Pick trip dates in the Itinerary tab first (arrival / departure).</p>';
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(checkOut) || checkOut <= checkIn) {
+      checkOut = addDaysIso(checkIn, 1);
+    }
+    const q = String($('itin-hotel-q')?.value || '').trim();
+    if (q.length < 2) {
+      host.innerHTML = '<p class="eh-muted">Enter a destination (at least 2 characters).</p>';
+      return;
+    }
+    host.innerHTML = '<p class="eh-loading">Searching Google Hotels…</p>';
+    try {
+      const data = await H.fetchSerpHotels(
+        { q: q, checkIn: checkIn, checkOut: checkOut, adults: 2 },
+        undefined,
+      );
+      const rows = H.mergeHotelProperties(data);
+      const book = H.hotelsBookUrlFromResponse(data);
+      if (!rows.length) {
+        host.innerHTML =
+          '<p class="eh-muted">No hotels returned for this search. Try another destination or dates.</p>';
+        return;
+      }
+      host.innerHTML =
+        '<ul class="eh-flight-list">' +
+        H.renderSerpHotelListItems(rows, book) +
+        '</ul>' +
+        '<p class="eh-footnote">Results from Google Hotels (SerpAPI). Confirm prices and policies before booking.</p>';
+    } catch (e) {
+      host.innerHTML =
+        '<p class="eh-muted">' + escapeHtml(e.message || 'Hotel search failed') + '</p>';
+    }
+  }
+
+  function tripShareText() {
+    if (!tripEnvelope) return 'Your trip';
+    const act = getActiveVariant();
+    const ev = (tripEnvelope && tripEnvelope.event) || {};
+    const title = String(ev.title || 'My trip').trim();
+    const bits = [title];
+    const dep = ($('itin-date-depart') && $('itin-date-depart').value) || '';
+    const ret = ($('itin-date-return') && $('itin-date-return').value) || '';
+    if (dep || ret) bits.push('Dates: ' + formatSideDates(dep, ret));
+    if (act && act.guideSummary) bits.push(String(act.guideSummary).replace(/\s+/g, ' ').trim().slice(0, 400));
+    return bits.join('\n\n');
   }
 
   function refreshHeaderBack() {
@@ -186,7 +1100,10 @@
     itinHistoryVisible = true;
     const formSec = $('itin-form-section');
     const resSec = $('itin-result-section');
-    if (formSec) formSec.hidden = true;
+    if (formSec) {
+      formSec.hidden = true;
+      formSec.setAttribute('hidden', '');
+    }
     if (resSec) resSec.hidden = true;
     const hs = $('itin-history-section');
     if (hs) hs.hidden = false;
@@ -300,7 +1217,10 @@
       if (evNorm) setSelectedEvent(evNorm);
       const formSec = $('itin-form-section');
       const resSec = $('itin-result-section');
-      if (formSec) formSec.hidden = true;
+      if (formSec) {
+        formSec.hidden = true;
+        formSec.setAttribute('hidden', '');
+      }
       if (resSec) resSec.hidden = false;
       const vPref =
         typeof p.selectedVariantIndex === 'number' && Number.isFinite(p.selectedVariantIndex)
@@ -324,7 +1244,11 @@
       hideHistoryPanel(true);
       return;
     }
-    if (!tripEnvelope) return;
+    if (!tripEnvelope) {
+      clearPlannerSession();
+      closeTripModal();
+      return;
+    }
     if (planDetailVisible && tripEnvelope.variants.length > 1) {
       planDetailVisible = false;
       hidePlanSkeleton();
@@ -333,7 +1257,8 @@
       refreshHeaderBack();
       return;
     }
-    resetToForm();
+    clearPlannerSession();
+    closeTripModal();
   }
 
   function showAlert(msg) {
@@ -372,7 +1297,10 @@
     m.classList.add('is-open');
     m.setAttribute('aria-hidden', 'false');
     document.body.classList.add('itin-modal-open');
+    scrollItinModalMainToTop();
+    scrollTripTabPanelsToTop();
     refreshHeaderBack();
+    refreshPlannerPreflightVisibility();
   }
 
   function closeTripModal() {
@@ -507,7 +1435,41 @@
       );
       return false;
     }
+    const f = plannerSelectedFlight;
+    if (!f || typeof f !== 'object' || !f.departure || !f.arrival) {
+      showAlert('Pick an inbound flight first (event card → Flights tab → Add to my itinerary).');
+      return false;
+    }
+    const h = plannerSelectedHotel;
+    if (!h || typeof h !== 'object' || !String(h.name || '').trim()) {
+      showAlert(
+        'Pick a hotel first (event card → Hotels tab → search → Add to my itinerary beside your preferred property).',
+      );
+      return false;
+    }
     return true;
+  }
+
+  function syncFormFromProfile() {
+    const u = window.__authUser;
+    const p = u && u.profile && typeof u.profile === 'object' ? u.profile : {};
+    const adv = $('itin-adventure');
+    if (adv && ['easy', 'medium', 'hard'].indexOf(String(p.adventureLevel)) >= 0) {
+      adv.value = String(p.adventureLevel);
+    }
+    const pace = $('itin-pace');
+    if (pace && ['slow', 'balanced', 'packed'].indexOf(String(p.pacePreference)) >= 0) {
+      pace.value = String(p.pacePreference);
+    }
+    const interests = Array.isArray(p.activityInterests) ? p.activityInterests : [];
+    document.querySelectorAll('.itin-interest').forEach(function (cb) {
+      cb.checked = interests.indexOf(cb.value) >= 0;
+    });
+    if (!document.querySelector('.itin-interest:checked')) {
+      document.querySelectorAll('.itin-interest').forEach(function (cb) {
+        if (cb.value === 'food' || cb.value === 'culture') cb.checked = true;
+      });
+    }
   }
 
   function renderAutocomplete(events) {
@@ -580,6 +1542,7 @@
     }
     const inp = $('itin-event-search');
     if (inp) inp.value = '';
+    refreshPlannerPreflightVisibility();
   }
 
   function renderToolbar() {
@@ -666,217 +1629,312 @@
   }
 
   function hidePlanSkeleton() {
-    var g = $('itin-guide-summary');
+    const modal = $('itin-modal');
+    if (modal) modal.classList.remove('itin-modal--trip-view');
+    const surf = $('itin-trip-surface');
+    if (surf) {
+      surf.hidden = true;
+      surf.setAttribute('hidden', '');
+    }
+    setTripTab('itin');
+    const pills = $('itin-day-pills');
+    if (pills) pills.innerHTML = '';
+    const inf = $('itin-trip-flights-inline');
+    if (inf) inf.innerHTML = '';
+    const wh = $('itin-weather-headline');
+    if (wh) wh.textContent = '—';
+    const wloc = $('itin-weather-locale');
+    if (wloc) wloc.textContent = '';
+    const wg = $('itin-weather-grid');
+    if (wg) {
+      wg.hidden = true;
+      wg.setAttribute('hidden', '');
+    }
+    const wf = $('itin-weather-foot');
+    if (wf) {
+      wf.innerHTML =
+        'Forecast from <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open‑Meteo</a> for your trip start date (or today if earlier).';
+    }
+    const g = $('itin-guide-summary');
     if (g) {
       g.textContent = '';
       g.hidden = true;
       g.setAttribute('hidden', '');
     }
-    var sw = $('itin-summary-row-wrap');
+    const sw = $('itin-summary-row-wrap');
     if (sw) {
       sw.hidden = true;
       sw.setAttribute('hidden', '');
     }
-    var w = $('itin-warnings');
+    const w = $('itin-warnings');
     if (w) {
       w.innerHTML = '';
       w.hidden = true;
       w.setAttribute('hidden', '');
     }
-    var pa = $('itin-plan-actions');
+    const pa = $('itin-plan-actions');
     if (pa) {
       pa.hidden = true;
       pa.setAttribute('hidden', '');
     }
-    var daysHost = $('itin-days-container');
+    const daysHost = $('itin-days-container');
     if (daysHost) daysHost.innerHTML = '';
-    var tl = $('itin-travel-links');
+    const tl = $('itin-trip-flights-links');
     if (tl) tl.innerHTML = '';
+    const tl2 = $('itin-travel-links');
+    if (tl2) tl2.innerHTML = '';
+    const hi = $('itin-hotels-inline');
+    if (hi) hi.innerHTML = '';
+    const fb = $('itin-trip-flight-banner');
+    if (fb) {
+      fb.hidden = true;
+      fb.setAttribute('hidden', '');
+      fb.innerHTML = '';
+    }
   }
 
   function renderChosenPlan() {
     if (!tripEnvelope) return;
-    var act = getActiveVariant();
+    const act = getActiveVariant();
     if (!act) return;
     syncOverlayPayload(act);
     planDetailVisible = true;
-    var g = $('itin-guide-summary');
-    if (g) {
-      g.textContent = act.guideSummary || '';
-      g.hidden = false;
-      g.removeAttribute('hidden');
+    const modal = $('itin-modal');
+    if (modal) modal.classList.add('itin-modal--trip-view');
+    const surf = $('itin-trip-surface');
+    if (surf) {
+      surf.hidden = false;
+      surf.removeAttribute('hidden');
     }
+    populateTripHero(act);
     renderSummary({
       days: act.days,
       places: act.places,
       event: tripEnvelope.event,
     });
+    renderTripTips(act.days);
+    renderTripFlightBannerFromEnvelope();
     renderWarnings(mergeEnvelopeWarnings(act.warnings));
-    var sw = $('itin-summary-row-wrap');
-    if (sw) {
-      sw.hidden = false;
-      sw.removeAttribute('hidden');
-    }
-    var pa = $('itin-plan-actions');
-    if (pa) {
-      pa.hidden = false;
-      pa.removeAttribute('hidden');
-    }
-    renderTravelLinks(act.travelLinks || {});
+    renderTravelLinks();
     renderDays(act, true);
     renderToolbar();
     renderVariantStage();
+    updateTripFlightPanel();
+    updateTripHotelPanel();
+    setTripTab('itin');
+    scrollItinModalMainToTop();
+    void refreshTripWeather();
   }
 
   function renderSummary(payload) {
     const days = Array.isArray(payload.days) ? payload.days.length : 0;
     const nPlaces = Array.isArray(payload.places) ? payload.places.length : 0;
     const mainD = payload.event && toIsoDate(payload.event.date);
+    const dStr = days ? String(days) + (days === 1 ? ' day' : ' days') : '—';
+    const pStr = String(nPlaces);
+    const eStr = mainD || '—';
+    const dep = ($('itin-date-depart') && $('itin-date-depart').value) || '';
+    const ret = ($('itin-date-return') && $('itin-date-return').value) || '';
+    const datesLabel = formatSideDates(dep, ret);
     const dEl = $('itin-summary-duration');
     const pEl = $('itin-summary-places');
     const eEl = $('itin-summary-eventdate');
-    if (dEl) dEl.textContent = days ? String(days) + (days === 1 ? ' day' : ' days') : '—';
-    if (pEl) pEl.textContent = String(nPlaces);
-    if (eEl) eEl.textContent = mainD || '—';
+    if (dEl) dEl.textContent = dStr;
+    if (pEl) pEl.textContent = pStr;
+    if (eEl) eEl.textContent = eStr;
+    const sd = $('itin-side-dates');
+    const sdu = $('itin-side-duration');
+    const sp = $('itin-side-places');
+    const se = $('itin-side-eventdate');
+    if (sd) sd.textContent = datesLabel;
+    if (sdu) sdu.textContent = dStr;
+    if (sp) sp.textContent = pStr;
+    if (se) se.textContent = eStr;
   }
 
-  function miniCardHtml(slot) {
-    const pid = escapeHtml(slot.id);
-    const name = escapeHtml(slot.name);
-    const area = escapeHtml(slot.area || '');
-    const img = escapeHtml(slot.image || '');
+  function slotTimesForPeriod(period, indexInPeriod) {
+    const baseH = { morning: 9, afternoon: 14, evening: 19 }[period] || 12;
+    let totalMin = baseH * 60 + indexInPeriod * 40;
+    totalMin = Math.min(23 * 60 + 30, totalMin);
+    const h24 = Math.floor(totalMin / 60);
+    const mm = totalMin % 60;
+    const ampm = h24 >= 12 ? 'PM' : 'AM';
+    let h12 = h24 % 12;
+    if (h12 === 0) h12 = 12;
+    return h12 + ':' + String(mm).padStart(2, '0') + ' ' + ampm;
+  }
+
+  function periodCategory(period) {
+    if (period === 'morning') return 'Explore';
+    if (period === 'afternoon') return 'Food & culture';
+    if (period === 'evening') return 'Evening';
+    return 'Experience';
+  }
+
+  function shortSlotDesc(slot) {
+    let d = String(slot.description || '').trim();
+    if (d.length > 140) d = d.slice(0, 137) + '\u2026';
+    return d;
+  }
+
+  function mergeSlotFromPlaces(slot, placesArr) {
+    if (!slot || typeof slot !== 'object') return slot;
+    const pid = String(slot.id != null ? slot.id : '');
+    const p = (Array.isArray(placesArr) ? placesArr : []).find(function (x) {
+      return String(x.id) === pid;
+    });
+    let mergedImg = String(slot.image || '').trim();
+    if (!mergedImg && p && p.image) mergedImg = String(p.image).trim();
+    const desc = String(slot.description || (p && p.description) || '').trim();
+    return {
+      id: slot.id,
+      name: slot.name,
+      area: slot.area,
+      image: mergedImg,
+      description: desc,
+    };
+  }
+
+  function timelineRowMarkup(slot, timeStr, category, placesArr) {
+    const m = mergeSlotFromPlaces(slot, placesArr || []);
+    const pid = escapeHtml(m.id);
+    const name = escapeHtml(m.name);
+    const area = escapeHtml(m.area || '');
+    const imgRaw = String(m.image || '').trim() || ITIN_IMG_STATIC_FALLBACK;
+    const imgUrl = escapeHtml(imgRaw);
+    const desc = escapeHtml(shortSlotDesc(m));
+    const sub = [area, desc].filter(Boolean).join(' · ');
     return (
-      '<button type="button" class="itin-mini-card" data-place-id="' +
+      '<div class="itin-tl-row itin-tl-row--click" role="button" tabindex="0" data-place-id="' +
       pid +
       '">' +
-      '<div class="itin-mini-img-wrap">' +
-      (img
-        ? '<img src="' +
-          img +
-          '" alt="" loading="lazy" referrerpolicy="no-referrer" />'
-        : '<div class="itin-mini-fallback">📍</div>') +
-      '</div><div class="itin-mini-body"><strong class="itin-mini-title">' +
+      '<div class="itin-tl-thumb">' +
+      '<img src="' +
+      imgUrl +
+      '" alt="" loading="lazy" decoding="async" />' +
+      '</div>' +
+      '<div class="itin-tl-time">' +
+      escapeHtml(timeStr) +
+      '</div>' +
+      '<div class="itin-tl-body">' +
+      '<p class="itin-tl-name">' +
       name +
-      '</strong><span class="itin-mini-area">' +
-      (area || '\u00a0') +
-      '</span></div></button>'
-    );
-  }
-
-  /** One grid cell per period; empty → blank column (keeps ~⅓ card width when 2+ periods have stops). */
-  function slotColumnHtml(title, slots) {
-    const arr = Array.isArray(slots) ? slots : [];
-    if (!arr.length) {
-      return '<div class="itin-slot itin-slot--empty" aria-hidden="true"></div>';
-    }
-    return (
-      '<div class="itin-slot">' +
-      '<div class="itin-slot-label"><span class="itin-slot-dot"></span>' +
-      escapeHtml(title) +
-      '</div><div class="itin-mini-grid">' +
-      arr.map(miniCardHtml).join('') +
+      '</p>' +
+      (sub ? '<p class="itin-tl-desc">' + sub + '</p>' : '') +
+      '<span class="itin-tl-cat">' +
+      escapeHtml(category) +
+      '</span>' +
       '</div></div>'
     );
   }
 
   function renderDays(payload, showDayRegenerate) {
     const host = $('itin-days-container');
-    if (!host) return;
+    const pillsHost = $('itin-day-pills');
+    if (!host || !pillsHost) return;
     const days = payload.days || [];
+    pillsHost.innerHTML = days
+      .map(function (day, idx) {
+        const label = day.label || 'Day ' + (idx + 1);
+        const isFirst = idx === 0;
+        return (
+          '<button type="button" class="itin-day-pill' +
+          (isFirst ? ' itin-day-pill--active' : '') +
+          '" data-go-day="' +
+          idx +
+          '">Day ' +
+          (idx + 1) +
+          ' — ' +
+          escapeHtml(label) +
+          '</button>'
+        );
+      })
+      .join('');
+
     host.innerHTML = days
       .map(function (day, idx) {
-        const numStr = String(idx + 1).padStart(2, '0');
         const ordinal = DAY_ORDINALS[idx] || String(idx + 1);
-
-        const meals = Array.isArray(day.meals)
-          ? day.meals.map(function (m) {
-              return (
-                '<li><strong>' + escapeHtml(m.time || '') + '</strong> ' +
-                escapeHtml(m.type || '') + ' — ' + escapeHtml(m.suggestion || '') +
-                (m.dish ? ' &middot; ' + escapeHtml(m.dish) : '') + '</li>'
-              );
-            }).join('')
-          : '';
-        const tips = Array.isArray(day.tips)
-          ? day.tips.map(function (t) {
-              return '<li>' + escapeHtml(t) + '</li>';
-            }).join('')
-          : '';
-
-        const noteHtml = (meals || tips)
-          ? '<div class="itin-day-note">' +
-            (meals ? '<div class="itin-meals"><h4>Meals</h4><ul>' + meals + '</ul></div>' : '') +
-            (tips  ? '<div class="itin-tips"><h4>Tips</h4><ul>'  + tips  + '</ul></div>' : '') +
-            '</div>'
-          : '';
-
-        const hasMorning   = Array.isArray(day.morning) && day.morning.length;
-        const hasAfternoon = Array.isArray(day.afternoon) && day.afternoon.length;
-        const hasEvening   = Array.isArray(day.evening) && day.evening.length;
-        const hasSlots     = hasMorning || hasAfternoon || hasEvening;
-        const nPeriods =
-          (hasMorning ? 1 : 0) + (hasAfternoon ? 1 : 0) + (hasEvening ? 1 : 0);
-
-        let slotsHtml = '';
-        if (hasSlots) {
-          if (nPeriods === 1) {
-            var soloTitle = 'Evening';
-            var soloSlots = day.evening;
-            if (hasMorning) {
-              soloTitle = 'Morning';
-              soloSlots = day.morning;
-            } else if (hasAfternoon) {
-              soloTitle = 'Afternoon';
-              soloSlots = day.afternoon;
-            }
-            slotsHtml =
-              '<div class="itin-slots-row itin-slots-row--solo">' +
-              slotColumnHtml(soloTitle, soloSlots) +
-              '</div>';
-          } else {
-            slotsHtml =
-              '<div class="itin-slots-row itin-slots-row--cols-3">' +
-              slotColumnHtml('Morning', day.morning) +
-              slotColumnHtml('Afternoon', day.afternoon) +
-              slotColumnHtml('Evening', day.evening) +
-              '</div>';
-          }
+        const rows = [];
+        ['morning', 'afternoon', 'evening'].forEach(function (period) {
+          const slots = day[period];
+          if (!Array.isArray(slots)) return;
+          slots.forEach(function (slot, si) {
+            rows.push(
+              timelineRowMarkup(slot, slotTimesForPeriod(period, si), periodCategory(period), payload.places || []),
+            );
+          });
+        });
+        if (!rows.length) {
+          rows.push(
+            '<div class="itin-tl-row">' +
+              '<div class="itin-tl-thumb"><div class="itin-tl-thumb-fallback">·</div></div>' +
+              '<div class="itin-tl-time">—</div>' +
+              '<div class="itin-tl-body"><p class="itin-tl-name">Open day</p>' +
+              '<p class="itin-tl-desc">No stops were listed for this day yet.</p></div></div>',
+          );
         }
 
-        const regenHtml =
-          showDayRegenerate && planDetailVisible
-            ? '<div class="itin-day-actions">' +
-              '<button type="button" class="itin-day-regen" data-regen-day="' +
-              idx +
-              '">Redraft this day</button>' +
+        const meals = Array.isArray(day.meals)
+          ? day.meals
+              .map(function (m) {
+                return (
+                  '<li><strong>' +
+                  escapeHtml(m.time || '') +
+                  '</strong> ' +
+                  escapeHtml(m.type || '') +
+                  ' — ' +
+                  escapeHtml(m.suggestion || '') +
+                  (m.dish ? ' · ' + escapeHtml(m.dish) : '') +
+                  '</li>'
+                );
+              })
+              .join('')
+          : '';
+        const tips = Array.isArray(day.tips)
+          ? day.tips
+              .map(function (t) {
+                return '<li>' + escapeHtml(t) + '</li>';
+              })
+              .join('')
+          : '';
+
+        const noteHtml =
+          meals || tips
+            ? '<div class="itin-tl-notes">' +
+              (meals ? '<h5>Meals</h5><ul>' + meals + '</ul>' : '') +
+              (tips ? '<h5>Tips</h5><ul>' + tips + '</ul>' : '') +
               '</div>'
             : '';
 
+        const regenBtn =
+          showDayRegenerate && planDetailVisible
+            ? '<button type="button" class="itin-day-regen" data-regen-day="' +
+              idx +
+              '">Redraft this day</button>'
+            : '';
+
         return (
-          '<article class="itin-day-card" data-day-card="' +
+          '<div class="itin-tl-day' +
+          (idx === 0 ? ' is-active' : '') +
+          '" data-tl-day="' +
           idx +
           '">' +
-          '<div class="itin-day-spine">' +
-          '<span class="itin-day-num">' +
-          numStr +
-          '</span>' +
-          '<span class="itin-day-spine-lbl">Day ' +
+          '<div class="itin-tl-day-hdr">' +
+          '<div>' +
+          '<h3 class="itin-tl-day-title">Day ' +
           escapeHtml(ordinal) +
-          '</span>' +
-          '<div class="itin-day-line"></div>' +
-          '</div>' +
-          '<div class="itin-day-content">' +
-          '<div class="itin-day-hdr">' +
-          '<h3 class="itin-day-dest">' +
+          ' — ' +
           escapeHtml(day.label || 'Day ' + (idx + 1)) +
           '</h3>' +
-          (day.subtitle ? '<p class="itin-day-tagline">' + escapeHtml(day.subtitle) + '</p>' : '') +
+          (day.subtitle ? '<p class="itin-tl-day-sub">' + escapeHtml(day.subtitle) + '</p>' : '') +
           '</div>' +
-          regenHtml +
-          slotsHtml +
+          regenBtn +
+          '</div>' +
+          '<div class="itin-tl-list">' +
+          rows.join('') +
+          '</div>' +
           noteHtml +
-          '</div>' +
-          '</article>'
+          '</div>'
         );
       })
       .join('');
@@ -917,37 +1975,10 @@
       .join('');
   }
 
-  function renderTravelLinks(links) {
-    const host = $('itin-travel-links');
+  function renderTravelLinks() {
+    const host = $('itin-trip-flights-links') || $('itin-travel-links');
     if (!host) return;
-    if (!links || typeof links !== 'object') {
-      host.innerHTML = '';
-      return;
-    }
-    const f = links.flights || '#';
-    const h = links.hotels || '#';
-
-    /** Stash event venue/city + trip dates on the Hotel button so the modal opens pre-filled near the event. */
-    const ev = (lastPayload && lastPayload.event) || {};
-    const venue = String(ev.venue || '').trim();
-    const city = String(ev.city || (lastPayload && lastPayload.city) || '').trim();
-    const dep = ($('itin-date-depart') && $('itin-date-depart').value) || '';
-    const ret = ($('itin-date-return') && $('itin-date-return').value) || '';
-
-    host.innerHTML =
-      '<h4>Travel links</h4><div class="itin-links-row">' +
-      '<button type="button" class="itin-link-btn" id="itin-flight-search-open">Flight search</button>' +
-      '<button type="button" class="itin-link-btn itin-link-btn--alt" id="itin-hotel-search-open"' +
-      ' data-event-venue="' +
-      escapeHtml(venue) +
-      '" data-event-city="' +
-      escapeHtml(city) +
-      '" data-trip-depart="' +
-      escapeHtml(dep) +
-      '" data-trip-return="' +
-      escapeHtml(ret) +
-      '">Hotel search</button>' +
-      '</div>';
+    host.innerHTML = '';
   }
 
   function renderResults(raw, opts) {
@@ -962,7 +1993,10 @@
     planDetailVisible = opts.skipPicker === true ? true : nVar <= 1;
     const formSec = $('itin-form-section');
     const resSec = $('itin-result-section');
-    if (formSec) formSec.hidden = true;
+    if (formSec) {
+      formSec.hidden = true;
+      formSec.setAttribute('hidden', '');
+    }
     if (resSec) resSec.hidden = false;
 
     if (planDetailVisible) {
@@ -976,13 +2010,37 @@
     refreshHeaderBack();
   }
 
-  function resetToForm() {
+  /** Clear trip / history UI state (shared by form reset and hub prefill). */
+  function clearPlannerSession() {
     lastPayload = null;
     tripEnvelope = null;
     chosenVariantIdx = 0;
     planDetailVisible = false;
     stashBeforeHistory = null;
     itinHistoryVisible = false;
+    plannerSelectedFlight = null;
+    plannerSelectedHotel = null;
+    lastPlannerFlightRows = [];
+    plannerFlightSearchSerial += 1;
+    if (plannerPreflightTimer) {
+      clearTimeout(plannerPreflightTimer);
+      plannerPreflightTimer = null;
+    }
+    lastPreflightSearchKey = '';
+    const pf = $('itin-preflight-block');
+    if (pf) {
+      pf.hidden = true;
+      pf.setAttribute('hidden', '');
+    }
+    const fh = $('itin-form-flights-host');
+    if (fh) fh.innerHTML = '';
+    const sfc = $('itin-selected-flight-card');
+    if (sfc) {
+      sfc.hidden = true;
+      sfc.setAttribute('hidden', '');
+      sfc.innerHTML = '';
+    }
+    updateGenerateButtonState();
     const hs = $('itin-history-section');
     if (hs) hs.hidden = true;
     const ht = $('itin-history-status');
@@ -1011,19 +2069,38 @@
     if (pa) {
       pa.hidden = true;
     }
-    const formSec = $('itin-form-section');
-    const resSec = $('itin-result-section');
-    if (formSec) formSec.hidden = false;
-    if (resSec) resSec.hidden = true;
     hidePlanSkeleton();
     clearAlert();
+  }
+
+  function resetToForm() {
+    clearPlannerSession();
+    const formSec = $('itin-form-section');
+    const resSec = $('itin-result-section');
+    if (formSec) {
+      formSec.hidden = true;
+      formSec.setAttribute('hidden', '');
+    }
+    if (resSec) resSec.hidden = true;
+    refreshHeaderBack();
+  }
+
+  /** Event hub: skip the planner form — show results area (loading → journeys). */
+  function showPlannerResultsShell() {
+    clearPlannerSession();
+    const formSec = $('itin-form-section');
+    const resSec = $('itin-result-section');
+    if (formSec) {
+      formSec.hidden = true;
+      formSec.setAttribute('hidden', '');
+    }
+    if (resSec) resSec.hidden = false;
     refreshHeaderBack();
   }
 
   async function onGenerate() {
     if (!validateBeforeSubmit()) return;
     const btn = $('itin-generate');
-    const btnLabel = btn ? btn.textContent : '';
     if (btn) {
       btn.disabled = true;
       btn.textContent = 'Generating…';
@@ -1048,9 +2125,25 @@
         interests: getCheckedInterests(),
         travelPace: $('itin-pace').value,
       };
+      if (
+        plannerSelectedFlight &&
+        typeof plannerSelectedFlight === 'object' &&
+        plannerSelectedFlight.departure &&
+        plannerSelectedFlight.arrival
+      ) {
+        body.selectedFlight = plannerSelectedFlight;
+      }
+      if (
+        plannerSelectedHotel &&
+        typeof plannerSelectedHotel === 'object' &&
+        String(plannerSelectedHotel.name || '').trim()
+      ) {
+        body.selectedHotel = plannerSelectedHotel;
+      }
       const res = await fetch('/api/itinerary/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify(body),
         signal: ac.signal,
       });
@@ -1076,8 +2169,8 @@
       hideLoadingMsg();
       if (btn) {
         btn.disabled = false;
-        btn.textContent = btnLabel || 'Curate three journeys';
       }
+      updateGenerateButtonState();
     }
   }
 
@@ -1098,6 +2191,7 @@
       const res = await fetch('/api/itinerary/regenerate-day', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({
           eventId: String(selectedEvent.id != null ? selectedEvent.id : ''),
           eventUrl: String(selectedEvent.url || '').trim(),
@@ -1160,6 +2254,8 @@
           selectedVariantKey: act.key || '',
           selectedVariantIndex: chosenVariantIdx,
           variants: tripEnvelope.variants,
+          selectedFlight: tripEnvelope.selectedFlight || null,
+          selectedHotel: tripEnvelope.selectedHotel || null,
         }),
       });
       const data = await res.json().catch(function () {
@@ -1175,19 +2271,44 @@
     } finally {
       if (saveBtn) {
         saveBtn.disabled = false;
-        saveBtn.textContent = prev || 'Save itinerary';
+        saveBtn.textContent = prev || 'Save full trip';
       }
     }
   }
 
   function init() {
-    const fab = $('itin-fab');
     const modal = $('itin-modal');
-    if (!fab || !modal) return;
+    if (!modal) return;
+    updateGenerateButtonState();
 
-    fab.addEventListener('click', function () {
-      openTripModal();
-    });
+    document.addEventListener(
+      'click',
+      function (e) {
+        const addBtn = e.target.closest('[data-itin-add-flight]');
+        if (addBtn) {
+          const host = $('itin-form-flights-host');
+          if (host && host.contains(addBtn)) {
+            e.preventDefault();
+            const idx = parseInt(addBtn.getAttribute('data-itin-add-flight'), 10);
+            if (!Number.isNaN(idx)) onPlannerFormFlightAdd(idx);
+            return;
+          }
+        }
+        const clr = e.target.closest('[data-itin-clear-flight]');
+        if (clr) {
+          const card = $('itin-selected-flight-card');
+          if (card && card.contains(clr)) {
+            e.preventDefault();
+            clearSelectedPlannerFlight();
+            showAlert('Flight removed — pick another option if you like.');
+            setTimeout(function () {
+              clearAlert();
+            }, 2600);
+          }
+        }
+      },
+      false,
+    );
     const mClose = $('itin-modal-close');
     if (mClose) mClose.addEventListener('click', closeTripModal);
     const mBd = $('itin-modal-backdrop');
@@ -1206,6 +2327,10 @@
         return;
       }
       if (modal.classList.contains('is-open')) closeTripModal();
+    });
+
+    document.addEventListener('ts-auth-change', function () {
+      updateTripFlightPanel();
     });
 
     const search = $('itin-event-search');
@@ -1228,8 +2353,21 @@
       depInput.addEventListener('change', function () {
         const d = depInput.value || minDate;
         retInput.min = d < minDate ? minDate : d;
+        updateTripFlightPanel();
+        updateTripHotelPanel();
+        refreshPlannerPreflightVisibility();
+      });
+      retInput.addEventListener('change', function () {
+        updateTripFlightPanel();
+        updateTripHotelPanel();
+        refreshPlannerPreflightVisibility();
       });
     }
+
+    ;['itin-trip-from', 'itin-trip-to'].forEach(function (id) {
+      const el = $(id);
+      if (el) el.addEventListener('input', updateTripFlightPanel);
+    });
 
     const acList = $('itin-ac-list');
     if (acList) {
@@ -1240,17 +2378,89 @@
         const ev = lastAcEvents.find(function (x) {
           return String(x.id) === String(id);
         });
-        if (ev) setSelectedEvent(ev);
+        if (ev) {
+          setSelectedEvent(ev);
+          refreshPlannerPreflightVisibility();
+        }
       });
     }
 
     const gen = $('itin-generate');
     if (gen) gen.addEventListener('click', onGenerate);
     const edit = $('itin-edit-trip');
-    if (edit) edit.addEventListener('click', resetToForm);
+    if (edit) {
+      edit.addEventListener('click', function () {
+        clearPlannerSession();
+        closeTripModal();
+      });
+    }
 
     const saveTrip = $('itin-save-trip');
     if (saveTrip) saveTrip.addEventListener('click', saveItinerary);
+
+    const googleTripBtn = $('itin-trip-google-btn');
+    if (googleTripBtn) {
+      googleTripBtn.addEventListener('click', function () {
+        void searchTripGoogleFlights();
+      });
+    }
+    const googleHotelsTripBtn = $('itin-google-hotels-btn');
+    if (googleHotelsTripBtn) {
+      googleHotelsTripBtn.addEventListener('click', function () {
+        void searchTripGoogleHotels();
+      });
+    }
+    const hotelTripBtn = $('itin-trip-hotel-btn');
+    if (hotelTripBtn) {
+      hotelTripBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        if (typeof window.__prefillHotelModal !== 'function') return;
+        const ev = (tripEnvelope && tripEnvelope.event) || {};
+        window.__prefillHotelModal({
+          venue: String(ev.venue || ''),
+          city: String(ev.city || (tripEnvelope && tripEnvelope.city) || ''),
+          depart: ($('itin-date-depart') && $('itin-date-depart').value) || '',
+          ret: ($('itin-date-return') && $('itin-date-return').value) || '',
+        });
+      });
+    }
+    const shareTrip = $('itin-share-trip');
+    if (shareTrip) {
+      shareTrip.addEventListener('click', function () {
+        const text = tripShareText();
+        if (navigator.share) {
+          navigator.share({ title: 'My trip', text: text }).catch(function () {});
+        } else if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(
+            function () {
+              showAlert('Trip summary copied to clipboard.');
+              setTimeout(clearAlert, 2200);
+            },
+            function () {
+              showAlert('Could not copy — select text manually.');
+            },
+          );
+        } else {
+          showAlert(text.slice(0, 500));
+        }
+      });
+    }
+    const pdfTrip = $('itin-pdf-trip');
+    if (pdfTrip) {
+      pdfTrip.addEventListener('click', function () {
+        window.print();
+      });
+    }
+    const waTrip = $('itin-wa-trip');
+    if (waTrip) {
+      waTrip.addEventListener('click', function () {
+        window.open(
+          'https://wa.me/?text=' + encodeURIComponent(tripShareText()),
+          '_blank',
+          'noopener,noreferrer',
+        );
+      });
+    }
 
     const backBtn = $('itin-back-btn');
     if (backBtn) backBtn.addEventListener('click', performTripBack);
@@ -1268,6 +2478,19 @@
     const resWrap = $('itin-result-section');
     if (resWrap) {
       resWrap.addEventListener('click', function (e) {
+        const tabBtn = e.target.closest('[data-trip-tab]');
+        if (tabBtn) {
+          e.preventDefault();
+          setTripTab(tabBtn.getAttribute('data-trip-tab'));
+          return;
+        }
+        const go = e.target.closest('[data-go-day]');
+        if (go) {
+          e.preventDefault();
+          const di = parseInt(go.getAttribute('data-go-day'), 10);
+          if (!Number.isNaN(di)) activateTripDay(di);
+          return;
+        }
         const pick = e.target.closest('[data-pick-variant]');
         if (pick) {
           const i = parseInt(pick.getAttribute('data-pick-variant'), 10);
@@ -1294,7 +2517,9 @@
         'error',
         function (e) {
           const t = e.target;
-          if (!t || t.tagName !== 'IMG' || !t.closest('.itin-mini-img-wrap')) return;
+          if (!t || t.tagName !== 'IMG') return;
+          const wrap = t.closest('.itin-mini-img-wrap') || t.closest('.itin-tl-thumb');
+          if (!wrap) return;
           if (t.dataset.itinImgFallback === '1') {
             t.dataset.itinImgFallback = '2';
             t.src = ITIN_IMG_STATIC_FALLBACK;
@@ -1305,7 +2530,7 @@
             return;
           }
           t.dataset.itinImgFallback = '1';
-          const card = t.closest('.itin-mini-card');
+          const card = t.closest('.itin-mini-card') || t.closest('.itin-tl-row');
           const pid = (card && card.getAttribute('data-place-id')) || 'place';
           t.src =
             'https://picsum.photos/seed/' +
@@ -1314,6 +2539,14 @@
         },
         true,
       );
+      daysHost.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' && e.key !== ' ') return;
+        const row = e.target.closest('.itin-tl-row--click[data-place-id]');
+        if (!row) return;
+        e.preventDefault();
+        const pid = row.getAttribute('data-place-id');
+        if (pid) openPlaceOverlay(pid);
+      });
       daysHost.addEventListener('click', function (e) {
         const regenBtn = e.target.closest('[data-regen-day]');
         if (regenBtn) {
@@ -1324,13 +2557,53 @@
           }
           return;
         }
-        const card = e.target.closest('.itin-mini-card');
-        if (!card) return;
-        const pid = card.getAttribute('data-place-id');
+        const row = e.target.closest('.itin-tl-row[data-place-id]');
+        if (!row || !row.classList.contains('itin-tl-row--click')) return;
+        const pid = row.getAttribute('data-place-id');
         if (pid) openPlaceOverlay(pid);
       });
     }
   }
+
+  /** Header / deep link: open modal on saved itineraries list. */
+  window.__openSavedItineraries = function () {
+    clearPlannerSession();
+    const formSec = $('itin-form-section');
+    const resSec = $('itin-result-section');
+    if (formSec) {
+      formSec.hidden = true;
+      formSec.setAttribute('hidden', '');
+    }
+    if (resSec) {
+      resSec.hidden = true;
+      resSec.setAttribute('hidden', '');
+    }
+    openTripModal();
+    openHistoryPanel();
+  };
+
+  /** Event hub: open results modal and run AI generation (no separate planner UI). */
+  window.__hubItineraryGenerate = async function (opts) {
+    opts = opts || {};
+    syncFormFromProfile();
+    if (opts.event) setSelectedEvent(opts.event);
+    var d1 = $('itin-date-depart');
+    var d2 = $('itin-date-return');
+    if (d1 && opts.arrivalDate) d1.value = String(opts.arrivalDate).slice(0, 10);
+    if (d2 && opts.departureDate) d2.value = String(opts.departureDate).slice(0, 10);
+    plannerSelectedFlight = null;
+    plannerSelectedHotel = null;
+    showPlannerResultsShell();
+    if (opts.selectedFlight && typeof opts.selectedFlight === 'object') {
+      plannerSelectedFlight = opts.selectedFlight;
+    }
+    if (opts.selectedHotel && typeof opts.selectedHotel === 'object') {
+      plannerSelectedHotel = opts.selectedHotel;
+    }
+    openTripModal();
+    await onGenerate();
+  };
+  window.__tripPlannerGenerateNow = onGenerate;
 
   document.addEventListener('DOMContentLoaded', init);
 })();

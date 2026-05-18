@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in · Event Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Jost:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ivory: #f8f4ee;
+      --forest: #0c1510;
+      --gold: #c8a96e;
+      --muted: rgba(248, 244, 238, 0.62);
+      --rule: rgba(200, 169, 110, 0.28);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      font-family: 'Jost', system-ui, sans-serif;
+      background: radial-gradient(120% 80% at 50% 0%, #1a2e24 0%, var(--forest) 45%, #050807 100%);
+      color: var(--ivory);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 48px;
+    }
+    a.brand {
+      text-decoration: none;
+      color: var(--ivory);
+      margin-bottom: 28px;
+      text-align: center;
+    }
+    .brand-eyebrow {
+      font-size: 0.72rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(200, 169, 110, 0.7);
+    }
+    .brand-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.85rem;
+      font-weight: 400;
+      margin-top: 6px;
+    }
+    .auth-shell {
+      width: 100%;
+      max-width: 440px;
+      background: rgba(12, 21, 16, 0.92);
+      border: 1px solid var(--rule);
+      border-radius: 14px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+    }
+    .auth-tabs {
+      display: flex;
+      border-bottom: 1px solid rgba(255, 250, 243, 0.08);
+    }
+    .auth-tabs button {
+      flex: 1;
+      padding: 16px;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: color 0.2s, background 0.2s;
+    }
+    .auth-tabs button.is-active {
+      color: var(--gold);
+      background: rgba(200, 169, 110, 0.08);
+    }
+    .auth-panels { padding: 26px 26px 30px; }
+    .auth-panel[hidden] { display: none !important; }
+    .auth-intro {
+      font-size: 0.92rem;
+      color: var(--muted);
+      line-height: 1.55;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(200, 169, 110, 0.85);
+      margin: 14px 0 6px;
+    }
+    label:first-of-type { margin-top: 0; }
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 250, 243, 0.18);
+      background: rgba(255, 250, 243, 0.06);
+      color: var(--ivory);
+      font-family: inherit;
+      font-size: 1rem;
+    }
+    input:focus {
+      outline: none;
+      border-color: rgba(200, 169, 110, 0.55);
+      box-shadow: 0 0 0 3px rgba(200, 169, 110, 0.12);
+    }
+    .auth-submit {
+      width: 100%;
+      margin-top: 22px;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #d4b97a, var(--gold));
+      color: var(--forest);
+      cursor: pointer;
+      transition: transform 0.15s, filter 0.15s;
+    }
+    .auth-submit:hover { filter: brightness(1.06); }
+    .auth-submit:active { transform: scale(0.99); }
+    .auth-msg {
+      margin-top: 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      display: none;
+    }
+    .auth-msg.is-error {
+      display: block;
+      background: rgba(180, 60, 60, 0.2);
+      border: 1px solid rgba(220, 120, 120, 0.35);
+      color: #f5d0d0;
+    }
+    .auth-msg.is-ok {
+      display: block;
+      background: rgba(80, 140, 100, 0.2);
+      border: 1px solid rgba(120, 200, 150, 0.3);
+      color: #d8f0e0;
+    }
+    .back-home {
+      margin-top: 22px;
+      font-size: 0.88rem;
+    }
+    .back-home a { color: var(--gold); }
+  </style>
+</head>
+<body>
+  <a class="brand" href="/events">
+    <div class="brand-eyebrow">Malaysia · Live events</div>
+    <div class="brand-title">Event Explorer</div>
+  </a>
+
+  <div class="auth-shell">
+    <div class="auth-tabs" role="tablist">
+      <button type="button" id="tab-signin" class="is-active" role="tab" aria-selected="true">Sign in</button>
+      <button type="button" id="tab-register" role="tab" aria-selected="false">Create account</button>
+    </div>
+    <div class="auth-panels">
+      <div id="panel-signin" class="auth-panel" role="tabpanel">
+        <p class="auth-intro">Welcome back. After this you’ll land on the listings — or a quick taste quiz if you still need to finish setup.</p>
+        <form id="form-signin" autocomplete="on">
+          <label for="si-email">Email</label>
+          <input id="si-email" name="email" type="email" required autocomplete="email" />
+          <label for="si-password">Password</label>
+          <input id="si-password" name="password" type="password" required autocomplete="current-password" />
+          <button type="submit" class="auth-submit">Sign in</button>
+        </form>
+      </div>
+
+      <div id="panel-register" class="auth-panel" hidden role="tabpanel">
+        <p class="auth-intro">
+          Create your account in one step. Right after, we’ll run a short tap-style quiz (home airport, what you like to go out for) — then you’re on the home page.
+        </p>
+        <form id="form-register">
+          <label for="reg-email">Email</label>
+          <input id="reg-email" type="email" required autocomplete="email" />
+          <label for="reg-password">Password (min 8 characters)</label>
+          <input id="reg-password" type="password" required minlength="8" autocomplete="new-password" />
+          <label for="reg-name">Display name (optional)</label>
+          <input id="reg-name" type="text" maxlength="80" autocomplete="name" placeholder="How we greet you" />
+          <button type="submit" class="auth-submit">Create account</button>
+        </form>
+      </div>
+
+      <div id="auth-msg" class="auth-msg" role="alert"></div>
+    </div>
+  </div>
+
+  <p class="back-home"><a href="/events">← Back to events</a></p>
+
+  <script>
+    (function () {
+      var tabSign = document.getElementById('tab-signin');
+      var tabReg = document.getElementById('tab-register');
+      var panelSign = document.getElementById('panel-signin');
+      var panelReg = document.getElementById('panel-register');
+      var msg = document.getElementById('auth-msg');
+
+      function showMsg(text, kind) {
+        msg.textContent = text || '';
+        msg.className = 'auth-msg' + (kind === 'ok' ? ' is-ok' : kind === 'err' ? ' is-error' : '');
+        if (!text) msg.className = 'auth-msg';
+      }
+
+      function setTab(which) {
+        var reg = which === 'register';
+        tabSign.classList.toggle('is-active', !reg);
+        tabReg.classList.toggle('is-active', reg);
+        tabSign.setAttribute('aria-selected', reg ? 'false' : 'true');
+        tabReg.setAttribute('aria-selected', reg ? 'true' : 'false');
+        panelSign.hidden = reg;
+        panelReg.hidden = !reg;
+        showMsg('');
+        if (reg) history.replaceState(null, '', '#register');
+        else history.replaceState(null, '', location.pathname + location.search);
+      }
+
+      tabSign.addEventListener('click', function () { setTab('signin'); });
+      tabReg.addEventListener('click', function () { setTab('register'); });
+
+      if (location.hash === '#register') setTab('register');
+
+      document.getElementById('form-signin').addEventListener('submit', function (e) {
+        e.preventDefault();
+        showMsg('');
+        var body = {
+          email: document.getElementById('si-email').value.trim(),
+          password: document.getElementById('si-password').value,
+        };
+        fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(body),
+        })
+          .then(function (r) {
+            return r.json().then(function (j) {
+              return { ok: r.ok, j: j };
+            });
+          })
+          .then(function (x) {
+            if (x.ok) {
+              showMsg('Signed in. Redirecting…', 'ok');
+              var needQuiz = x.j.user && x.j.user.profile && x.j.user.profile.onboardingComplete === false;
+              location.href = needQuiz ? '/onboarding' : '/';
+            } else {
+              showMsg(x.j.error || 'Sign in failed', 'err');
+            }
+          })
+          .catch(function () {
+            showMsg('Network error — try again.', 'err');
+          });
+      });
+
+      document.getElementById('form-register').addEventListener('submit', function (e) {
+        e.preventDefault();
+        showMsg('');
+        var body = {
+          email: document.getElementById('reg-email').value.trim(),
+          password: document.getElementById('reg-password').value,
+          displayName: document.getElementById('reg-name').value.trim(),
+        };
+        fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(body),
+        })
+          .then(function (r) {
+            return r.json().then(function (j) {
+              return { ok: r.ok, j: j };
+            });
+          })
+          .then(function (x) {
+            if (x.ok) {
+              showMsg('Account created — quick quiz next.', 'ok');
+              location.href = '/onboarding';
+            } else {
+              showMsg(x.j.error || 'Could not create account', 'err');
+            }
+          })
+          .catch(function () {
+            showMsg('Network error — try again.', 'err');
+          });
+      });
+    })();
+  </script>
+</body>
+</html>

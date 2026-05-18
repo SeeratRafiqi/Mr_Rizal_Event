@@ -336,6 +336,17 @@ function init() {
     },
     true,
   );
+
+  window.__prefillHotelModal = function (opts) {
+    opts = opts || {};
+    const fake = document.createElement('button');
+    fake.setAttribute('data-event-venue', String(opts.venue || ''));
+    fake.setAttribute('data-event-city', String(opts.city || ''));
+    fake.setAttribute('data-trip-depart', String(opts.depart || '').slice(0, 10));
+    fake.setAttribute('data-trip-return', String(opts.ret || '').slice(0, 10));
+    prefillFromItinerary(fake);
+    openHsModal();
+  };
 }
 
 init();
