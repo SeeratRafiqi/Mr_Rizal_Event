@@ -590,7 +590,7 @@
       border-bottom: 1px solid var(--pg-rule);
     }
     .hero-history-panel-head h3 {
-      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-family: var(--premium-font-display);
       font-size: 1.35rem;
       font-weight: 500;
       color: var(--pg-forest);
@@ -4360,6 +4360,7 @@
   </style>
   <link rel="stylesheet" href="/eventra-ticket-theme.css" />
   <link rel="stylesheet" href="/premium-ui.css" />
+  <link rel="stylesheet" href="/event-hub-flow.css" />
 </head>
 <body class="theme-eventra">
 
@@ -4618,11 +4619,16 @@
       <p class="eh-muted eh-trip-strip-hint">Flights → Hotels: tap <strong>Add to my itinerary</strong> once each, then <strong>Itinerary</strong>.</p>
     </div>
     <div class="event-hub-main">
-    <div class="event-hub-tabs" role="tablist">
-      <button type="button" class="eh-tab eh-tab--active" id="eh-tab-flights" role="tab" aria-selected="true">Flights</button>
-      <button type="button" class="eh-tab" id="eh-tab-hotels" role="tab" aria-selected="false">Hotels</button>
-      <button type="button" class="eh-tab" id="eh-tab-itin" role="tab" aria-selected="false">Itinerary</button>
+    <div class="event-hub-stepper-wrap">
+      <div class="event-hub-tabs" role="tablist" aria-label="Trip planning steps">
+        <button type="button" class="eh-tab eh-tab--active" id="eh-tab-flights" role="tab" aria-selected="true" aria-controls="eh-panel-flights" data-step-num="1">Flights</button>
+        <button type="button" class="eh-tab" id="eh-tab-hotels" role="tab" aria-selected="false" aria-controls="eh-panel-hotels" data-step-num="2">Hotels</button>
+        <button type="button" class="eh-tab" id="eh-tab-itin" role="tab" aria-selected="false" aria-controls="eh-panel-itin" data-step-num="3">Itinerary</button>
+      </div>
+      <div id="eh-step-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
     </div>
+    <div class="event-hub-body">
+    <div class="event-hub-step-main">
     <div class="event-hub-scroll">
       <div id="eh-panel-flights" class="eh-panel" role="tabpanel">
         <h3>Flights</h3>
@@ -4675,14 +4681,23 @@
       </div>
       <div id="eh-panel-itin" class="eh-panel" role="tabpanel" hidden>
         <h3>Itinerary</h3>
-        <p class="eh-muted">After one flight and one hotel are added, summaries appear below — then tap Generate.</p>
-        <p id="eh-gen-hint" class="eh-muted" style="margin-top: 10px;"></p>
+        <p class="eh-muted">Choose a flight and hotel, then generate your AI itinerary from the booking panel on the right (or below on mobile).</p>
+      </div>
+    </div>
+    </div>
+    <aside class="event-hub-booking-summary" aria-label="Booking summary">
+      <h3 class="eh-booking-summary-title">Your selections</h3>
+      <div class="eh-booking-summary-body">
         <div id="eh-hub-flight-summary" class="eh-hub-flight-summary" hidden></div>
         <div id="eh-hub-hotel-summary" class="eh-hub-flight-summary" hidden style="margin-top: 10px;"></div>
-        <div class="event-hub-cta-row" style="margin-top: 18px;">
-          <button type="button" class="eh-btn eh-btn--gold" id="eh-gen-itin" disabled title="Pick a flight and a hotel, then generate">Generate AI itinerary</button>
+        <p id="eh-gen-hint" class="eh-muted" style="margin-top: 4px;"></p>
+        <div class="eh-summary-jumps">
+          <button type="button" class="eh-btn eh-btn--ghost eh-summary-jump" data-eh-tab="eh-tab-flights">Edit flight</button>
+          <button type="button" class="eh-btn eh-btn--ghost eh-summary-jump" data-eh-tab="eh-tab-hotels">Edit hotel</button>
         </div>
+        <button type="button" class="eh-btn eh-btn--gold" id="eh-gen-itin" disabled title="Pick a flight and a hotel, then generate">Generate AI itinerary</button>
       </div>
+    </aside>
     </div>
     </div>
   </div>
@@ -6353,6 +6368,66 @@
   }
 
   loadEvents();
+
+  /* Event hub flow — UI-only: step announcer, focus, summary jump (does not change setTab logic) */
+  (function initEventHubFlowUi() {
+    const ann = document.getElementById('eh-step-announcer');
+    const stepLabels = {
+      'eh-tab-flights': 'Flights step. Search and add a flight to your itinerary.',
+      'eh-tab-hotels': 'Hotels step. Search and add a hotel to your itinerary.',
+      'eh-tab-itin': 'Itinerary step. Generate your trip plan.',
+    };
+    const panelByTab = {
+      'eh-tab-flights': 'eh-panel-flights',
+      'eh-tab-hotels': 'eh-panel-hotels',
+      'eh-tab-itin': 'eh-panel-itin',
+    };
+
+    function syncStepperA11y(activeTabId) {
+      Object.keys(stepLabels).forEach(function (id) {
+        const btn = document.getElementById(id);
+        if (!btn) return;
+        const on = id === activeTabId;
+        btn.setAttribute('aria-current', on ? 'step' : 'false');
+      });
+      if (ann && activeTabId && stepLabels[activeTabId]) {
+        ann.textContent = stepLabels[activeTabId];
+      }
+    }
+
+    function focusActivePanel(activeTabId) {
+      const panelId = panelByTab[activeTabId];
+      if (!panelId) return;
+      const panel = document.getElementById(panelId);
+      if (!panel || panel.hidden) return;
+      const heading = panel.querySelector('h3');
+      if (heading && typeof heading.focus === 'function') {
+        heading.setAttribute('tabindex', '-1');
+        heading.focus();
+      }
+    }
+
+    Object.keys(stepLabels).forEach(function (tabId) {
+      const tab = document.getElementById(tabId);
+      if (!tab) return;
+      tab.addEventListener('click', function () {
+        window.setTimeout(function () {
+          syncStepperA11y(tabId);
+          focusActivePanel(tabId);
+        }, 60);
+      });
+    });
+
+    document.querySelectorAll('.eh-summary-jump').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const targetId = btn.getAttribute('data-eh-tab');
+        const tab = targetId && document.getElementById(targetId);
+        if (tab) tab.click();
+      });
+    });
+
+    syncStepperA11y('eh-tab-flights');
+  })();
 
 </script>
 

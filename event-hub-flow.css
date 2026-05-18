@@ -1,0 +1,449 @@
+/**
+ * Event hub — modern stepper layout & premium theme (UI only).
+ * Requires existing tab/panel IDs; behavior unchanged.
+ */
+
+.event-hub-modal {
+  --eh-anim-dur: 280ms;
+  --eh-anim-ease: cubic-bezier(0.2, 0.9, 0.3, 1);
+  --eh-surface: var(--premium-surface, #ffffff);
+  --eh-bg: var(--premium-bg, #fbfaf8);
+  --eh-text: var(--premium-text, #0f1724);
+  --eh-muted: var(--premium-muted, #6b6f76);
+  --eh-accent: var(--premium-accent, #cda34e);
+  --eh-accent-deep: var(--premium-accent-deep, #b8862b);
+  --eh-line: rgba(15, 23, 36, 0.1);
+  --eh-shadow: 0 8px 24px rgba(16, 24, 40, 0.08);
+  --eh-shadow-hover: 0 18px 36px rgba(16, 24, 40, 0.12);
+  --eh-font-display: var(--premium-font-display, "Playfair Display", "Cormorant Garamond", Georgia, serif);
+  --eh-font-body: var(--premium-font-body, "Inter", "Jost", system-ui, sans-serif);
+}
+
+/* ── Panel shell: wider, light body ───────────────── */
+.event-hub-panel {
+  width: min(1120px, min(96vw, 96dvw)) !important;
+  background: var(--eh-bg) !important;
+  border: 1px solid var(--eh-line) !important;
+  border-radius: var(--premium-radius-lg, 16px) !important;
+  box-shadow: 0 32px 80px rgba(16, 24, 40, 0.18) !important;
+  color: var(--eh-text) !important;
+}
+
+.event-hub-hero {
+  background: linear-gradient(165deg, #0f1724 0%, #1a2f3d 50%, #1e3a2f 100%) !important;
+  border-bottom: 1px solid rgba(205, 163, 78, 0.2) !important;
+  padding: 0 28px 16px !important;
+}
+
+.event-hub-title {
+  font-family: var(--eh-font-display) !important;
+}
+
+.eh-trip-strip {
+  background: var(--eh-surface) !important;
+  border-bottom: 1px solid var(--eh-line) !important;
+  padding: 16px 28px !important;
+  color: var(--eh-text);
+}
+
+.eh-trip-strip h3 {
+  font-family: var(--eh-font-display) !important;
+  color: var(--eh-text) !important;
+  font-size: 1.2rem !important;
+}
+
+.eh-trip-strip .eh-muted,
+.eh-trip-strip > p:not([hidden]),
+.eh-trip-strip .eh-trip-strip-hint {
+  color: var(--eh-muted) !important;
+}
+
+.eh-trip-strip .eh-field label {
+  color: var(--eh-accent-deep) !important;
+}
+
+.eh-trip-strip .eh-field input {
+  background: var(--eh-bg) !important;
+  border-color: var(--eh-line) !important;
+  color: var(--eh-text) !important;
+}
+
+/* ── Stepper (horizontal) ─────────────────────────── */
+.event-hub-main {
+  background: var(--eh-bg);
+  padding: 0;
+}
+
+.event-hub-stepper-wrap {
+  padding: 0 28px;
+  background: var(--eh-surface);
+  border-bottom: 1px solid var(--eh-line);
+  flex-shrink: 0;
+}
+
+.event-hub-tabs {
+  display: flex !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border-bottom: none !important;
+  max-width: 100%;
+}
+
+.event-hub-tabs .eh-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 12px 14px !important;
+  font-family: var(--eh-font-body) !important;
+  font-size: 0.68rem !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase;
+  color: var(--eh-muted) !important;
+  border-radius: 0 !important;
+  position: relative;
+}
+
+.event-hub-tabs .eh-tab::before {
+  content: attr(data-step-num);
+  font-family: var(--eh-font-display);
+  font-size: 1.15rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--eh-muted);
+  line-height: 1;
+  transition: color var(--eh-anim-dur) var(--eh-anim-ease);
+}
+
+.event-hub-tabs .eh-tab::after {
+  left: 20% !important;
+  right: 20% !important;
+  height: 3px !important;
+  background: linear-gradient(90deg, var(--eh-accent), var(--eh-accent-deep)) !important;
+  border-radius: 3px 3px 0 0;
+}
+
+.event-hub-tabs .eh-tab:hover {
+  background: rgba(205, 163, 78, 0.06) !important;
+  color: var(--eh-text) !important;
+}
+
+.event-hub-tabs .eh-tab:hover::before {
+  color: var(--eh-accent-deep);
+}
+
+.event-hub-tabs .eh-tab--active {
+  color: var(--eh-text) !important;
+  background: transparent !important;
+}
+
+.event-hub-tabs .eh-tab--active::before {
+  color: var(--eh-accent-deep);
+}
+
+.event-hub-tabs .eh-tab:focus-visible {
+  outline: 2px solid var(--eh-accent);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+/* ── Main + sticky summary grid ─────────────────── */
+.event-hub-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: 0;
+  flex: 1 1 0;
+  min-height: 0;
+  align-items: stretch;
+}
+
+.event-hub-step-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.event-hub-scroll {
+  flex: 1 1 0;
+  min-height: 440px;
+  max-height: none;
+  padding: 20px 24px max(24px, env(safe-area-inset-bottom, 0px)) !important;
+  background: var(--eh-bg);
+  scrollbar-color: rgba(205, 163, 78, 0.45) rgba(15, 23, 36, 0.06);
+}
+
+.event-hub-scroll::-webkit-scrollbar-track {
+  background: rgba(15, 23, 36, 0.04) !important;
+}
+
+.event-hub-scroll::-webkit-scrollbar-thumb {
+  background: rgba(205, 163, 78, 0.4) !important;
+}
+
+/* Step content card */
+.event-hub-scroll .eh-panel {
+  background: var(--eh-surface);
+  border: 1px solid var(--eh-line);
+  border-radius: var(--premium-radius-md, 12px);
+  box-shadow: var(--eh-shadow);
+  padding: 20px 22px 24px;
+  min-height: 400px;
+}
+
+.event-hub-scroll .eh-panel h3 {
+  font-family: var(--eh-font-display) !important;
+  font-size: 1.45rem !important;
+  font-weight: 500 !important;
+  color: var(--eh-text) !important;
+  margin-bottom: 10px !important;
+}
+
+.event-hub-scroll .eh-panel > .eh-muted,
+.event-hub-scroll .eh-muted {
+  color: var(--eh-muted) !important;
+}
+
+/* Step enter animation */
+@keyframes eh-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.event-hub-scroll .eh-panel:not([hidden]) {
+  animation: eh-step-in var(--eh-anim-dur) var(--eh-anim-ease) both;
+}
+
+/* ── Booking summary sidebar ──────────────────────── */
+.event-hub-booking-summary {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100%;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 20px 22px 24px;
+  background: var(--eh-surface);
+  border-left: 1px solid var(--eh-line);
+  box-shadow: -8px 0 24px rgba(16, 24, 40, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.eh-booking-summary-title {
+  font-family: var(--eh-font-display);
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: var(--eh-text);
+  margin: 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--eh-line);
+}
+
+.event-hub-booking-summary .eh-hub-flight-summary {
+  margin-top: 0 !important;
+  padding: 14px 16px !important;
+  border-radius: var(--premium-radius-md, 12px) !important;
+  border: 1px solid rgba(205, 163, 78, 0.35) !important;
+  background: rgba(205, 163, 78, 0.08) !important;
+  color: var(--eh-text) !important;
+  font-size: 0.88rem !important;
+  line-height: 1.5 !important;
+  animation: eh-summary-in var(--eh-anim-dur) var(--eh-anim-ease) both;
+}
+
+@keyframes eh-summary-in {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.event-hub-booking-summary #eh-gen-hint {
+  font-size: 0.82rem !important;
+  margin: 0 !important;
+}
+
+.eh-summary-jumps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.eh-summary-jumps .eh-btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 10px 12px !important;
+  font-size: 0.65rem !important;
+}
+
+.event-hub-booking-summary #eh-gen-itin {
+  width: 100%;
+  margin-top: auto;
+  padding: 14px 18px !important;
+  font-size: 0.75rem !important;
+}
+
+.eh-btn--gold {
+  background: linear-gradient(180deg, var(--eh-accent), var(--eh-accent-deep)) !important;
+  color: #1a1408 !important;
+  box-shadow: 0 8px 20px rgba(205, 163, 78, 0.28) !important;
+}
+
+.eh-btn--ghost {
+  color: var(--eh-text) !important;
+  border-color: var(--eh-line) !important;
+  background: var(--eh-bg) !important;
+}
+
+.eh-btn--ghost:hover {
+  border-color: var(--eh-accent) !important;
+  color: var(--eh-accent-deep) !important;
+}
+
+/* ── Route bars & result rows (light) ─────────────── */
+.event-hub-scroll .eh-route-bar {
+  background: var(--eh-bg) !important;
+  border-color: var(--eh-line) !important;
+}
+
+.event-hub-scroll .eh-route-bar strong,
+.event-hub-scroll .eh-route-kicker {
+  color: var(--eh-accent-deep) !important;
+}
+
+.event-hub-scroll .eh-route-line {
+  font-family: var(--eh-font-display) !important;
+  color: var(--eh-text) !important;
+  font-size: 1.2rem !important;
+}
+
+.event-hub-scroll .eh-route-dates {
+  color: var(--eh-muted) !important;
+}
+
+.event-hub-scroll .eh-field label {
+  color: var(--eh-accent-deep) !important;
+}
+
+.event-hub-scroll .eh-field input {
+  background: var(--eh-bg) !important;
+  border-color: var(--eh-line) !important;
+  color: var(--eh-text) !important;
+}
+
+.event-hub-scroll .eh-flight-row,
+.event-hub-scroll .eh-hotel-row {
+  padding: 16px 18px !important;
+  border-radius: var(--premium-radius-md, 12px) !important;
+  background: var(--eh-bg) !important;
+  border: 1px solid var(--eh-line) !important;
+  transition: transform var(--eh-anim-dur) var(--eh-anim-ease), box-shadow var(--eh-anim-dur) var(--eh-anim-ease),
+    border-color 0.2s ease;
+}
+
+.event-hub-scroll .eh-flight-row:hover,
+.event-hub-scroll .eh-hotel-row:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--eh-shadow);
+  border-color: rgba(205, 163, 78, 0.35) !important;
+  background: #fffefb !important;
+}
+
+.event-hub-scroll .eh-serp-logo--hotel {
+  width: 48px !important;
+  height: 48px !important;
+}
+
+.event-hub-scroll .eh-price {
+  color: var(--eh-accent-deep) !important;
+}
+
+.event-hub-scroll .eh-tag--gold {
+  background: rgba(205, 163, 78, 0.15) !important;
+  border-color: var(--eh-accent) !important;
+  color: var(--eh-text) !important;
+}
+
+#eh-flights-results,
+#eh-hotels-results {
+  min-height: 120px;
+}
+
+/* ── Mobile: stack + bottom summary sheet ─────────── */
+@media (max-width: 900px) {
+  .event-hub-panel {
+    width: min(100vw, 100dvw) !important;
+    height: min(100dvh, 100dvh) !important;
+    max-height: 100dvh !important;
+    border-radius: 0 !important;
+  }
+
+  .event-hub-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+
+  .event-hub-scroll {
+    min-height: 320px;
+  }
+
+  .event-hub-scroll .eh-panel {
+    min-height: 280px;
+  }
+
+  .event-hub-booking-summary {
+    position: relative;
+    top: auto;
+    max-height: 38vh;
+    border-left: none;
+    border-top: 1px solid var(--eh-line);
+    box-shadow: 0 -8px 24px rgba(16, 24, 40, 0.06);
+    padding: 16px 18px max(18px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .event-hub-booking-summary.is-collapsed .eh-booking-summary-body {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .event-hub-stepper-wrap,
+  .eh-trip-strip,
+  .event-hub-scroll {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  .event-hub-tabs .eh-tab::before {
+    font-size: 1rem;
+  }
+}
+
+/* ── Reduced motion ───────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .event-hub-scroll .eh-panel:not([hidden]),
+  .event-hub-booking-summary .eh-hub-flight-summary,
+  .event-hub-scroll .eh-flight-row:hover,
+  .event-hub-scroll .eh-hotel-row:hover {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}

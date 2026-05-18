@@ -190,6 +190,11 @@ app.get('/premium-ui.css', (req, res) => {
   res.sendFile(path.join(__dirname, 'premium-ui.css'));
 });
 
+app.get('/event-hub-flow.css', (req, res) => {
+  res.type('text/css');
+  res.sendFile(path.join(__dirname, 'event-hub-flow.css'));
+});
+
 app.get('/flight-search.js', (req, res) => {
   res.type('application/javascript');
   res.sendFile(path.join(__dirname, 'flight-search.js'));
