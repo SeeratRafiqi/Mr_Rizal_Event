@@ -152,6 +152,77 @@
       font-size: 0.88rem;
     }
     .back-home a { color: var(--gold); }
+
+    /* Phase 2 Eventra OS visual foundation */
+    :root {
+      --ivory: #f4fbf6;
+      --forest: #050b0f;
+      --gold: #f2d99b;
+      --mint: #b9f5c9;
+      --cyan: #8ee8ff;
+      --muted: rgba(244, 251, 246, 0.66);
+      --rule: rgba(255, 255, 255, 0.12);
+      --surface: rgba(255, 255, 255, 0.075);
+      --surface-strong: rgba(7, 18, 13, 0.88);
+      --radius: 24px;
+      --shadow: 0 28px 90px rgba(0, 0, 0, 0.42);
+    }
+    body {
+      background:
+        radial-gradient(circle at 16% 0%, rgba(142, 232, 255, 0.18), transparent 30rem),
+        radial-gradient(circle at 86% 12%, rgba(185, 245, 201, 0.14), transparent 28rem),
+        linear-gradient(180deg, #050b0f, #071611 55%, #050907) !important;
+      font-family: Inter, 'Jost', system-ui, sans-serif;
+    }
+    .brand-eyebrow { color: var(--mint); }
+    .brand-title {
+      font-family: Inter, 'Jost', system-ui, sans-serif;
+      font-weight: 850;
+      letter-spacing: 0;
+      background: linear-gradient(100deg, #fff, var(--mint), var(--gold));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .auth-shell {
+      border-radius: var(--radius);
+      border-color: var(--rule);
+      background:
+        radial-gradient(circle at top right, rgba(185, 245, 201, 0.1), transparent 34%),
+        var(--surface-strong);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+    }
+    .auth-tabs button,
+    .auth-submit,
+    .back-home a {
+      font-family: Inter, 'Jost', system-ui, sans-serif;
+      letter-spacing: 0.04em;
+    }
+    .auth-tabs button.is-active {
+      color: var(--ivory);
+      background: rgba(242, 217, 155, 0.13);
+    }
+    label { color: var(--gold); }
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      border-radius: 14px;
+      border-color: var(--rule);
+      background: rgba(255, 255, 255, 0.07);
+    }
+    input:focus {
+      border-color: rgba(185, 245, 201, 0.5);
+      box-shadow: 0 0 0 4px rgba(185, 245, 201, 0.1);
+    }
+    .auth-submit {
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--gold), var(--mint));
+      color: #081510;
+      font-weight: 850;
+      box-shadow: 0 16px 40px rgba(185, 245, 201, 0.18);
+    }
   </style>
 </head>
 <body>

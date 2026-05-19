@@ -351,7 +351,7 @@ function renderSerpFlightCards(flights, bookUrl) {
         `</div>` +
         `<div class="fs-serp-side">` +
         `<div class="fs-serp-price">${escapeHtml(priceStr)}</div>` +
-        `<a class="fs-book-btn" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">Book now</a>` +
+        `<a class="fs-book-btn" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">Open provider</a>` +
         `</div></article>`
       );
     })

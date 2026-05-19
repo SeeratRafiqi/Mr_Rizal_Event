@@ -703,3 +703,253 @@ body.theme-eventra .hero-banner .hero-ai-conversation .hero-chat-turn {
     width: 100%;
   }
 }
+
+/* Phase 2 visual foundation: unified Eventra Tourism OS layer. */
+body.theme-eventra {
+  --os-bg: #050b0f;
+  --os-bg-2: #071611;
+  --os-surface: rgba(255, 255, 255, 0.075);
+  --os-surface-2: rgba(255, 255, 255, 0.11);
+  --os-surface-strong: rgba(8, 20, 15, 0.92);
+  --os-line: rgba(255, 255, 255, 0.12);
+  --os-line-strong: rgba(185, 245, 201, 0.24);
+  --os-ink: #f4fbf6;
+  --os-muted: rgba(244, 251, 246, 0.66);
+  --os-soft: rgba(244, 251, 246, 0.46);
+  --os-mint: #b9f5c9;
+  --os-cyan: #8ee8ff;
+  --os-gold: #f2d99b;
+  --os-danger: #ffb4b4;
+  --os-radius-sm: 12px;
+  --os-radius-md: 18px;
+  --os-radius-lg: 28px;
+  --os-shadow: 0 28px 90px rgba(0, 0, 0, 0.42);
+  --os-shadow-soft: 0 18px 54px rgba(0, 0, 0, 0.24);
+  font-family: Inter, "Jost", system-ui, -apple-system, "Segoe UI", sans-serif !important;
+  letter-spacing: 0 !important;
+  background:
+    radial-gradient(circle at 12% 0%, rgba(142, 232, 255, 0.17), transparent 30rem),
+    radial-gradient(circle at 84% 10%, rgba(185, 245, 201, 0.13), transparent 30rem),
+    radial-gradient(circle at 55% 85%, rgba(242, 217, 155, 0.09), transparent 32rem),
+    linear-gradient(180deg, var(--os-bg), var(--os-bg-2) 45%, #050907) !important;
+  color: var(--os-ink) !important;
+}
+
+body.theme-eventra h1,
+body.theme-eventra h2,
+body.theme-eventra h3,
+body.theme-eventra h4 {
+  font-family: Inter, "Jost", system-ui, sans-serif !important;
+  letter-spacing: 0 !important;
+}
+
+body.theme-eventra header,
+body.theme-eventra .controls,
+body.theme-eventra .ai-command,
+body.theme-eventra .event-hub-panel,
+body.theme-eventra .itin-modal-panel,
+body.theme-eventra .fs-modal-panel,
+body.theme-eventra .hs-modal-panel,
+body.theme-eventra .ai-drawer,
+body.theme-eventra .auth-shell {
+  border: 1px solid var(--os-line) !important;
+  background:
+    radial-gradient(circle at top right, rgba(185, 245, 201, 0.08), transparent 34%),
+    rgba(7, 18, 13, 0.82) !important;
+  box-shadow: var(--os-shadow) !important;
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+body.theme-eventra header {
+  border-width: 0 0 1px !important;
+  box-shadow: 0 10px 44px rgba(0, 0, 0, 0.24) !important;
+}
+
+body.theme-eventra .header-auth-link,
+body.theme-eventra .header-auth-out,
+body.theme-eventra .eh-btn,
+body.theme-eventra .itin-primary,
+body.theme-eventra .itin-trip-searchbtn,
+body.theme-eventra .itin-save-trip,
+body.theme-eventra .fs-book-btn,
+body.theme-eventra .card-link,
+body.theme-eventra .hero-banner .prompt-chips button,
+body.theme-eventra .eh-choice,
+body.theme-eventra .itin-header-chip,
+body.theme-eventra .itin-header-back,
+body.theme-eventra .itin-icon-btn {
+  border-radius: 999px !important;
+  font-family: Inter, "Jost", system-ui, sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease, filter 0.2s ease;
+}
+
+body.theme-eventra .hero-banner .ai-command .primary,
+body.theme-eventra .ai-history-btn,
+body.theme-eventra .ai-events-zone-clear,
+body.theme-eventra .ai-drawer-close {
+  border-radius: 999px !important;
+  font-family: Inter, "Jost", system-ui, sans-serif !important;
+  font-weight: 850 !important;
+  letter-spacing: 0.04em !important;
+}
+
+body.theme-eventra .header-auth-link--gold,
+body.theme-eventra .eh-btn--gold,
+body.theme-eventra .itin-primary,
+body.theme-eventra .itin-save-trip,
+body.theme-eventra .fs-book-btn,
+body.theme-eventra #chat-send,
+body.theme-eventra .hero-banner .ai-command .primary,
+body.theme-eventra .eh-choice--primary {
+  border-color: transparent !important;
+  background: linear-gradient(135deg, var(--os-gold), var(--os-mint)) !important;
+  color: #081510 !important;
+  box-shadow: 0 16px 40px rgba(185, 245, 201, 0.18) !important;
+}
+
+body.theme-eventra .header-auth-link:hover,
+body.theme-eventra .header-auth-out:hover,
+body.theme-eventra .eh-btn:hover,
+body.theme-eventra .itin-header-chip:hover,
+body.theme-eventra .hero-banner .prompt-chips button:hover,
+body.theme-eventra .eh-choice:hover {
+  transform: translateY(-1px);
+}
+
+body.theme-eventra input,
+body.theme-eventra select,
+body.theme-eventra textarea,
+body.theme-eventra #chat-message {
+  border-radius: var(--os-radius-sm) !important;
+  border-color: var(--os-line) !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  color: var(--os-ink) !important;
+}
+
+body.theme-eventra input:focus,
+body.theme-eventra select:focus,
+body.theme-eventra textarea:focus,
+body.theme-eventra #chat-message:focus {
+  border-color: rgba(185, 245, 201, 0.5) !important;
+  box-shadow: 0 0 0 4px rgba(185, 245, 201, 0.1) !important;
+  outline: none !important;
+}
+
+body.theme-eventra .card,
+body.theme-eventra .tourism-mini-card,
+body.theme-eventra .city-pulse-card,
+body.theme-eventra .eh-ai-story-card,
+body.theme-eventra .eh-copilot-card,
+body.theme-eventra .eh-route-bar,
+body.theme-eventra .eh-flight-row,
+body.theme-eventra .eh-hotel-row,
+body.theme-eventra .fs-card,
+body.theme-eventra .fs-serp-card,
+body.theme-eventra .itin-side-card,
+body.theme-eventra .itin-summary-card,
+body.theme-eventra .itin-day-card,
+body.theme-eventra .itin-mini-card,
+body.theme-eventra .itin-variant-card,
+body.theme-eventra .itin-selected-flight-card,
+body.theme-eventra .msg-user,
+body.theme-eventra .msg-bot {
+  border: 1px solid var(--os-line) !important;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.035)) !important;
+  border-radius: var(--os-radius-md) !important;
+  box-shadow: var(--os-shadow-soft) !important;
+}
+
+body.theme-eventra .card {
+  color: var(--os-ink) !important;
+}
+
+body.theme-eventra .card-title,
+body.theme-eventra .tourism-mini-title,
+body.theme-eventra .event-hub-title,
+body.theme-eventra .itin-trip-title,
+body.theme-eventra .itin-tl-day-title,
+body.theme-eventra .fs-card-title {
+  color: var(--os-ink) !important;
+}
+
+body.theme-eventra .card-meta,
+body.theme-eventra .card-summary,
+body.theme-eventra .event-hub-meta,
+body.theme-eventra .eh-muted,
+body.theme-eventra .itin-trip-meta,
+body.theme-eventra .itin-trip-blurb,
+body.theme-eventra .itin-loading-msg,
+body.theme-eventra .empty,
+body.theme-eventra .loading {
+  color: var(--os-muted) !important;
+}
+
+body.theme-eventra .badge,
+body.theme-eventra .eh-ai-rec,
+body.theme-eventra .tourism-mini-tag,
+body.theme-eventra .itin-trip-tab,
+body.theme-eventra .eh-tab {
+  border-radius: 999px !important;
+  border: 1px solid var(--os-line) !important;
+  background: rgba(255, 255, 255, 0.075) !important;
+  color: var(--os-muted) !important;
+}
+
+body.theme-eventra .eh-tab--active,
+body.theme-eventra .itin-trip-tab--active {
+  border-color: rgba(242, 217, 155, 0.38) !important;
+  background: rgba(242, 217, 155, 0.15) !important;
+  color: var(--os-ink) !important;
+}
+
+body.theme-eventra .empty,
+body.theme-eventra .loading,
+body.theme-eventra .itin-loading-msg:not([hidden]),
+body.theme-eventra .fs-loading:not([hidden]),
+body.theme-eventra .eh-loading {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--os-line) !important;
+  border-radius: var(--os-radius-md) !important;
+  background: rgba(255, 255, 255, 0.065) !important;
+  padding: 18px !important;
+}
+
+body.theme-eventra .loading::after,
+body.theme-eventra .itin-loading-msg:not([hidden])::after,
+body.theme-eventra .fs-loading:not([hidden])::after,
+body.theme-eventra .eh-loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(185, 245, 201, 0.11), transparent);
+  animation: eventraShimmer 1.5s infinite;
+}
+
+@keyframes eventraShimmer {
+  to { transform: translateX(100%); }
+}
+
+@media (max-width: 720px) {
+  body.theme-eventra header {
+    padding: 14px 16px !important;
+  }
+
+  body.theme-eventra .controls {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  body.theme-eventra .event-hub-panel,
+  body.theme-eventra .itin-modal-panel,
+  body.theme-eventra .fs-modal-panel,
+  body.theme-eventra .hs-modal-panel {
+    border-radius: 0 !important;
+  }
+}

@@ -3756,6 +3756,53 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .tourism-signal-deck {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 22px 0 0;
+      max-width: 760px;
+    }
+    .tourism-signal {
+      min-height: 102px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,.1);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.025)),
+        rgba(8,18,13,.22);
+      border-radius: 8px;
+      box-shadow: 0 16px 42px rgba(0,0,0,.18);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .tourism-signal-kicker {
+      display: block;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .52rem;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: rgba(200,169,110,.78);
+      margin-bottom: 10px;
+    }
+    .tourism-signal strong {
+      display: block;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.44rem;
+      font-weight: 400;
+      line-height: 1.05;
+      color: var(--pg-ivory);
+    }
+    .tourism-signal span:last-child {
+      display: block;
+      margin-top: 8px;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .72rem;
+      line-height: 1.45;
+      color: rgba(255,255,255,.52);
+    }
     .hero-stats-row {
       display: flex;
       align-items: center;
@@ -3795,6 +3842,225 @@
       letter-spacing: .18em;
       text-transform: uppercase;
       color: rgba(200,169,110,.62);
+    }
+
+    /* AI tourism rails */
+    .tourism-rails {
+      padding: 34px 34px 10px;
+      background:
+        radial-gradient(circle at top left, rgba(200,169,110,.15), transparent 32%),
+        linear-gradient(180deg, #f7f0e7 0%, #fbf8f3 100%);
+      border-bottom: 1px solid rgba(30,58,47,.08);
+    }
+    .tourism-rails-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 22px;
+      align-items: flex-end;
+      margin-bottom: 18px;
+    }
+    .tourism-rails-eyebrow,
+    .ai-pulse-label {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .58rem;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--pg-gold);
+    }
+    .tourism-rails-title {
+      margin-top: 6px;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: clamp(2rem, 4vw, 3.3rem);
+      font-weight: 400;
+      line-height: .98;
+      color: var(--pg-forest);
+      max-width: 620px;
+    }
+    .tourism-rails-copy {
+      max-width: 460px;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .9rem;
+      line-height: 1.7;
+      color: rgba(30,58,47,.68);
+    }
+    .ai-pulse-card {
+      flex: 0 0 min(360px, 40vw);
+      padding: 18px;
+      border-radius: 8px;
+      background: #12251b;
+      color: var(--pg-ivory);
+      box-shadow: 0 24px 70px rgba(30,58,47,.22);
+      border: 1px solid rgba(200,169,110,.24);
+    }
+    .ai-pulse-card p {
+      margin: 8px 0 0;
+      font-family: 'Jost', system-ui, sans-serif;
+      color: rgba(255,255,255,.68);
+      line-height: 1.55;
+      font-size: .82rem;
+    }
+    .tourism-rail {
+      margin-top: 22px;
+    }
+    .tourism-rail-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+    .tourism-rail-title {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .72rem;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: rgba(30,58,47,.78);
+    }
+    .tourism-rail-note {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .75rem;
+      color: rgba(30,58,47,.55);
+    }
+    .tourism-rail-scroll {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(235px, 1fr);
+      gap: 12px;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      padding-bottom: 12px;
+      scroll-snap-type: x proximity;
+    }
+    .tourism-mini-card {
+      position: relative;
+      min-height: 270px;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #12251b;
+      color: #fff;
+      scroll-snap-align: start;
+      box-shadow: 0 18px 48px rgba(30,58,47,.16);
+      border: 1px solid rgba(30,58,47,.08);
+      cursor: pointer;
+    }
+    .tourism-mini-card img,
+    .tourism-mini-card .tourism-mini-ph {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: saturate(.95) brightness(.72);
+      transform: scale(1.01);
+      transition: transform .45s ease, filter .45s ease;
+    }
+    .tourism-mini-card:hover img {
+      transform: scale(1.06);
+      filter: saturate(1.05) brightness(.82);
+    }
+    .tourism-mini-ph {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      background: linear-gradient(135deg, #102219, #314b39);
+    }
+    .tourism-mini-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,.08), rgba(0,0,0,.86));
+    }
+    .tourism-mini-body {
+      position: absolute;
+      z-index: 1;
+      inset: auto 0 0;
+      padding: 18px;
+    }
+    .tourism-mini-tag {
+      display: inline-flex;
+      align-items: center;
+      max-width: 100%;
+      padding: 5px 8px;
+      margin-bottom: 10px;
+      border: 1px solid rgba(255,255,255,.2);
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+      backdrop-filter: blur(8px);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .55rem;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.86);
+    }
+    .tourism-mini-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.42rem;
+      font-weight: 500;
+      line-height: 1.05;
+      color: #fff;
+    }
+    .tourism-mini-meta {
+      margin-top: 8px;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: .73rem;
+      line-height: 1.45;
+      color: rgba(255,255,255,.68);
+    }
+    .city-pulse-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .city-pulse-card {
+      border: 1px solid rgba(30,58,47,.1);
+      border-radius: 8px;
+      padding: 16px;
+      background: rgba(255,255,255,.62);
+      box-shadow: 0 10px 32px rgba(30,58,47,.08);
+    }
+    .city-pulse-card strong {
+      display: block;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      color: var(--pg-forest);
+      font-size: 1.35rem;
+      font-weight: 500;
+    }
+    .city-pulse-card span {
+      display: block;
+      margin-top: 5px;
+      font-family: 'Jost', system-ui, sans-serif;
+      color: rgba(30,58,47,.58);
+      font-size: .76rem;
+    }
+    @media (max-width: 920px) {
+      .tourism-signal-deck,
+      .city-pulse-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .tourism-rails-head {
+        align-items: stretch;
+        flex-direction: column;
+      }
+      .ai-pulse-card {
+        flex-basis: auto;
+      }
+    }
+    @media (max-width: 620px) {
+      .tourism-rails {
+        padding: 24px 16px 8px;
+      }
+      .tourism-signal-deck,
+      .city-pulse-grid {
+        grid-template-columns: 1fr;
+      }
+      .tourism-rail-scroll {
+        grid-auto-columns: minmax(225px, 82vw);
+      }
     }
 
     /* ── TICKER ───────────────────────────────────────────── */
@@ -4322,6 +4588,47 @@
         font-size: 28px;
       }
     }
+    .eh-ai-story {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin: 10px 0 14px;
+    }
+    .eh-ai-story-card {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(200, 169, 110, 0.18);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.09), rgba(255,255,255,.025)),
+        rgba(0,0,0,.16);
+    }
+    .eh-ai-story-card span {
+      display: block;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: rgba(200,169,110,.86);
+      margin-bottom: 7px;
+    }
+    .eh-ai-story-card strong {
+      display: block;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.15rem;
+      font-weight: 500;
+      line-height: 1.08;
+      color: #f8f4ee;
+    }
+    .eh-ai-story-card em {
+      display: block;
+      margin-top: 6px;
+      font-style: normal;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 12px;
+      line-height: 1.45;
+      color: rgba(248,244,238,.64);
+    }
     .eh-event-desc {
       font-family: 'Jost', system-ui, sans-serif;
       font-size: 13px;
@@ -4545,6 +4852,31 @@
       margin-top: 14px;
     }
     .eh-loading { color: #c8a96e; font-size: 14px; }
+    .eh-ai-rec {
+      display: inline-flex;
+      align-items: center;
+      max-width: 100%;
+      padding: 4px 8px;
+      margin-bottom: 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(200,169,110,.42);
+      background: rgba(200,169,110,.13);
+      color: rgba(255,250,243,.92);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .eh-ai-reason {
+      display: block;
+      margin-top: 7px;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 11px;
+      line-height: 1.45;
+      color: rgba(248,244,238,.58);
+      max-width: 36ch;
+    }
 
     /* ── Modal entrance + motion (prefers-reduced-motion aware) ───── */
     @keyframes flow-backdrop-in {
@@ -4630,6 +4962,7 @@
     }
     .card-enter.card-visible { opacity: 1; transform: translateY(0); }
 
+
     body.hero-history-open { overflow: hidden; }
 
     @media (max-width: 768px) {
@@ -4684,6 +5017,39 @@
       .grid-skeleton-card .sk-img,
       .grid-skeleton-card .sk-line { animation: none; }
       .hero-geo-shape { animation: none !important; opacity: 0.35; }
+
+    /* Phase 1 structural support: one curated rail, one browse grid, compact copilot choices. */
+    .tourism-picks-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .tourism-picks-grid .tourism-mini-card {
+      min-height: 360px;
+      background: rgba(255,255,255,.08);
+      box-shadow: 0 22px 70px rgba(0,0,0,.24);
+    }
+    .tourism-picks-grid .tourism-mini-card img { height: 210px; }
+    .card-cardcue {
+      margin-top: auto;
+      color: rgba(16,33,23,.7);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: .02em;
+    }
+    .eh-choice-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    @media (max-width: 1100px) {
+      .tourism-picks-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 720px) {
+      .tourism-picks-grid { grid-template-columns: 1fr; }
+    }
+
     }
   </style>
   <link rel="stylesheet" href="/eventra-ticket-theme.css" />
@@ -4776,11 +5142,33 @@
   <div class="hero-banner-watermark">EVENTS</div>
   <div class="hero-banner-inner">
     <div class="hero-banner-content">
-      <p class="hero-banner-eyebrow">Discover &middot; Explore &middot; Experience</p>
+      <p class="hero-banner-eyebrow">AI Tourism Radar &middot; Malaysia</p>
       <div class="hero-headline-row">
-        <h2 class="hero-banner-title">What's on <em>in Malaysia</em></h2>
+        <h2 class="hero-banner-title">Malaysia is <em>happening now</em></h2>
         <span class="hero-headline-sep" aria-hidden="true"></span>
-        <p class="hero-banner-sub">Every event worth attending — music, culture, food, sports and more — scraped fresh from across the web and delivered here.</p>
+        <p class="hero-banner-sub">Discover live events, city energy, food culture and AI-built travel ideas around the moments worth flying in for.</p>
+      </div>
+      <div class="tourism-signal-deck">
+        <div class="tourism-signal">
+          <span class="tourism-signal-kicker">Live Pulse</span>
+          <strong id="signal-live-city">Kuala Lumpur</strong>
+          <span>City energy changes as fresh events load.</span>
+        </div>
+        <div class="tourism-signal">
+          <span class="tourism-signal-kicker">Trip Spark</span>
+          <strong id="signal-trip-spark">Concerts</strong>
+          <span>Turn one event into a Malaysia travel plan.</span>
+        </div>
+        <div class="tourism-signal">
+          <span class="tourism-signal-kicker">Local Layer</span>
+          <strong>Food + Culture</strong>
+          <span>Itineraries pair events with nearby local moments.</span>
+        </div>
+        <div class="tourism-signal">
+          <span class="tourism-signal-kicker">External Handoff</span>
+          <strong>No Booking Lock-in</strong>
+          <span>Tickets, hotels and flights open on provider sites.</span>
+        </div>
       </div>
       <div class="hero-stats-row">
         <div class="hero-stat-box">
@@ -4798,20 +5186,20 @@
       </div>
       <div class="ai-command">
         <div class="ai-command-head">
-          <div class="command-question">What are you looking for?</div>
+          <div class="command-question">Tell Eventra the trip mood you want to unlock.</div>
           <button type="button" class="hero-history-btn" id="hero-history-btn" aria-label="Open search history" aria-haspopup="dialog" aria-expanded="false" aria-controls="hero-history-panel">
             <span class="hero-history-btn-icon" aria-hidden="true">◷</span>
             <span class="hero-history-badge" id="hero-history-badge" hidden>0</span>
           </button>
         </div>
         <div class="ai-command-inner">
-          <input id="hero-ai-input" type="search" placeholder="Events next month?" autocomplete="off" />
+          <input id="hero-ai-input" type="search" placeholder="I want a luxury concert weekend in Kuala Lumpur" autocomplete="off" />
           <button class="primary" id="hero-ai-btn" type="button">Ask Eventra</button>
         </div>
         <div class="prompt-chips">
-          <!-- <button type="button" data-prompt="Plan me a 3-day trip around a music festival in Malaysia">3-day music trip</button>
-          <button type="button" data-prompt="Find me a comedy show worth travelling for">Comedy show</button>
-          <button type="button" data-prompt="What event should I travel to Malaysia for next month?">Tourist-worthy event</button> -->
+          <button type="button" data-prompt="Plan me a 3-day trip around a music festival in Malaysia">3-day music trip</button>
+          <button type="button" data-prompt="Find me a comedy show worth travelling for">Comedy escape</button>
+          <button type="button" data-prompt="I want a cultural weekend in Penang with food and hidden gems">Penang culture</button>
         </div>
         <div class="hero-ai-status" id="hero-ai-status">Try a travel-style question, or just say hello and Eventra will guide you.</div>
         <div class="hero-ai-conversation" id="hero-ai-conversation" aria-live="polite"></div>
@@ -4820,43 +5208,31 @@
   </div>
 </section>
 
-<!-- TICKER -->
-<div class="ticker-wrap">
-  <div class="ticker-track">
-    <span class="ticker-item">Music</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Comedy</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Arts &amp; Culture</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Food &amp; Drink</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Sports</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Wellness</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Kuala Lumpur</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Penang</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Johor Bahru</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Tech &amp; Innovation</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Family</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Nightlife</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Eventbrite</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Ticket2U</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">GoLive Asia</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Ticketmelon</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Music</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Comedy</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Arts &amp; Culture</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Food &amp; Drink</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Sports</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Wellness</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Kuala Lumpur</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Penang</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Johor Bahru</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Tech &amp; Innovation</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Family</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Nightlife</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Eventbrite</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Ticket2U</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">GoLive Asia</span><span class="ticker-sep">&middot;</span>
-    <span class="ticker-item">Ticketmelon</span><span class="ticker-sep">&middot;</span>
+<section class="tourism-rails discovery-journey" aria-label="AI-curated Malaysia event journeys">
+  <div class="tourism-rails-head">
+    <div>
+      <div class="tourism-rails-eyebrow">Smart Discovery</div>
+      <h2 class="tourism-rails-title">AI Picks for Your Malaysia Trip</h2>
+      <p class="tourism-rails-copy">A focused set of live events that feel most useful for planning a memorable Malaysia visit.</p>
+    </div>
+    <div class="ai-pulse-card">
+      <div class="ai-pulse-label">Tourism copilot</div>
+      <p>Choose one strong starting point, then let the AI shape the itinerary, stay area and external travel handoffs around it.</p>
+    </div>
   </div>
-</div>
+
+  <div class="tourism-rail ai-picks-rail">
+    <div class="tourism-picks-grid" id="rail-ai-picks"></div>
+  </div>
+
+  <div class="tourism-rail">
+    <div class="tourism-rail-top">
+      <h3 class="tourism-rail-title">Trending Cities</h3>
+      <span class="tourism-rail-note">Where Malaysia feels most alive in this dataset</span>
+    </div>
+    <div class="city-pulse-grid" id="city-pulse-grid"></div>
+  </div>
+</section>
 
 <div id="eventsView" style="flex: 1;">
 
@@ -4902,10 +5278,9 @@
 <div class="grid-section-head" id="events-section" tabindex="-1">
   <div class="grid-section-head-inner">
     <div>
-      <p class="grid-sec-eyebrow">Showing <span id="grid-event-count">—</span> events</p>
-      <h3 class="grid-sec-title" id="grid-sec-title">Browse <em>the full listing</em></h3>
+      <p class="grid-sec-eyebrow">Search and filter the live catalog</p>
+      <h3 class="grid-sec-title" id="grid-sec-title">All Events <em id="grid-event-count">...</em></h3>
     </div>
-    <div class="source-badges" id="source-badges"></div>
   </div>
 
 <p id="events-chat-banner" class="events-chat-banner" hidden>
@@ -4957,7 +5332,7 @@
           <button type="button" class="ai-drawer-close" id="ai-close" aria-label="Close assistant">×</button>
         </div>
       </div>
-      <p class="ai-drawer-sub">Mood, budget, date — suggestions use your scraped listings. Configure <code style="color:var(--pg-forest);font-weight:600;">DASHSCOPE_API_KEY</code> in <code style="color:var(--pg-forest);font-weight:600;">.env</code>.</p>
+      <p class="ai-drawer-sub">Ask for a mood, city, budget or travel style. Eventra uses the live Malaysia event catalog to shape ideas you can plan around.</p>
       <div id="ai-history-panel" class="ai-history-panel" aria-hidden="true">
         <div class="ai-history-head">
           <h4>Conversation History</h4>
@@ -4991,18 +5366,42 @@
         <div id="eh-hero-placeholder" class="event-hub-hero-placeholder" hidden>🎟️</div>
       </div>
       <div>
-        <p class="event-hub-eyebrow">Plan your visit</p>
+        <p class="event-hub-eyebrow">AI travel opportunity</p>
         <h2 id="eh-hero-title" class="event-hub-title">Event</h2>
         <p id="eh-hero-meta" class="event-hub-meta"></p>
+        <div class="eh-ai-story" id="eh-ai-story">
+          <div class="eh-ai-story-card">
+            <span>Why go</span>
+            <strong id="eh-ai-why">A live Malaysia moment</strong>
+            <em id="eh-ai-why-copy">Pair the event with food, culture and city time.</em>
+          </div>
+          <div class="eh-ai-story-card">
+            <span>Best base</span>
+            <strong id="eh-ai-base">Near the venue</strong>
+            <em id="eh-ai-base-copy">Stay close for smoother arrival and late-night return.</em>
+          </div>
+          <div class="eh-ai-story-card">
+            <span>Trip shape</span>
+            <strong id="eh-ai-duration">3 days</strong>
+            <em id="eh-ai-duration-copy">Enough room for the event plus local discovery.</em>
+          </div>
+        </div>
         <div class="event-hub-cta-row">
-          <a class="eh-btn eh-btn--gold" id="eh-book-btn" href="#" target="_blank" rel="noopener noreferrer">Book tickets</a>
+          <a class="eh-btn eh-btn--gold" id="eh-book-btn" href="#" target="_blank" rel="noopener noreferrer">View ticket provider</a>
         </div>
       </div>
     </div>
     <div class="eh-trip-strip">
-      <h3>Trip dates</h3>
+      <h3>Draft the journey</h3>
       <p id="eh-event-desc" class="eh-event-desc" hidden></p>
-      <p>Days before and after the event (max 14-day trip).</p>
+      <p>Start with an AI travel draft around the event. Flights and hotels can be added before or after the itinerary.</p>
+      <div class="eh-copilot-card" id="eh-copilot-card">
+        <div class="eh-copilot-kicker">Eventra copilot</div>
+        <h3 id="eh-copilot-title">Your recommended plan</h3>
+        <p id="eh-copilot-copy">Eventra will suggest the next step using your profile and the selected event.</p>
+        <div class="eh-choice-grid" id="eh-choice-grid"></div>
+        <p class="eh-copilot-context" id="eh-copilot-context"></p>
+      </div>
       <div class="eh-field-row">
         <div class="eh-field">
           <label for="eh-days-before">Days before event</label>
@@ -5015,7 +5414,7 @@
         <button type="button" class="eh-btn eh-btn--ghost" id="eh-apply-dates">Update trip</button>
       </div>
       <p id="eh-trip-summary" class="eh-muted"></p>
-      <p class="eh-muted eh-trip-strip-hint">Start on <strong>My Trip</strong>, then add <strong>Flights</strong> and <strong>Hotels</strong> when you are ready to book.</p>
+      <p class="eh-muted eh-trip-strip-hint">Recommended flow: draft itinerary first, then compare flights and stays with external provider links.</p>
     </div>
     <nav class="event-hub-tabs" role="tablist" aria-label="Trip planner sections">
       <button type="button" class="eh-tab eh-tab--active" id="eh-tab-itin" role="tab" aria-selected="true" aria-controls="eh-panel-itin">My Trip</button>
@@ -5025,12 +5424,12 @@
     <div class="event-hub-tab-panels">
       <div id="eh-panel-itin" class="eh-panel" role="tabpanel" aria-labelledby="eh-tab-itin">
         <h3>My Trip</h3>
-        <p class="eh-muted">Review your trip dates above, then add a flight and hotel on their tabs. Summaries appear here when ready — tap Generate to build your AI itinerary.</p>
+        <p class="eh-muted">Generate a first AI travel draft now. If you add a flight or hotel, Qwen will use them as extra context.</p>
         <p id="eh-gen-hint" class="eh-muted" style="margin-top: 10px;"></p>
         <div id="eh-hub-flight-summary" class="eh-hub-flight-summary" hidden></div>
         <div id="eh-hub-hotel-summary" class="eh-hub-flight-summary" hidden style="margin-top: 10px;"></div>
         <div class="event-hub-cta-row" style="margin-top: 18px;">
-          <button type="button" class="eh-btn eh-btn--gold" id="eh-gen-itin" disabled title="Pick a flight and a hotel, then generate">Generate AI itinerary</button>
+          <button type="button" class="eh-btn eh-btn--gold" id="eh-gen-itin">Draft AI trip first</button>
         </div>
       </div>
       <div id="eh-panel-flights" class="eh-panel" role="tabpanel" aria-labelledby="eh-tab-flights" hidden>
@@ -5082,6 +5481,7 @@
         </div>
         <div id="eh-hotels-results"></div>
       </div>
+
     </div>
     <p class="event-hub-scroll-hint" id="event-hub-scroll-hint" aria-hidden="true">Scroll for more ↓</p>
     </div>
@@ -5165,8 +5565,8 @@
           </div>
         </div>
         <div id="itin-preflight-block" class="itin-preflight" hidden>
-          <h3 class="itin-preflight-title">Pick your inbound flight</h3>
-          <p class="itin-preflight-hint">We search <strong>Google Flights</strong> for outbound on your <strong>departure date</strong>, from your home airport to the airport we infer from the event. Choose one option, then generate your itineraries.</p>
+          <h3 class="itin-preflight-title">Optional: add flight context</h3>
+          <p class="itin-preflight-hint">We can search <strong>Google Flights</strong> for your departure date. Pick one if you want Qwen to plan around travel timing, or generate the draft first and compare flights later.</p>
           <div id="itin-form-flights-host" class="itin-form-flights-host"></div>
           <div id="itin-selected-flight-card" class="itin-selected-flight-card" hidden></div>
         </div>
@@ -5187,7 +5587,7 @@
             </div>
             <div class="itin-trip-hero-actions">
               <span class="itin-trip-price-hint" id="itin-trip-price-hint" hidden></span>
-              <a class="itin-trip-book" id="itin-trip-book" href="#" target="_blank" rel="noopener noreferrer" hidden>Book tickets</a>
+              <a class="itin-trip-book" id="itin-trip-book" href="#" target="_blank" rel="noopener noreferrer" hidden>View ticket provider</a>
             </div>
           </div>
 
@@ -5488,7 +5888,8 @@
 <script>
   let allEvents = [];
   let filterDebounceTimer = null;
-  const MAX_CARDS = 120;
+  let curatedEventIds = new Set();
+  const MAX_CARDS = 24;
   let chatResultsMode = false;
   let chatResultsPool = [];
   let lastChatQuery = '';
@@ -6093,6 +6494,18 @@
   }
 
   function eventCardHtml(e, animDelay = 0, idx = 0) {
+    const source = getEventSource(e);
+    const city = e.city && String(e.city).trim() ? String(e.city).trim() : 'Malaysia';
+    const venue = e.venue || 'Venue TBA';
+    const dateLabel = e.date ? new Date(e.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : 'Date TBA';
+    const blob = [e.title, e.category, e.summary].join(' ').toLowerCase();
+    const insight = /(concert|tour|fancon|music|dj|nightlife)/.test(blob)
+      ? 'AI trip angle: make it a music-led city escape.'
+      : /(culture|arts|festival|heritage|creative|exhibition)/.test(blob)
+        ? 'AI trip angle: pair it with culture, food and local walks.'
+        : /(sports|championship|marathon|fitness|race)/.test(blob)
+          ? 'AI trip angle: balance event energy with easy recovery time.'
+          : 'AI trip angle: turn this event into a Malaysia city break.';
     return `
       <div class="card card-enter" data-anim-delay="${animDelay}" data-ev-idx="${idx}" role="button" tabindex="0" aria-label="Open event details and plan your trip">
         <div class="card-img-wrap">
@@ -6103,18 +6516,13 @@
         </div>
         <div class="card-body">
           <div class="card-title">${e.title || 'Untitled Event'}</div>
-          <div class="card-meta">&#9679; ${e.venue || 'Unknown Venue'}, ${e.city && String(e.city).trim() ? e.city : 'Location TBA'}</div>
-          <div class="card-meta">&#9679; ${e.date ? new Date(e.date).toDateString() : 'Date TBA'}</div>
+          <div class="card-meta">${city} · ${venue}</div>
+          <div class="card-meta">${dateLabel}</div>
           <div>
-            ${getEventSource(e) !== 'unknown' ? `<span class="badge badge-category">${sourceLabel(getEventSource(e))}</span>` : ''}
-            <span class="badge ${e.isFree ? 'badge-free' : 'badge-paid'}">
-              ${e.isFree ? 'Free' : `${e.price || 'Paid'}`}
-            </span>
             ${e.category ? `<span class="badge badge-category">${e.category}</span>` : ''}
           </div>
-          ${e.summary ? `<div class="card-summary">${e.summary}</div>` : ''}
-          <div style="flex:1;min-height:14px;"></div>
-          ${e.url ? `<a class="card-link" href="${e.url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">View Event &rarr;</a>` : ''}
+          <div class="card-summary">${insight}</div>
+          <div class="card-cardcue">Open details</div>
         </div>
       </div>
     `;
@@ -6151,6 +6559,7 @@
            </div>`
         ).join('');
       }
+      updateTourismRails(allEvents);
 
       filterEvents();
     } catch (err) {
@@ -6199,6 +6608,11 @@
       filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
     }
 
+    const isDefaultBrowse = !chatResultsMode && !search && freeFilter === 'all' && sourceFilter === 'all' && sort === 'default' && activeCat === 'all';
+    const displayEvents = isDefaultBrowse
+      ? filtered.filter(function (e) { return !curatedEventIds.has(String(e.id || '')); })
+      : filtered;
+
     const statsEl = document.getElementById('stats');
     if (statsEl) {
       statsEl.style.display = '';
@@ -6216,9 +6630,13 @@
     }
 
     const countEl = document.getElementById('grid-event-count');
-    if (countEl) countEl.textContent = filtered.length;
+    if (countEl) {
+      countEl.textContent = displayEvents.length > MAX_CARDS
+        ? `${MAX_CARDS} of ${displayEvents.length}`
+        : String(displayEvents.length);
+    }
 
-    renderCards(filtered);
+    renderCards(displayEvents);
   }
 
   function getEventSource(event) {
@@ -6298,10 +6716,102 @@
         ' of ' +
         events.length +
         ' matches — refine search or filters to see more.';
+      note.textContent = 'Use search or filters to explore the remaining matches.';
       grid.appendChild(note);
     }
     setupCardAnimations();
     if (chatResultsMode && lastChatQuery) applyChatHighlightsToGrid(lastChatQuery);
+  }
+
+  function eventIso(e) {
+    const iso = String(e && e.date || '').slice(0, 10);
+    return /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : '';
+  }
+
+  function cityLabel(e) {
+    return String((e && e.city) || '').trim() || String((e && e.venue) || '').split(',').pop().trim() || 'Malaysia';
+  }
+
+  function railCardHtml(e, tag) {
+    const source = sourceLabel(getEventSource(e));
+    const city = cityLabel(e);
+    const date = eventIso(e) || '';
+    return (
+      '<article class="tourism-mini-card" data-rail-event-id="' + escapeHtml(String(e.id || '')) + '" tabindex="0" role="button" aria-label="Open ' + escapeHtml(e.title || 'event') + '">' +
+      (e.image
+        ? '<img src="' + escapeHtml(e.image) + '" alt="" loading="lazy" decoding="async" />'
+        : '<div class="tourism-mini-ph">EVENT</div>') +
+      '<div class="tourism-mini-body">' +
+      '<span class="tourism-mini-tag">' + escapeHtml(tag || source) + '</span>' +
+      '<h3 class="tourism-mini-title">' + escapeHtml(e.title || 'Untitled Event') + '</h3>' +
+      '<p class="tourism-mini-meta">' + escapeHtml([city, date, source].filter(Boolean).join(' - ')) + '</p>' +
+      '</div></article>'
+    );
+  }
+
+  function scoreFlyIn(e) {
+    const blob = [e.title, e.category, e.summary].join(' ').toLowerCase();
+    let score = 0;
+    if (/(concert|festival|tour|fancon|show|comedy|sports|championship|culture|arts|nightlife|food)/.test(blob)) score += 8;
+    if (e.image) score += 2;
+    if (e.summary) score += 1;
+    if (!e.isFree) score += 1;
+    return score;
+  }
+
+  function updateTourismRails(events) {
+    const nowIso = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' });
+    const future = (events || [])
+      .filter(function (e) { return eventIso(e) && eventIso(e) >= nowIso; })
+      .sort(function (a, b) { return eventIso(a).localeCompare(eventIso(b)); });
+    const picksHost = document.getElementById('rail-ai-picks');
+    const cityHost = document.getElementById('city-pulse-grid');
+    if (picksHost) {
+      const picks = future
+        .slice()
+        .sort(function (a, b) { return scoreFlyIn(b) - scoreFlyIn(a); })
+        .slice(0, 8);
+      curatedEventIds = new Set(picks.map(function (e) { return String(e.id || ''); }).filter(Boolean));
+      picksHost.innerHTML = picks.length
+        ? picks.map(function (e) { return railCardHtml(e, 'AI Pick'); }).join('')
+        : '<div class="empty">Fresh AI picks will appear here after the next scrape.</div>';
+    }
+    if (cityHost) {
+      const counts = {};
+      future.forEach(function (e) {
+        const c = cityLabel(e);
+        if (!c || c === 'Malaysia') return;
+        counts[c] = (counts[c] || 0) + 1;
+      });
+      const topCities = Object.entries(counts).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 6);
+      cityHost.innerHTML = topCities.map(function (pair) {
+        return '<div class="city-pulse-card"><strong>' + escapeHtml(pair[0]) + '</strong><span>' + pair[1] + ' live event' + (pair[1] === 1 ? '' : 's') + ' to build a trip around</span></div>';
+      }).join('');
+      const liveCity = document.getElementById('signal-live-city');
+      if (liveCity && topCities[0]) liveCity.textContent = topCities[0][0];
+    }
+    const spark = document.getElementById('signal-trip-spark');
+    if (spark && future.length) {
+      const best = future.slice().sort(function (a, b) { return scoreFlyIn(b) - scoreFlyIn(a); })[0];
+      spark.textContent = String(best.category || sourceLabel(getEventSource(best)) || 'Events').slice(0, 24);
+    }
+  }
+
+  function initTourismRailClicks() {
+    document.addEventListener('click', function (e) {
+      const card = e.target.closest('.tourism-mini-card[data-rail-event-id]');
+      if (!card) return;
+      const id = card.getAttribute('data-rail-event-id');
+      const ev = allEvents.find(function (item) { return String(item.id || '') === String(id || ''); });
+      if (ev && typeof window.__openEventHub === 'function') window.__openEventHub(ev);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const card = document.activeElement && document.activeElement.closest('.tourism-mini-card[data-rail-event-id]');
+      if (!card) return;
+      e.preventDefault();
+      card.click();
+    });
   }
 
   function escapeHtml(str) {
@@ -6314,6 +6824,7 @@
 
   function chatCompactCardHtml(e) {
     const source = getEventSource(e);
+    const dateLabel = e.date ? escapeHtml(String(new Date(e.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }))) : 'Date TBA';
     return (
       '<div class="card card--compact">' +
       (e.image
@@ -6321,12 +6832,10 @@
         : '<div class="no-img">🎟️</div>') +
       '<div class="card-body">' +
       '<div class="card-title">' + escapeHtml(e.title || 'Untitled Event') + '</div>' +
-      '<div class="card-meta">📍 ' + escapeHtml(e.venue || 'Unknown Venue') + '</div>' +
-      '<div class="card-meta">📅 ' + (e.date ? escapeHtml(String(new Date(e.date).toDateString())) : 'Date TBA') + '</div>' +
-      '<div class="card-meta">💰 ' + escapeHtml(String(e.price || (e.isFree ? 'Free' : 'Paid'))) +
-      (source !== 'unknown' ? ' • ' + escapeHtml(sourceLabel(source)) : '') + '</div>' +
+      '<div class="card-meta">' + escapeHtml(e.venue || 'Unknown Venue') + '</div>' +
+      '<div class="card-meta">' + dateLabel + (source !== 'unknown' ? ' · ' + escapeHtml(sourceLabel(source)) : '') + '</div>' +
       (e.url
-        ? '<a class="card-link" href="' + escapeHtml(e.url) + '" target="_blank" rel="noopener noreferrer">View →</a>'
+        ? '<a class="card-link" href="' + escapeHtml(e.url) + '" target="_blank" rel="noopener noreferrer">Open source</a>'
         : '') +
       '</div></div>'
     );
@@ -6881,6 +7390,7 @@
   }
 
   initAiAssistant();
+  initTourismRailClicks();
 
   const searchInput = document.getElementById('search');
   if (searchInput) searchInput.addEventListener('input', scheduleFilterEvents);

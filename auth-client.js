@@ -13,6 +13,11 @@
     return /^[A-Z]{3}$/.test(iata) ? iata : 'KUL';
   };
 
+  window.__getEventraProfile = function () {
+    const u = window.__authUser;
+    return u && u.profile && typeof u.profile === 'object' ? Object.assign({}, u.profile) : {};
+  };
+
   function $(id) {
     return document.getElementById(id);
   }

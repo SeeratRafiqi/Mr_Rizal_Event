@@ -876,6 +876,8 @@ function profileQuestionnaireBlock(profile, selectedFlight, selectedHotel) {
     `- Trip interests: ${JSON.stringify(Array.isArray(p.activityInterests) ? p.activityInterests : [])}`,
     `- Adventure style (activity boldness, not money): ${String(p.adventureLevel || 'medium')}`,
     `- Trip pace: ${String(p.pacePreference || 'balanced')}`,
+    `- Hotel preference: ${String(p.hotelPreference || 'venue').trim()}`,
+    `- Traveller type: ${String(p.travelerType || '').trim() || 'not specified'}`,
     `- Spending tier (1–4, separate from adventure): ${lvl} — ${budgetGuide[lvl]}`,
     `- Preferred language: ${String(p.language || '').trim() || 'not specified'}`,
     `- Extra notes: ${String(p.notes || '').trim() || '(none)'}`,
@@ -897,6 +899,9 @@ function profileQuestionnaireBlock(profile, selectedFlight, selectedHotel) {
     lines.push('');
     lines.push('SELECTED OUTBOUND FLIGHT (use times as soft context for Day 1 energy; never invent new flight numbers):');
     lines.push(JSON.stringify(selectedFlight));
+  } else {
+    lines.push('');
+    lines.push('NO FLIGHT SELECTED YET: create a first-draft itinerary anyway. Include ideal arrival buffer, airport-transfer caution, and remind that flight options open externally later.');
   }
   if (selectedHotel && typeof selectedHotel === 'object' && String(selectedHotel.name || '').trim()) {
     lines.push('');
@@ -904,6 +909,9 @@ function profileQuestionnaireBlock(profile, selectedFlight, selectedHotel) {
       'SELECTED PREFERRED HOTEL (traveller chose this listing — use as primary stay anchor for check-in rhythm and area; still diversify daily stops; do not rename or substitute a different property):',
     );
     lines.push(JSON.stringify(selectedHotel));
+  } else {
+    lines.push('');
+    lines.push('NO HOTEL SELECTED YET: suggest sensible stay areas near the event/city rather than inventing a booked hotel. Mention tradeoffs like venue proximity, nightlife access, family comfort, and budget.');
   }
   return lines.join('\n');
 }
@@ -1639,28 +1647,21 @@ function registerItineraryRoutes(app, deps) {
       ? body.interests.map((x) => String(x)).filter(Boolean).slice(0, 12)
       : [];
 
-    const selectedFlight =
+    const rawSelectedFlight =
       body.selectedFlight && typeof body.selectedFlight === 'object' ? body.selectedFlight : null;
-    const flightOk =
-      selectedFlight &&
-      typeof selectedFlight.departure === 'object' &&
-      typeof selectedFlight.arrival === 'object';
-    if (!flightOk) {
-      return res.status(400).json({
-        error:
-          'Pick an outbound flight first — open the event card, use the Flights tab, search, then tap “Add to my itinerary”.',
-      });
-    }
+    const selectedFlight =
+      rawSelectedFlight &&
+      typeof rawSelectedFlight.departure === 'object' &&
+      typeof rawSelectedFlight.arrival === 'object'
+        ? rawSelectedFlight
+        : null;
 
-    const selectedHotel =
+    const rawSelectedHotel =
       body.selectedHotel && typeof body.selectedHotel === 'object' ? body.selectedHotel : null;
-    const hotelOk = selectedHotel && String(selectedHotel.name || '').trim().length >= 2;
-    if (!hotelOk) {
-      return res.status(400).json({
-        error:
-          'Pick a hotel first — open the Hotels tab, search under Pick your stay, then tap “Add to my itinerary” beside a property.',
-      });
-    }
+    const selectedHotel =
+      rawSelectedHotel && String(rawSelectedHotel.name || '').trim().length >= 2
+        ? rawSelectedHotel
+        : null;
 
     let accountProfile = null;
     if (typeof getSessionUserId === 'function' && authStoreDep && typeof authStoreDep.findById === 'function') {

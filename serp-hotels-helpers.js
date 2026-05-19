@@ -53,6 +53,42 @@
     };
   }
 
+  function aiHotelInsight(p, idx) {
+    const rating = Number(p && p.overall_rating);
+    const reviews = Number(p && p.reviews);
+    const priceRaw = String(hotelPriceLabel(p) || '');
+    const extracted = Number(p && p.extracted_price);
+    const type = String((p && p.type) || '').toLowerCase();
+    if (idx === 0) {
+      return {
+        label: 'AI pick: venue-aware base',
+        reason: 'Start here: this is the strongest live hotel result for the event-area search.',
+      };
+    }
+    if (Number.isFinite(rating) && rating >= 4.5 && Number.isFinite(reviews) && reviews >= 100) {
+      return {
+        label: 'Best confidence stay',
+        reason: 'High rating and review volume make this safer for international travellers.',
+      };
+    }
+    if ((Number.isFinite(extracted) && extracted < 260) || /rm\s?1|rm\s?2|myr\s?1|myr\s?2/i.test(priceRaw)) {
+      return {
+        label: 'Best value',
+        reason: 'Good candidate when you want more budget left for food, tickets and local experiences.',
+      };
+    }
+    if (/hotel|resort|suite|serviced/.test(type) && Number.isFinite(rating) && rating >= 4) {
+      return {
+        label: 'Comfort traveller fit',
+        reason: 'Better for travellers who want a smoother check-in, rest window and event-night return.',
+      };
+    }
+    return {
+      label: 'Alternative stay area',
+      reason: 'Compare distance, late-night transport and cancellation policy before opening the provider.',
+    };
+  }
+
   /**
    * @param {Array<object>} rows
    * @param {string} googleHotelsUrl Same Google Hotels search URL for every row (like flights + google_flights_url).
@@ -65,6 +101,7 @@
     );
     return rows
       .map(function (p, idx) {
+        const insight = aiHotelInsight(p, idx);
         const name = escapeHtml(p.name || 'Property');
         const rating =
           p.overall_rating != null && Number.isFinite(Number(p.overall_rating))
@@ -90,6 +127,9 @@
           '<div class="eh-serp-left">' +
           logoBlock +
           '<div class="eh-serp-mid">' +
+          '<span class="eh-ai-rec">' +
+          escapeHtml(insight.label) +
+          '</span>' +
           '<div><strong>' +
           name +
           '</strong></div>' +
@@ -97,6 +137,9 @@
           '<span class="eh-flight-sub">Rating ' +
           escapeHtml(rating) +
           (revStr ? ' · ' + revStr : '') +
+          '</span>' +
+          '<span class="eh-ai-reason">' +
+          escapeHtml(insight.reason) +
           '</span>' +
           '</div></div>' +
           '<div class="eh-flight-meta">' +
@@ -110,7 +153,7 @@
             : '') +
           '<a class="eh-btn eh-btn--ghost eh-serp-book" href="' +
           bookHref +
-          '" target="_blank" rel="noopener noreferrer">Book</a>' +
+          '" target="_blank" rel="noopener noreferrer">Open provider</a>' +
           '</div></li>'
         );
       })

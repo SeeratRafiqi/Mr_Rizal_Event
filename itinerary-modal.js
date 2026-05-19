@@ -509,21 +509,12 @@
   function updateGenerateButtonState() {
     const btn = $('itin-generate');
     if (!btn) return;
-    const formSec = $('itin-form-section');
-    if (formSec && formSec.hidden) {
-      btn.disabled = false;
-      btn.removeAttribute('title');
-      btn.textContent = 'Generate My Itinerary 🚀';
-      btn.classList.remove('itin-primary--disabled');
-      return;
-    }
-    const ok = !!plannerSelectedFlight;
-    btn.disabled = !ok;
-    btn.title = ok
-      ? ''
-      : 'Please select a flight first so we can plan around your travel times';
-    btn.textContent = ok ? 'Generate My Itinerary 🚀' : 'Select a flight first ✈️';
-    btn.classList.toggle('itin-primary--disabled', !ok);
+    btn.disabled = false;
+    btn.removeAttribute('title');
+    btn.textContent = plannerSelectedFlight || plannerSelectedHotel
+      ? 'Refine My AI Trip'
+      : 'Generate My AI Trip';
+    btn.classList.remove('itin-primary--disabled');
   }
 
   function updateSelectedFlightCard() {
@@ -712,7 +703,7 @@
           '">Add to my itinerary</button>' +
           '<a class="eh-btn eh-btn--ghost eh-serp-book" href="' +
           href +
-          '" target="_blank" rel="noopener noreferrer">Book</a>' +
+          '" target="_blank" rel="noopener noreferrer">Open provider</a>' +
           '</div></li>'
         );
       })
@@ -1435,18 +1426,6 @@
           ' to ' +
           ret +
           '. Update your dates so the event falls within your trip.',
-      );
-      return false;
-    }
-    const f = plannerSelectedFlight;
-    if (!f || typeof f !== 'object' || !f.departure || !f.arrival) {
-      showAlert('Pick an inbound flight first (event card → Flights tab → Add to my itinerary).');
-      return false;
-    }
-    const h = plannerSelectedHotel;
-    if (!h || typeof h !== 'object' || !String(h.name || '').trim()) {
-      showAlert(
-        'Pick a hotel first (event card → Hotels tab → search → Add to my itinerary beside your preferred property).',
       );
       return false;
     }

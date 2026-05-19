@@ -199,6 +199,94 @@
       color: #f5d0d0;
     }
     .pf-loading { text-align: center; padding: 40px 16px; color: var(--muted); }
+
+    /* Phase 2 Eventra OS visual foundation */
+    :root {
+      --ivory: #f4fbf6;
+      --forest: #050b0f;
+      --gold: #f2d99b;
+      --mint: #b9f5c9;
+      --cyan: #8ee8ff;
+      --muted: rgba(244, 251, 246, 0.66);
+      --rule: rgba(255, 255, 255, 0.12);
+      --surface: rgba(255, 255, 255, 0.075);
+      --surface-strong: rgba(7, 18, 13, 0.88);
+      --radius: 24px;
+      --shadow: 0 28px 90px rgba(0, 0, 0, 0.42);
+    }
+    body {
+      background:
+        radial-gradient(circle at 18% 0%, rgba(142, 232, 255, 0.18), transparent 30rem),
+        radial-gradient(circle at 86% 12%, rgba(185, 245, 201, 0.14), transparent 28rem),
+        linear-gradient(180deg, #050b0f, #071611 55%, #050907) !important;
+      font-family: Inter, 'Jost', system-ui, sans-serif;
+    }
+    .pf-eyebrow { color: var(--mint); }
+    .pf-title,
+    .pf-q {
+      font-family: Inter, 'Jost', system-ui, sans-serif;
+      letter-spacing: 0;
+    }
+    .pf-title {
+      font-weight: 850;
+      background: linear-gradient(100deg, #fff, var(--mint), var(--gold));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .pf-card {
+      border-radius: var(--radius);
+      border-color: var(--rule);
+      background:
+        radial-gradient(circle at top right, rgba(185, 245, 201, 0.1), transparent 34%),
+        var(--surface-strong);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+    }
+    .pf-field input,
+    .pf-field select,
+    .pf-notes,
+    .pf-tile,
+    .pf-chip {
+      border-color: var(--rule) !important;
+      background: rgba(255, 255, 255, 0.07) !important;
+      border-radius: 16px !important;
+    }
+    .pf-chip { border-radius: 999px !important; }
+    .pf-field input:focus,
+    .pf-field select:focus,
+    .pf-notes:focus {
+      outline: none;
+      border-color: rgba(185, 245, 201, 0.5) !important;
+      box-shadow: 0 0 0 4px rgba(185, 245, 201, 0.1);
+    }
+    .pf-tile:hover,
+    .pf-chip:hover {
+      border-color: rgba(185, 245, 201, 0.38);
+      background: rgba(255, 255, 255, 0.1) !important;
+    }
+    .pf-tile.is-selected,
+    .pf-chip.is-on {
+      border-color: rgba(242, 217, 155, 0.58);
+      background: rgba(242, 217, 155, 0.14) !important;
+      box-shadow: 0 0 0 3px rgba(242, 217, 155, 0.08);
+    }
+    .pf-btn {
+      border-radius: 999px;
+      font-family: Inter, 'Jost', system-ui, sans-serif;
+      letter-spacing: 0.04em;
+      font-weight: 850;
+    }
+    .pf-btn--gold {
+      background: linear-gradient(135deg, var(--gold), var(--mint));
+      color: #081510;
+      box-shadow: 0 16px 40px rgba(185, 245, 201, 0.18);
+    }
+    @media (max-width: 520px) {
+      body { padding: 18px 12px 28px; }
+      .pf-card { padding: 20px 16px 22px; }
+    }
   </style>
 </head>
 <body>
@@ -281,6 +369,13 @@
       </div>
 
       <div class="pf-section">
+        <p class="pf-q">Planning defaults</p>
+        <p class="pf-sub">Used so Eventra can suggest hotels and trip versions without asking again during event planning.</p>
+        <div class="pf-grid" id="pf-traveler"></div>
+        <div class="pf-grid" id="pf-hotel" style="margin-top:12px"></div>
+      </div>
+
+      <div class="pf-section">
         <p class="pf-q">Tips by email</p>
         <div class="pf-yesno" id="pf-marketing"></div>
         <div class="pf-field" style="margin-top:16px">
@@ -346,6 +441,8 @@
         adventureLevel: 'medium',
         budgetLevel: 2,
         pacePreference: 'balanced',
+        hotelPreference: 'venue',
+        travelerType: 'couple',
         marketingOptIn: false,
         language: '',
         notes: '',
@@ -506,6 +603,30 @@
           'pacePreference',
           state.pacePreference,
         );
+        renderTiles(
+          'pf-traveler',
+          [
+            { v: 'solo', t: 'Solo', s: 'Independent traveler' },
+            { v: 'couple', t: 'Couple', s: 'Shared city escape' },
+            { v: 'family', t: 'Family', s: 'Comfort and easier pacing' },
+            { v: 'group', t: 'Group', s: 'Flexible plans together' },
+          ],
+          'travelerType',
+          state.travelerType,
+        );
+        renderTiles(
+          'pf-hotel',
+          [
+            { v: 'venue', t: 'Near venue', s: 'Shortest event commute' },
+            { v: 'nightlife', t: 'Nightlife area', s: 'Food and late evenings' },
+            { v: 'transit', t: 'Transit access', s: 'Airport and train convenience' },
+            { v: 'luxury', t: 'Luxury stay', s: 'Premium hotels' },
+            { v: 'budget', t: 'Budget stay', s: 'Keep more for food and events' },
+            { v: 'quiet', t: 'Quiet area', s: 'Calmer nights' },
+          ],
+          'hotelPreference',
+          state.hotelPreference,
+        );
         renderMarketing();
       }
 
@@ -528,6 +649,8 @@
           adventureLevel: state.adventureLevel,
           pacePreference: state.pacePreference,
           budgetLevel: state.budgetLevel,
+          hotelPreference: state.hotelPreference,
+          travelerType: state.travelerType,
           marketingOptIn: state.marketingOptIn,
           language: state.language,
           notes: state.notes,
@@ -549,6 +672,8 @@
         state.adventureLevel = p.adventureLevel || 'medium';
         state.budgetLevel = Number.isFinite(Number(p.budgetLevel)) ? Math.min(4, Math.max(1, Math.round(Number(p.budgetLevel)))) : 2;
         state.pacePreference = p.pacePreference || 'balanced';
+        state.hotelPreference = p.hotelPreference || 'venue';
+        state.travelerType = p.travelerType || 'couple';
         state.marketingOptIn = Boolean(p.marketingOptIn);
         state.language = p.language || '';
         state.notes = p.notes || '';

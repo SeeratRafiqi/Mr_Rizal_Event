@@ -119,6 +119,193 @@
     lastHotelRows: [],
   };
 
+  function getProfile() {
+    if (typeof window.__getEventraProfile === 'function') return window.__getEventraProfile() || {};
+    const u = window.__authUser;
+    return u && u.profile && typeof u.profile === 'object' ? u.profile : {};
+  }
+
+  function budgetLabel(profile) {
+    const lvl = Number(profile && profile.budgetLevel);
+    if (lvl <= 1) return 'budget';
+    if (lvl === 3) return 'comfort';
+    if (lvl >= 4) return 'luxury';
+    return 'balanced';
+  }
+
+  function paceLabel(profile) {
+    const pace = String(profile && profile.pacePreference || '').trim();
+    if (pace === 'slow') return 'relaxed';
+    if (pace === 'packed') return 'full';
+    return 'balanced';
+  }
+
+  function formatEventDate(ev) {
+    const iso = toIsoDate(ev && ev.date);
+    if (!iso) return 'the event date';
+    try {
+      return new Date(iso + 'T12:00:00Z').toLocaleDateString(undefined, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+    } catch (e) {
+      return iso;
+    }
+  }
+
+  function tripDayCount() {
+    return Number(hubState.daysBefore || 0) + Number(hubState.daysAfter || 0) + 1;
+  }
+
+  function profileContextLine(profile) {
+    const bits = [];
+    const home = String((profile && profile.homeIata) || hubState.originIata || '').toUpperCase();
+    if (/^[A-Z]{3}$/.test(home)) bits.push('origin ' + home);
+    bits.push(budgetLabel(profile) + ' budget');
+    bits.push(paceLabel(profile) + ' pace');
+    if (profile && profile.hotelPreference) bits.push('hotel: ' + String(profile.hotelPreference));
+    if (profile && profile.travelerType) bits.push(String(profile.travelerType));
+    if (profile && profile.language) bits.push(String(profile.language).trim());
+    return 'Using profile: ' + bits.filter(Boolean).join(' · ');
+  }
+
+  function cityName(ev) {
+    return String((ev && ev.city) || '').trim() || 'Malaysia';
+  }
+
+  function setTripShape(daysBefore, daysAfter) {
+    hubState.daysBefore = Math.max(0, Math.min(14, Number(daysBefore) || 0));
+    hubState.daysAfter = Math.max(0, Math.min(14, Number(daysAfter) || 0));
+    const dbEl = $('eh-days-before');
+    const daEl = $('eh-days-after');
+    if (dbEl) dbEl.value = String(hubState.daysBefore);
+    if (daEl) daEl.value = String(hubState.daysAfter);
+    updateHubSummary();
+    updateRouteLine();
+    updateHotelRouteBar();
+    syncFlightTabInputsFromHub();
+  }
+
+  function hotelQueryForChoice(choice) {
+    const ev = hubState.event || {};
+    const city = cityName(ev);
+    const venue = String(ev.venue || '').trim();
+    if (choice === 'nightlife') return 'Bukit Bintang, ' + city;
+    if (choice === 'transit') return /kuala lumpur|kl/i.test(city + ' ' + venue) ? 'KL Sentral, Kuala Lumpur' : city;
+    if (choice === 'luxury') return 'luxury hotels near ' + (venue || city);
+    if (choice === 'budget') return 'budget hotels near ' + (venue || city);
+    return venue && city ? venue + ', ' + city : city;
+  }
+
+  function setHotelChoice(choice) {
+    const hq = $('eh-hotel-q');
+    if (hq) hq.value = hotelQueryForChoice(choice);
+  }
+
+  function renderCopilot(step) {
+    const ev = hubState.event || {};
+    const profile = getProfile();
+    const title = $('eh-copilot-title');
+    const copy = $('eh-copilot-copy');
+    const grid = $('eh-choice-grid');
+    const ctx = $('eh-copilot-context');
+    if (!title || !copy || !grid) return;
+
+    const eventDate = formatEventDate(ev);
+    const city = cityName(ev);
+    const days = tripDayCount();
+    const arrival = hubState.arrivalIso || addDaysIso(toIsoDate(ev.date), -1);
+    const depart = hubState.departureIso || addDaysIso(toIsoDate(ev.date), 1);
+    const from = String((profile.homeIata || hubState.originIata || 'KUL')).toUpperCase();
+    const to = String(hubState.destIata || guessDestIata(ev.city, ev.venue) || 'KUL').toUpperCase();
+    const choices = [];
+    function add(label, action, primary) {
+      choices.push(
+        '<button type="button" class="eh-choice' +
+          (primary ? ' eh-choice--primary' : '') +
+          '" data-eh-choice="' +
+          escapeHtml(action) +
+          '">' +
+          escapeHtml(label) +
+          '</button>',
+      );
+    }
+
+    if (step === 'ticket') {
+      title.textContent = 'Ticket handoff is external';
+      copy.textContent =
+        'Tickets are available through the event provider. Eventra will keep the provider link with this trip plan, but booking happens outside Eventra.';
+      add('Open ticket provider', 'ticket-open', true);
+      add('Continue planning', 'step-flight');
+    } else if (step === 'flight') {
+      title.textContent = 'Recommended flight timing';
+      if (!to || from === to) {
+        copy.textContent =
+          'Your profile origin appears to match this Malaysia destination. I can skip flights for now and plan the city experience around the event. Update your profile later if you are flying in internationally.';
+        add('I am already in Malaysia', 'flight-local', true);
+        add('Update profile origin', 'profile-open');
+        add('Continue to stay areas', 'step-hotel');
+      } else {
+        copy.textContent =
+          'Based on your profile, I will search from ' +
+          from +
+          ' to ' +
+          to +
+          '. For this event on ' +
+          eventDate +
+          ', arrive before 2PM on ' +
+          arrival +
+          ' so you have time for check-in, traffic and a calm first evening.';
+        add('Find recommended flights', 'flight-recommended', true);
+        add('Cheapest flights', 'flight-cheapest');
+        add('Most comfortable flights', 'flight-comfort');
+        add('I am already in Malaysia', 'flight-local');
+      }
+    } else if (step === 'hotel') {
+      title.textContent = 'Best stay area';
+      copy.textContent =
+        'For ' +
+        city +
+        ', I suggest starting from your profile preference (' +
+        String(profile.hotelPreference || 'near venue') +
+        '), then choosing nightlife, transit, luxury or budget if this trip needs a different base.';
+      add('Stay near venue', 'hotel-venue', true);
+      add('Stay near nightlife', 'hotel-nightlife');
+      add('Stay near airport/train', 'hotel-transit');
+      add('Luxury hotels', 'hotel-luxury');
+      add('Budget hotels', 'hotel-budget');
+    } else if (step === 'itinerary') {
+      title.textContent = 'Build the AI itinerary';
+      copy.textContent =
+        'I can now build your trip using the selected event, ' +
+        days +
+        '-day trip window, travel profile, flight timing and stay preference.';
+      add('Generate itinerary', 'itin-generate', true);
+      add('Generate budget plan', 'itin-budget');
+      add('Generate luxury plan', 'itin-luxury');
+      add('Generate food-focused plan', 'itin-food');
+    } else {
+      title.textContent = 'Recommended ' + days + '-day trip';
+      copy.textContent =
+        'This event is on ' +
+        eventDate +
+        ' in ' +
+        city +
+        '. Based on your profile, I suggest arriving on ' +
+        arrival +
+        ', attending the event, and leaving on ' +
+        depart +
+        '.';
+      add('Use ' + days + '-day plan', 'step-ticket', true);
+      add('Make it shorter', 'trip-short');
+      add('Make it longer', 'trip-long');
+      add('Show luxury version', 'trip-luxury');
+    }
+    grid.innerHTML = choices.join('');
+    if (ctx) ctx.textContent = profileContextLine(profile);
+  }
+
   function syncTripDatesFromInputs() {
     const db = Math.min(14, Math.max(0, parseInt($('eh-days-before')?.value || '1', 10) || 0));
     const da = Math.min(14, Math.max(0, parseInt($('eh-days-after')?.value || '1', 10) || 0));
@@ -148,6 +335,7 @@
 
   function updateHubSummary() {
     syncTripDatesFromInputs();
+    updateTripStory();
     const el = $('eh-trip-summary');
     if (!el) return;
     if (!hubState.arrivalIso || !hubState.departureIso) {
@@ -207,6 +395,60 @@
     const venue = String(ev.venue || '').trim();
     if (venue && city) return venue + ', ' + city;
     return city || venue || 'Malaysia';
+  }
+
+  function eventBlob(ev) {
+    return [ev?.title, ev?.category, ev?.summary, ev?.venue, ev?.city].filter(Boolean).join(' ').toLowerCase();
+  }
+
+  function setText(id, text) {
+    const el = $(id);
+    if (el) el.textContent = text || '';
+  }
+
+  function inferTripStory(ev) {
+    const blob = eventBlob(ev);
+    const city = String(ev?.city || '').trim() || 'Malaysia';
+    let why = 'A live Malaysia moment';
+    let whyCopy = 'Pair the event with food, culture and city time.';
+    if (/(concert|tour|fancon|music|dj|nightlife)/.test(blob)) {
+      why = 'A sound-led city escape';
+      whyCopy = 'Build the trip around the show, then add late-night food and a relaxed next morning.';
+    } else if (/(culture|arts|festival|heritage|creative|exhibition)/.test(blob)) {
+      why = 'A culture-rich weekend';
+      whyCopy = 'Use the event as an anchor for museums, street food, local markets and neighbourhood walks.';
+    } else if (/(sports|championship|marathon|fitness|race)/.test(blob)) {
+      why = 'A high-energy travel anchor';
+      whyCopy = 'Balance event energy with recovery meals, easy transfers and nearby attractions.';
+    } else if (/(food|drink|dining|cafe)/.test(blob)) {
+      why = 'A taste-first itinerary';
+      whyCopy = 'Let Malaysia sell itself through local flavours before and after the event.';
+    }
+    const base = city && city !== 'Malaysia' ? city : 'Near the venue';
+    const baseCopy = /kuala lumpur|bukit bintang|kl|axiata|zepp/i.test([ev?.city, ev?.venue].join(' '))
+      ? 'Stay near Bukit Bintang, KL Sentral or the venue corridor for smoother late-night movement.'
+      : 'Stay close to the venue first; branch out for food and culture once the event timing is clear.';
+    const days = Number(hubState.daysBefore || 0) + Number(hubState.daysAfter || 0) + 1;
+    return {
+      why,
+      whyCopy,
+      base,
+      baseCopy,
+      duration: days + ' day' + (days === 1 ? '' : 's'),
+      durationCopy: days <= 2
+        ? 'Compact event escape with one or two local highlights.'
+        : 'Enough room for the event, recovery time and a proper city layer.',
+    };
+  }
+
+  function updateTripStory() {
+    const story = inferTripStory(hubState.event || {});
+    setText('eh-ai-why', story.why);
+    setText('eh-ai-why-copy', story.whyCopy);
+    setText('eh-ai-base', story.base);
+    setText('eh-ai-base-copy', story.baseCopy);
+    setText('eh-ai-duration', story.duration);
+    setText('eh-ai-duration-copy', story.durationCopy);
   }
 
   function updateHotelRouteBar() {
@@ -329,16 +571,13 @@
       hubState.selectedHotel &&
       typeof hubState.selectedHotel === 'object' &&
       String(hubState.selectedHotel.name || '').trim().length >= 2;
-    const ok = flightOk && hotelOk;
-    btn.disabled = !ok;
-    if (!ok) {
-      if (!flightOk) {
-        btn.title = 'Pick a flight on the Flights tab first.';
-      } else if (!hotelOk) {
-        btn.title = 'Pick a hotel on the Hotels tab (Add to my itinerary).';
-      }
+    btn.disabled = !hubState.event || !hubState.arrivalIso || !hubState.departureIso;
+    if (btn.disabled) {
+      btn.title = 'Set a valid event trip window first.';
+      btn.textContent = 'Draft AI trip first';
     } else {
       btn.removeAttribute('title');
+      btn.textContent = flightOk || hotelOk ? 'Refine AI trip with selections' : 'Draft AI trip first';
     }
   }
 
@@ -427,7 +666,7 @@
     updateRouteLine();
     syncFlightTabInputsFromHub();
     const hq = $('eh-hotel-q');
-    if (hq) hq.value = suggestHotelQuery(ev);
+    if (hq) hq.value = hotelQueryForChoice(getProfile().hotelPreference || 'venue') || suggestHotelQuery(ev);
     const hotelsRes = $('eh-hotels-results');
     if (hotelsRes) hotelsRes.innerHTML = '';
     updateHotelRouteBar();
@@ -440,7 +679,9 @@
     updateHubFlightSummaryUI();
     updateHubHotelSummaryUI();
     updateGenButtonStateHub();
+    updateTripStory();
     setTab('itin');
+    renderCopilot('trip');
 
     m.classList.add('is-open');
     m.setAttribute('aria-hidden', 'false');
@@ -453,27 +694,12 @@
     const ev = hubState.event;
     if (!ev || !hubState.arrivalIso || !hubState.departureIso) return;
     const hint = $('eh-gen-hint');
-    if (
-      !hubState.selectedFlight ||
-      !hubState.selectedFlight.departure ||
-      !hubState.selectedFlight.arrival
-    ) {
-      if (hint) hint.textContent = 'Choose a flight on the Flights tab and tap Add to my itinerary.';
-      setTab('flights');
-      return;
+    if (hint) {
+      hint.textContent =
+        hubState.selectedFlight || hubState.selectedHotel
+          ? 'Using your selected travel context to refine the draft.'
+          : 'Creating a first AI travel draft. You can add flights and hotels after.';
     }
-    if (
-      !hubState.selectedHotel ||
-      typeof hubState.selectedHotel !== 'object' ||
-      !String(hubState.selectedHotel.name || '').trim()
-    ) {
-      if (hint)
-        hint.textContent =
-          'Under Pick your stay, run a hotel search and tap Add to my itinerary beside your preferred property.';
-      setTab('hotels');
-      return;
-    }
-    if (hint) hint.textContent = '';
     const plannerEv = {
       id: ev.id != null ? ev.id : '',
       title: ev.title || 'Event',
@@ -620,6 +846,109 @@
     }
   }
 
+  function openTicketProvider() {
+    const ev = hubState.event || {};
+    const url = String(ev.url || '').trim();
+    if (!url) return;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  function markFlightLocal() {
+    hubState.selectedFlight = null;
+    updateHubFlightSummaryUI();
+    const host = $('eh-flights-results');
+    if (host) {
+      host.innerHTML =
+        '<p class="eh-muted">Noted. Eventra will plan this as an in-Malaysia trip and keep airport timing optional.</p>';
+    }
+    setTab('hotels');
+    renderCopilot('hotel');
+  }
+
+  function prepareItineraryVariant(kind) {
+    const hint = $('eh-gen-hint');
+    if (!hint) return;
+    if (kind === 'budget') {
+      hint.textContent = 'Budget version selected: Qwen will favor street food, public transport and best-value stays.';
+    } else if (kind === 'luxury') {
+      hint.textContent = 'Luxury version selected: Qwen will favor premium hotels, calmer transfers and elevated dining.';
+    } else if (kind === 'food') {
+      hint.textContent = 'Food-focused version selected: Qwen will emphasize hawker culture, cafes, markets and late-night eats.';
+    }
+  }
+
+  function onCopilotChoice(action) {
+    if (!action) return;
+    if (action === 'trip-short') {
+      setTripShape(0, 1);
+      renderCopilot('trip');
+      return;
+    }
+    if (action === 'trip-long') {
+      setTripShape(2, 2);
+      renderCopilot('trip');
+      return;
+    }
+    if (action === 'trip-luxury') {
+      setTripShape(1, 2);
+      setHotelChoice('luxury');
+      renderCopilot('ticket');
+      return;
+    }
+    if (action === 'step-ticket') {
+      renderCopilot('ticket');
+      return;
+    }
+    if (action === 'ticket-open') {
+      openTicketProvider();
+      renderCopilot('flight');
+      return;
+    }
+    if (action === 'step-flight') {
+      renderCopilot('flight');
+      return;
+    }
+    if (action === 'step-hotel') {
+      setTab('hotels');
+      renderCopilot('hotel');
+      return;
+    }
+    if (action === 'profile-open') {
+      window.location.href = '/profile';
+      return;
+    }
+    if (action === 'flight-local') {
+      markFlightLocal();
+      return;
+    }
+    if (/^flight-/.test(action)) {
+      setTab('flights');
+      const msg = $('eh-gen-hint');
+      if (msg) {
+        msg.textContent =
+          action === 'flight-cheapest'
+            ? 'Cheapest flight preference noted. Compare baggage and arrival buffer before opening the provider.'
+            : action === 'flight-comfort'
+              ? 'Comfort flight preference noted. Favor fewer stops and safer arrival timing.'
+              : 'Recommended timing selected. Eventra will prioritize arrival buffer before the event.';
+      }
+      void searchGoogleFlights();
+      return;
+    }
+    if (/^hotel-/.test(action)) {
+      const choice = action.replace('hotel-', '');
+      setHotelChoice(choice);
+      setTab('hotels');
+      renderCopilot('itinerary');
+      void searchGoogleHotelsSerp();
+      return;
+    }
+    if (action === 'itin-generate' || action === 'itin-budget' || action === 'itin-luxury' || action === 'itin-food') {
+      prepareItineraryVariant(action.replace('itin-', ''));
+      void generateItineraryFromHub();
+    }
+  }
+
   function onGridClick(e) {
     const card = e.target.closest('#grid .card[data-ev-idx]');
     if (!card) return;
@@ -675,7 +1004,9 @@
       updateRouteLine();
       updateHotelRouteBar();
       syncFlightTabInputsFromHub();
-      setTab('itin');
+      setTab('flights');
+      renderCopilot('flight');
+      void searchGoogleFlights();
     });
 
     $('eh-gen-itin')?.addEventListener('click', function () {
@@ -692,6 +1023,13 @@
       void searchGoogleHotelsSerp();
     });
 
+    $('eh-choice-grid')?.addEventListener('click', function (e) {
+      const b = e.target.closest('[data-eh-choice]');
+      if (!b) return;
+      e.preventDefault();
+      onCopilotChoice(b.getAttribute('data-eh-choice'));
+    });
+
     $('eh-flights-results')?.addEventListener('click', function (e) {
       const b = e.target.closest('[data-eh-add-flight]');
       if (!b) return;
@@ -704,6 +1042,7 @@
       updateHubFlightSummaryUI();
       updateGenButtonStateHub();
       setTab('hotels');
+      renderCopilot('hotel');
     });
 
     $('eh-hotels-results')?.addEventListener('click', function (e) {
@@ -723,6 +1062,7 @@
       updateHubHotelSummaryUI();
       updateGenButtonStateHub();
       setTab('itin');
+      renderCopilot('itinerary');
     });
 
     document.addEventListener(

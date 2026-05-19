@@ -142,6 +142,8 @@ function minimalNewProfile(body) {
     activityInterests: [],
     adventureLevel: 'medium',
     pacePreference: 'balanced',
+    hotelPreference: 'venue',
+    travelerType: 'couple',
     marketingOptIn: false,
     notes: '',
     budgetLevel: 2,
@@ -173,6 +175,12 @@ function buildProfileFromOnboardingBody(body) {
     activityInterests: sanitizeInterestList(body.activityInterests),
     adventureLevel,
     pacePreference,
+    hotelPreference: ['venue', 'nightlife', 'transit', 'luxury', 'budget', 'quiet'].includes(String(body.hotelPreference))
+      ? String(body.hotelPreference)
+      : 'venue',
+    travelerType: ['solo', 'couple', 'family', 'group'].includes(String(body.travelerType))
+      ? String(body.travelerType)
+      : 'couple',
     budgetLevel,
     marketingOptIn: Boolean(body.marketingOptIn),
     notes: String(body.notes || '')
@@ -355,6 +363,14 @@ async function updateProfile(userId, body) {
     const lang = String(b.language || '').trim().slice(0, 40);
     if (lang) cur.language = lang;
     else delete cur.language;
+  }
+  if (Object.prototype.hasOwnProperty.call(b, 'hotelPreference')) {
+    const hp = String(b.hotelPreference || '').trim();
+    if (['venue', 'nightlife', 'transit', 'luxury', 'budget', 'quiet'].includes(hp)) cur.hotelPreference = hp;
+  }
+  if (Object.prototype.hasOwnProperty.call(b, 'travelerType')) {
+    const tt = String(b.travelerType || '').trim();
+    if (['solo', 'couple', 'family', 'group'].includes(tt)) cur.travelerType = tt;
   }
 
   let homeIata = normalizeIata(cur.homeIata);

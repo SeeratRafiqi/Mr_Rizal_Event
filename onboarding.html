@@ -239,6 +239,88 @@
       margin-top: 8px;
     }
     .ob-yesno .ob-tile { text-align: center; }
+
+    /* Phase 2 Eventra OS visual foundation */
+    :root {
+      --ivory: #f4fbf6;
+      --forest: #050b0f;
+      --gold: #f2d99b;
+      --mint: #b9f5c9;
+      --cyan: #8ee8ff;
+      --muted: rgba(244, 251, 246, 0.66);
+      --rule: rgba(255, 255, 255, 0.12);
+      --surface: rgba(255, 255, 255, 0.075);
+      --surface-strong: rgba(7, 18, 13, 0.88);
+      --radius: 24px;
+      --shadow: 0 28px 90px rgba(0, 0, 0, 0.42);
+    }
+    body {
+      background:
+        radial-gradient(circle at 18% 0%, rgba(142, 232, 255, 0.18), transparent 30rem),
+        radial-gradient(circle at 86% 12%, rgba(185, 245, 201, 0.14), transparent 28rem),
+        linear-gradient(180deg, #050b0f, #071611 55%, #050907) !important;
+      font-family: Inter, 'Jost', system-ui, sans-serif;
+    }
+    .ob-eyebrow { color: var(--mint); }
+    .ob-title,
+    .ob-q {
+      font-family: Inter, 'Jost', system-ui, sans-serif;
+      letter-spacing: 0;
+    }
+    .ob-title {
+      font-weight: 850;
+      background: linear-gradient(100deg, #fff, var(--mint), var(--gold));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .ob-card {
+      border-radius: var(--radius);
+      border-color: var(--rule);
+      background:
+        radial-gradient(circle at top right, rgba(185, 245, 201, 0.1), transparent 34%),
+        var(--surface-strong);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+    }
+    .ob-dot.is-on { background: var(--mint); }
+    .ob-tile,
+    .ob-chip,
+    textarea.ob-notes,
+    .ob-other-row input,
+    #ob-lang {
+      border-color: var(--rule) !important;
+      background: rgba(255, 255, 255, 0.07) !important;
+      border-radius: 16px !important;
+    }
+    .ob-chip { border-radius: 999px !important; }
+    .ob-tile:hover,
+    .ob-chip:hover {
+      border-color: rgba(185, 245, 201, 0.38);
+      background: rgba(255, 255, 255, 0.1) !important;
+    }
+    .ob-tile.is-selected,
+    .ob-chip.is-on {
+      border-color: rgba(242, 217, 155, 0.58);
+      background: rgba(242, 217, 155, 0.14) !important;
+      box-shadow: 0 0 0 3px rgba(242, 217, 155, 0.08);
+    }
+    .ob-btn {
+      border-radius: 999px;
+      font-family: Inter, 'Jost', system-ui, sans-serif;
+      letter-spacing: 0.04em;
+      font-weight: 850;
+    }
+    .ob-btn--gold {
+      background: linear-gradient(135deg, var(--gold), var(--mint));
+      color: #081510;
+      box-shadow: 0 16px 40px rgba(185, 245, 201, 0.18);
+    }
+    @media (max-width: 520px) {
+      body { padding: 18px 12px 28px; }
+      .ob-card { padding: 20px 16px 22px; }
+    }
   </style>
 </head>
 <body>
@@ -302,6 +384,9 @@
 
       <section class="ob-step" data-step="7" hidden>
         <p class="ob-q">Almost there</p>
+        <p class="ob-sub">These defaults help Eventra suggest stays and trip versions without asking again during planning.</p>
+        <div class="ob-grid" id="ob-traveler"></div>
+        <div class="ob-grid" id="ob-hotel" style="margin-top:12px"></div>
         <p class="ob-sub">Want a heads-up when we find picks that match this taste?</p>
         <div class="ob-yesno" id="ob-marketing"></div>
         <label class="ob-sub" for="ob-lang" style="display:block;margin-top:16px">Preferred language (optional)</label>
@@ -331,6 +416,8 @@
         adventureLevel: 'medium',
         budgetLevel: 2,
         pacePreference: 'balanced',
+        hotelPreference: 'venue',
+        travelerType: 'couple',
         marketingOptIn: true,
         language: '',
         notes: '',
@@ -540,6 +627,23 @@
         if (!host.querySelector('.is-selected')) host.firstChild.classList.add('is-selected');
       }
 
+      function renderPreferenceTiles(hostId, key, opts) {
+        var host = document.getElementById(hostId);
+        if (!host) return;
+        host.innerHTML = '';
+        opts.forEach(function (o) {
+          var b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'ob-tile' + (ans[key] === o.v ? ' is-selected' : '');
+          b.innerHTML = '<span class="ob-v">' + o.t + '</span><span class="ob-s">' + o.s + '</span>';
+          b.addEventListener('click', function () {
+            ans[key] = o.v;
+            renderPreferenceTiles(hostId, key, opts);
+          });
+          host.appendChild(b);
+        });
+      }
+
       function syncDots() {
         var ds = dots.querySelectorAll('.ob-dot');
         ds.forEach(function (d, i) {
@@ -598,6 +702,18 @@
           if (step === 5) renderBudget();
           if (step === 6) renderPace();
           if (step === 7) {
+            renderPreferenceTiles('ob-traveler', 'travelerType', [
+              { v: 'solo', t: 'Solo', s: 'Independent traveler' },
+              { v: 'couple', t: 'Couple', s: 'Shared city escape' },
+              { v: 'family', t: 'Family', s: 'Comfort and easier pacing' },
+              { v: 'group', t: 'Group', s: 'Flexible plans together' },
+            ]);
+            renderPreferenceTiles('ob-hotel', 'hotelPreference', [
+              { v: 'venue', t: 'Near venue', s: 'Shortest event commute' },
+              { v: 'nightlife', t: 'Nightlife area', s: 'Food and late evenings' },
+              { v: 'transit', t: 'Transit access', s: 'Airport and train convenience' },
+              { v: 'luxury', t: 'Luxury stay', s: 'Premium hotels' },
+            ]);
             renderMarketing();
             var n = document.getElementById('ob-notes');
             n.value = ans.notes || '';
@@ -617,6 +733,8 @@
             adventureLevel: ans.adventureLevel,
             budgetLevel: ans.budgetLevel,
             pacePreference: ans.pacePreference,
+            hotelPreference: ans.hotelPreference,
+            travelerType: ans.travelerType,
             marketingOptIn: ans.marketingOptIn,
             language: ans.language,
             notes: ans.notes,

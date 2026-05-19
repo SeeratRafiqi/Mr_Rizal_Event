@@ -55,6 +55,51 @@
     return n + ' stop' + (n === 1 ? '' : 's');
   }
 
+  function aiFlightInsight(f, idx) {
+    const price = Number(f && f.price);
+    const stops =
+      Array.isArray(f?.layovers) && f.layovers.length
+        ? f.layovers.length
+        : Math.max(0, ((f && f.flights) || []).length - 1);
+    const duration = Number(f && f.total_duration) || 0;
+    const first = ((f && f.flights) || [])[0] || {};
+    const depTime = timeOnly(first.departure_airport && first.departure_airport.time);
+    if (idx === 0) {
+      return {
+        label: 'AI pick: best arrival buffer',
+        reason: 'Start here: it is ranked highly by Google Flights and gives the itinerary a safer travel anchor.',
+      };
+    }
+    if (Number.isFinite(price) && price > 0 && price < 350) {
+      return {
+        label: 'Budget-smart route',
+        reason: 'Lower fare signal; confirm baggage, timing and provider terms before leaving Eventra.',
+      };
+    }
+    if (stops === 0 && duration && duration <= 180) {
+      return {
+        label: 'Fastest city entry',
+        reason: 'Nonstop timing keeps the event-day plan simple and reduces transfer uncertainty.',
+      };
+    }
+    if (stops > 0) {
+      return {
+        label: 'Comfort check needed',
+        reason: 'This route has a connection; keep extra buffer before check-in and the event start.',
+      };
+    }
+    if (/^(2[0-3]|00|01):/.test(depTime)) {
+      return {
+        label: 'Late timing watch',
+        reason: 'A late departure can compress hotel check-in or rest time. Use only if the price is compelling.',
+      };
+    }
+    return {
+      label: 'Balanced option',
+      reason: 'A reasonable fallback if the recommended route does not fit your origin, budget or schedule.',
+    };
+  }
+
   function serializeForItinerary(f) {
     const legs = f.flights || [];
     const first = legs[0] || {};
@@ -94,6 +139,7 @@
     const href = escapeHtml(bookUrl || 'https://www.google.com/travel/flights');
     return flights
       .map(function (f, idx) {
+        const insight = aiFlightInsight(f, idx);
         const legs = f.flights || [];
         const first = legs[0] || {};
         const last = legs[legs.length - 1] || first;
@@ -135,6 +181,9 @@
           '<div class="eh-serp-left">' +
           logoBlock +
           '<div class="eh-serp-mid">' +
+          '<span class="eh-ai-rec">' +
+          escapeHtml(insight.label) +
+          '</span>' +
           '<div><strong>' +
           escapeHtml(airlines) +
           '</strong></div>' +
@@ -155,6 +204,9 @@
           ' · ' +
           escapeHtml(stops) +
           '</span>' +
+          '<span class="eh-ai-reason">' +
+          escapeHtml(insight.reason) +
+          '</span>' +
           '</div></div>' +
           '<div class="eh-flight-meta">' +
           '<span class="eh-price">' +
@@ -167,7 +219,7 @@
             : '') +
           '<a class="eh-btn eh-btn--ghost eh-serp-book" href="' +
           href +
-          '" target="_blank" rel="noopener noreferrer">Book</a>' +
+          '" target="_blank" rel="noopener noreferrer">Open provider</a>' +
           '</div></li>'
         );
       })
