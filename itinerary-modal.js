@@ -1978,7 +1978,7 @@
   function renderTravelLinks() {
     const host = $('itin-trip-flights-links') || $('itin-travel-links');
     if (!host) return;
-    host.innerHTML = '';
+      host.innerHTML = '';
   }
 
   function renderResults(raw, opts) {

@@ -33,6 +33,7 @@
       --pg-ink:     var(--premium-text);
       --pg-muted:   var(--premium-muted);
       --pg-warm:    #8a9099;
+      --layout-gutter: clamp(20px, 4vw, 48px);
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -50,13 +51,14 @@
     /* ── HEADER ────────────────────────────────────── */
     header {
       background: #0C1510;
-      padding: 0 48px;
-      height: 90px;
+      padding: 0 var(--layout-gutter);
+      height: 70px;
       flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid rgba(200,169,110,.10);
+      border-bottom: 1px solid rgba(200, 169, 110, 0.15);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
       position: sticky;
       top: 0;
       z-index: 50;
@@ -89,20 +91,17 @@
       text-transform: uppercase;
       color: rgba(200,169,110,.65);
     }
-    header > span, #last-updated {
-      font-family: 'Jost', system-ui, sans-serif;
-      font-size: .85rem;
-      letter-spacing: .08em;
-      color: rgba(255,255,255,.32);
-      text-align: right;
-      max-width: 420px;
+    #last-updated {
+      display: none !important;
     }
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 12px;
       flex-wrap: wrap;
       justify-content: flex-end;
+      margin-left: auto;
+      flex-shrink: 0;
     }
     .header-auth {
       display: flex;
@@ -140,13 +139,7 @@
       white-space: nowrap;
     }
     .header-auth-chip {
-      font-size: 0.72rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: rgba(200, 169, 110, 0.85);
-      border: 1px solid rgba(200, 169, 110, 0.35);
-      padding: 5px 10px;
-      border-radius: 999px;
+      display: none !important;
     }
     .header-auth-out {
       font-family: inherit;
@@ -168,7 +161,7 @@
 
     /* ── CONTROLS ──────────────────────────────────── */
     .controls {
-      padding: 14px 48px;
+      padding: 14px var(--layout-gutter);
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
@@ -204,7 +197,7 @@
 
     /* ── STATS BAR ─────────────────────────────────── */
     .stats {
-      padding: 13px 48px;
+      padding: 13px var(--layout-gutter);
       font-size: .92rem;
       font-weight: 500;
       letter-spacing: .08em;
@@ -215,10 +208,65 @@
     }
     .stats span { color: var(--pg-forest); font-weight: 600; }
 
+    /* ── EVENTS SECTION (beams background) ─────────── */
+    .events-view {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .events-beams-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      background: linear-gradient(
+        180deg,
+        var(--pg-parch) 0%,
+        var(--pg-ivory) 28%,
+        var(--pg-ivory) 100%
+      );
+    }
+    #events-beams-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      filter: blur(15px);
+    }
+    .events-beams-shimmer {
+      position: absolute;
+      inset: 0;
+      background: rgba(251, 250, 248, 0.35);
+      backdrop-filter: blur(50px);
+      -webkit-backdrop-filter: blur(50px);
+      animation: eventsBeamsShimmer 10s ease-in-out infinite;
+    }
+    @keyframes eventsBeamsShimmer {
+      0%,
+      100% { opacity: 0.4; }
+      50% { opacity: 0.65; }
+    }
+    .events-view > .category-chips-row,
+    .events-view > .controls,
+    .events-view > .stats,
+    .events-view > .grid-section-head,
+    .events-view > #events-announcer {
+      position: relative;
+      z-index: 1;
+    }
+    .events-view > .grid-frame {
+      position: relative;
+      z-index: 1;
+    }
+
     /* ── EVENTS GRID ───────────────────────────────── */
     .grid-frame {
-      padding: 28px 18px 48px;
-      background: var(--pg-ivory);
+      padding: 28px var(--layout-gutter) 48px;
+      background: transparent;
       flex: 1;
     }
     .grid {
@@ -253,7 +301,10 @@
     }
     .card:hover {
       transform: translateY(-6px);
-      box-shadow: 0 18px 36px rgba(16, 24, 40, 0.12);
+      box-shadow:
+        0 18px 36px rgba(16, 24, 40, 0.12),
+        0 0 0 1px rgba(200, 169, 110, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
       background: #fffefb;
     }
     .card:hover::after { transform: scaleX(1); }
@@ -680,6 +731,7 @@
     }
 
     .hero-ai-conversation {
+      display: none;
       margin-top: 10px;
       padding: 10px 12px 12px;
       border-radius: 10px;
@@ -687,6 +739,9 @@
       border: 1px solid rgba(255, 255, 255, 0.14);
       max-height: 220px;
       overflow-y: auto;
+    }
+    .hero-ai-conversation:not(:empty) {
+      display: block;
     }
     .hero-ai-conversation .hero-chat-turn {
       margin-top: 10px;
@@ -3445,17 +3500,148 @@
     }
     /* ── HERO BANNER ──────────────────────────────────────── */
     .hero-banner {
-      background: var(--pg-forest);
+      background: #0a1210;
       position: relative;
       overflow: hidden;
-      padding: 60px 52px 0;
+      padding: 60px var(--layout-gutter) 0;
       flex-shrink: 0;
+      isolation: isolate;
+    }
+    .hero-geometric-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .hero-geo-blur {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        135deg,
+        rgba(99, 102, 241, 0.06) 0%,
+        transparent 45%,
+        rgba(200, 169, 110, 0.05) 100%
+      );
+      filter: blur(48px);
+    }
+    .hero-geo-shape {
+      position: absolute;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      background: linear-gradient(90deg, var(--geo-from), transparent);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      box-shadow: 0 8px 32px rgba(255, 255, 255, 0.08);
+      opacity: 0;
+      animation:
+        heroGeoEnter 2.4s cubic-bezier(0.23, 0.86, 0.39, 0.96) forwards,
+        heroGeoFloat 12s ease-in-out infinite;
+    }
+    .hero-geo-shape::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(
+        circle at 50% 50%,
+        rgba(255, 255, 255, 0.18),
+        transparent 70%
+      );
+    }
+    .hero-geo-shape--1 {
+      --geo-from: rgba(99, 102, 241, 0.18);
+      --r: 12deg;
+      width: min(600px, 70vw);
+      height: 140px;
+      left: -10%;
+      top: 18%;
+      animation-delay: 0.3s, 0s;
+    }
+    .hero-geo-shape--2 {
+      --geo-from: rgba(244, 114, 182, 0.16);
+      --r: -15deg;
+      width: min(500px, 58vw);
+      height: 120px;
+      right: -5%;
+      top: 72%;
+      animation-delay: 0.5s, 0.8s;
+    }
+    .hero-geo-shape--3 {
+      --geo-from: rgba(139, 92, 246, 0.14);
+      --r: -8deg;
+      width: min(300px, 38vw);
+      height: 80px;
+      left: 8%;
+      bottom: 8%;
+      animation-delay: 0.4s, 0.4s;
+    }
+    .hero-geo-shape--4 {
+      --geo-from: rgba(200, 169, 110, 0.2);
+      --r: 20deg;
+      width: min(200px, 28vw);
+      height: 60px;
+      right: 18%;
+      top: 12%;
+      animation-delay: 0.6s, 1.2s;
+    }
+    .hero-geo-shape--5 {
+      --geo-from: rgba(34, 211, 238, 0.12);
+      --r: -25deg;
+      width: min(150px, 22vw);
+      height: 40px;
+      left: 24%;
+      top: 8%;
+      animation-delay: 0.7s, 0.2s;
+    }
+    .hero-geo-vignette {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        #0a1210 0%,
+        transparent 35%,
+        transparent 65%,
+        rgba(10, 18, 16, 0.75) 100%
+      );
+    }
+    @keyframes heroGeoEnter {
+      from {
+        opacity: 0;
+        transform: translateY(-120px) rotate(calc(var(--r, 0deg) - 15deg));
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) rotate(var(--r, 0deg));
+      }
+    }
+    @keyframes heroGeoFloat {
+      0%,
+      100% {
+        transform: translateY(0) rotate(var(--r, 0deg));
+      }
+      50% {
+        transform: translateY(15px) rotate(var(--r, 0deg));
+      }
+    }
+    .hero-banner::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        ellipse 80% 60% at 30% 50%,
+        rgba(44, 80, 64, 0.35) 0%,
+        transparent 70%
+      );
+      pointer-events: none;
+      z-index: 1;
     }
     .hero-banner-watermark {
       position: absolute;
       right: -40px;
       top: 50%;
       transform: translateY(-52%);
+      z-index: 1;
       font-family: 'Cormorant Garamond', Georgia, serif;
       font-size: clamp(10rem, 22vw, 26rem);
       font-weight: 300;
@@ -3467,50 +3653,33 @@
       user-select: none;
     }
     .hero-banner-inner {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 48px;
-      position: relative;
-      z-index: 1;
-      margin-bottom: 44px;
-    }
-    .hero-banner-content { flex: 1; min-width: 0; }
-
-    /* image mosaic */
-    .hero-img-mosaic {
-      display: flex;
-      gap: 8px;
-      flex-shrink: 0;
-      height: 360px;
-      align-items: stretch;
-      border-radius: 6px;
-      overflow: hidden;
-    }
-    .hero-img {
       display: block;
-      object-fit: cover;
-      filter: sepia(.18) brightness(.78) contrast(1.04);
-      transition: filter .4s ease;
-    }
-    .hero-img-mosaic:hover .hero-img { filter: sepia(.1) brightness(.86) contrast(1.02); }
-    .hero-img-tall {
-      width: 210px;
-      height: 100%;
-      border-radius: 4px 0 0 4px;
-    }
-    .hero-img-stack {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      width: 200px;
-    }
-    .hero-img-stack .hero-img {
-      flex: 1;
+      position: relative;
+      z-index: 2;
+      margin-bottom: 44px;
       width: 100%;
-      border-radius: 0;
+      max-width: 100%;
     }
-    .hero-img-stack .hero-img:last-child { border-radius: 0 4px 4px 0; }
+    .hero-banner-content {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      margin: 0;
+    }
+    .hero-headline-row {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: nowrap;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+    .hero-headline-sep {
+      flex-shrink: 0;
+      width: 1px;
+      height: 1.35em;
+      background: rgba(200, 169, 110, 0.45);
+      align-self: center;
+    }
     .hero-banner-eyebrow {
       font-family: 'Jost', system-ui, sans-serif;
       font-size: .62rem;
@@ -3532,43 +3701,63 @@
     }
     .hero-banner-title {
       font-family: var(--premium-font-display);
-      font-size: clamp(3rem, 5.5vw, 5.2rem);
+      font-size: clamp(1.85rem, 3.8vw, 3rem);
       font-weight: 300;
       color: var(--pg-ivory);
-      line-height: .93;
+      line-height: 1.1;
       letter-spacing: -.01em;
-      margin-bottom: 20px;
+      margin: 0;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
-    .hero-banner-title em { font-style: italic; color: var(--pg-gold); }
+    .hero-banner-title em {
+      font-style: italic;
+      color: var(--pg-gold);
+      font-size: 1em;
+      display: inline;
+      margin: 0;
+    }
     .hero-banner-sub {
       font-family: 'Jost', system-ui, sans-serif;
-      font-size: .88rem;
-      color: rgba(255,255,255,.42);
+      font-size: clamp(0.78rem, 1.35vw, 0.92rem);
+      color: rgba(255, 255, 255, 0.48);
       font-weight: 300;
-      line-height: 1.75;
-      max-width: 400px;
+      line-height: 1.4;
+      margin: 0;
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .hero-stats-row {
       display: flex;
-      align-items: stretch;
-      flex-shrink: 0;
-      border: 1px solid rgba(255,255,255,.09);
-      border-radius: 4px;
-      overflow: hidden;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0;
+      margin: 22px 0 28px;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      overflow: visible;
     }
     .hero-stat-box {
-      padding: 20px 30px;
+      padding: 0 22px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 5px;
-      border-right: 1px solid rgba(255,255,255,.08);
-      min-width: 100px;
+      align-items: flex-start;
+      gap: 4px;
+      border-right: 1px solid rgba(255, 255, 255, 0.14);
+      min-width: 0;
     }
-    .hero-stat-box:last-child { border-right: none; }
+    .hero-stat-box:first-child { padding-left: 0; }
+    .hero-stat-box:last-child {
+      border-right: none;
+      padding-right: 0;
+    }
     .hero-stat-num {
       font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: 2.4rem;
+      font-size: 1.8rem;
       font-weight: 400;
       color: var(--pg-ivory);
       line-height: 1;
@@ -3590,6 +3779,55 @@
       border-bottom: 1px solid rgba(200,169,110,.12);
       flex-shrink: 0;
       padding: 9px 0;
+      mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        black 4%,
+        black 96%,
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        black 4%,
+        black 96%,
+        transparent 100%
+      );
+    }
+
+    .category-chips-row {
+      display: flex;
+      gap: 8px;
+      padding: 14px var(--layout-gutter);
+      overflow-x: auto;
+      background: var(--pg-ivory);
+      border-bottom: 1px solid var(--pg-rule);
+      scrollbar-width: none;
+    }
+    .category-chips-row::-webkit-scrollbar { display: none; }
+    .cat-chip {
+      flex-shrink: 0;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--pg-rule);
+      background: white;
+      color: var(--pg-muted);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .cat-chip:hover {
+      border-color: var(--pg-forest);
+      color: var(--pg-forest);
+      background: var(--pg-parch);
+    }
+    .cat-chip--active {
+      background: var(--pg-forest);
+      color: var(--pg-gold);
+      border-color: var(--pg-forest);
     }
     .ticker-track {
       display: inline-block;
@@ -3617,7 +3855,7 @@
     }
 
     /* ── GRID SECTION HEAD ────────────────────────────────── */
-    .grid-section-head { padding: 28px 34px 0; }
+    .grid-section-head { padding: 28px var(--layout-gutter) 0; }
     .grid-section-head-inner {
       display: flex;
       align-items: flex-end;
@@ -4349,6 +4587,50 @@
 
     body.hero-history-open { overflow: hidden; }
 
+    @media (max-width: 768px) {
+      header {
+        height: auto;
+        min-height: 70px;
+        padding: 12px var(--layout-gutter);
+      }
+      .hero-banner {
+        padding: 40px var(--layout-gutter) 0;
+      }
+      .hero-banner-inner {
+        flex-direction: column;
+        gap: 28px;
+        margin-bottom: 32px;
+      }
+      .hero-banner-content {
+        flex: 1 1 auto;
+        max-width: 100%;
+        width: 100%;
+      }
+      .hero-headline-row {
+        flex-wrap: wrap;
+        gap: 10px 14px;
+      }
+      .hero-headline-sep {
+        display: none;
+      }
+      .hero-banner-title,
+      .hero-banner-sub {
+        white-space: normal;
+      }
+      .hero-banner-sub {
+        flex: 1 1 100%;
+      }
+      .hero-stats-row {
+        margin: 18px 0 22px;
+      }
+      .hero-stat-box {
+        padding: 0 14px;
+      }
+      .category-chips-row {
+        padding: 12px var(--layout-gutter);
+      }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
       .card-enter { transition: none; opacity: 1; transform: none; }
@@ -4356,52 +4638,104 @@
       .card, .card img, .card::after { transition: none; }
       .grid-skeleton-card .sk-img,
       .grid-skeleton-card .sk-line { animation: none; }
+      .hero-geo-shape { animation: none !important; opacity: 0.35; }
     }
   </style>
   <link rel="stylesheet" href="/eventra-ticket-theme.css" />
   <link rel="stylesheet" href="/premium-ui.css" />
-  <link rel="stylesheet" href="/event-hub-flow.css" />
+  <style id="viewer-layout-overrides">
+    /* Hero chat — lighter search tool (overrides theme sheets) */
+    body.theme-eventra .hero-banner .ai-command {
+      margin-top: 0 !important;
+      padding: 16px 18px !important;
+      border-radius: 12px !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      background: rgba(255, 255, 255, 0.06) !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      max-width: 100%;
+    }
+    body.theme-eventra .hero-banner .ai-command-head .command-question {
+      font-size: 0.9rem !important;
+      font-weight: 500 !important;
+      letter-spacing: normal !important;
+      text-transform: none !important;
+      color: rgba(255, 255, 255, 0.6) !important;
+      padding: 0 !important;
+      text-shadow: none !important;
+    }
+    body.theme-eventra .hero-banner .ai-command input#hero-ai-input {
+      min-height: 48px !important;
+      height: 48px;
+      font-size: 1rem !important;
+    }
+    body.theme-eventra .hero-banner .prompt-chips {
+      gap: 6px !important;
+      margin-top: 10px !important;
+    }
+    body.theme-eventra .hero-banner .prompt-chips button {
+      font-size: 11px !important;
+      padding: 6px 10px !important;
+    }
+    body.theme-eventra .hero-banner .hero-ai-conversation:empty {
+      display: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+    }
+    body.theme-eventra .hero-banner .hero-ai-conversation:not(:empty) {
+      display: block !important;
+    }
+    body.theme-eventra .hero-history-btn {
+      margin-top: 0 !important;
+      width: 36px;
+      height: 36px;
+    }
+    body.theme-eventra .hero-banner-title em {
+      display: inline !important;
+      margin-top: 0 !important;
+    }
+    body.theme-eventra .hero-headline-row .hero-banner-title {
+      font-size: clamp(1.85rem, 3.8vw, 3rem) !important;
+      line-height: 1.1 !important;
+    }
+    body.theme-eventra .hero-banner {
+      padding-left: var(--layout-gutter) !important;
+      padding-right: var(--layout-gutter) !important;
+    }
+  </style>
 </head>
 <body class="theme-eventra">
 
 <header>
   <a href="/events" class="header-brand" aria-label="Event Explorer — home">
-    <span class="header-eyebrow">Malaysia &middot; Live Events &amp; Culture</span>
     <h1>Event Explorer</h1>
   </a>
   <div class="header-actions">
     <div class="header-auth" id="header-auth" aria-live="polite"></div>
-    <span id="last-updated">Loading...</span>
   </div>
 </header>
 
 <!-- HERO BANNER -->
 <section class="hero-banner">
+  <div class="hero-geometric-bg" aria-hidden="true">
+    <div class="hero-geo-blur"></div>
+    <div class="hero-geo-shape hero-geo-shape--1"></div>
+    <div class="hero-geo-shape hero-geo-shape--2"></div>
+    <div class="hero-geo-shape hero-geo-shape--3"></div>
+    <div class="hero-geo-shape hero-geo-shape--4"></div>
+    <div class="hero-geo-shape hero-geo-shape--5"></div>
+    <div class="hero-geo-vignette"></div>
+  </div>
   <div class="hero-banner-watermark">EVENTS</div>
   <div class="hero-banner-inner">
     <div class="hero-banner-content">
       <p class="hero-banner-eyebrow">Discover &middot; Explore &middot; Experience</p>
-      <h2 class="hero-banner-title">What's on<br /><em>in Malaysia</em></h2>
-      <p class="hero-banner-sub">Every event worth attending — music, culture, food, sports and more — scraped fresh from across the web and delivered here.</p>
-      <div class="ai-command">
-        <div class="ai-command-head">
-          <div class="command-question">What kind of event experience are you looking for in Malaysia?</div>
-          <button type="button" class="hero-history-btn" id="hero-history-btn" aria-label="Open search history" aria-haspopup="dialog" aria-expanded="false" aria-controls="hero-history-panel">
-            <span class="hero-history-btn-icon" aria-hidden="true">◷</span>
-            <span class="hero-history-badge" id="hero-history-badge" hidden>0</span>
-          </button>
-        </div>
-        <div class="ai-command-inner">
-          <input id="hero-ai-input" type="search" placeholder="I'm coming from Singapore and want a K-pop concert in KL" autocomplete="off" />
-          <button class="primary" id="hero-ai-btn" type="button">Ask Eventra</button>
-        </div>
-        <div class="prompt-chips">
-          <button type="button" data-prompt="Plan me a 3-day trip around a music festival in Malaysia">3-day music trip</button>
-          <button type="button" data-prompt="Find me a comedy show worth travelling for">Comedy show</button>
-          <button type="button" data-prompt="What event should I travel to Malaysia for next month?">Tourist-worthy event</button>
-        </div>
-        <div class="hero-ai-status" id="hero-ai-status">Try a travel-style question, or just say hello and Eventra will guide you.</div>
-        <div class="hero-ai-conversation" id="hero-ai-conversation" aria-live="polite"></div>
+      <div class="hero-headline-row">
+        <h2 class="hero-banner-title">What's on <em>in Malaysia</em></h2>
+        <span class="hero-headline-sep" aria-hidden="true"></span>
+        <p class="hero-banner-sub">Every event worth attending — music, culture, food, sports and more — scraped fresh from across the web and delivered here.</p>
       </div>
       <div class="hero-stats-row">
         <div class="hero-stat-box">
@@ -4417,18 +4751,25 @@
           <span class="hero-stat-label">Platforms</span>
         </div>
       </div>
-    </div>
-    <div class="hero-img-mosaic">
-      <img class="hero-img hero-img-tall"
-           src="https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=340&h=480&fit=crop&auto=format&q=80"
-           alt="Concert crowd" loading="lazy" />
-      <div class="hero-img-stack">
-        <img class="hero-img"
-             src="https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=260&h=230&fit=crop&auto=format&q=80"
-             alt="Festival stage" loading="lazy" />
-        <img class="hero-img"
-             src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=260&h=230&fit=crop&auto=format&q=80"
-             alt="Event lights" loading="lazy" />
+      <div class="ai-command">
+        <div class="ai-command-head">
+          <div class="command-question">What are you looking for?</div>
+          <button type="button" class="hero-history-btn" id="hero-history-btn" aria-label="Open search history" aria-haspopup="dialog" aria-expanded="false" aria-controls="hero-history-panel">
+            <span class="hero-history-btn-icon" aria-hidden="true">◷</span>
+            <span class="hero-history-badge" id="hero-history-badge" hidden>0</span>
+          </button>
+        </div>
+        <div class="ai-command-inner">
+          <input id="hero-ai-input" type="search" placeholder="Events next month?" autocomplete="off" />
+          <button class="primary" id="hero-ai-btn" type="button">Ask Eventra</button>
+        </div>
+        <div class="prompt-chips">
+          <!-- <button type="button" data-prompt="Plan me a 3-day trip around a music festival in Malaysia">3-day music trip</button>
+          <button type="button" data-prompt="Find me a comedy show worth travelling for">Comedy show</button>
+          <button type="button" data-prompt="What event should I travel to Malaysia for next month?">Tourist-worthy event</button> -->
+        </div>
+        <div class="hero-ai-status" id="hero-ai-status">Try a travel-style question, or just say hello and Eventra will guide you.</div>
+        <div class="hero-ai-conversation" id="hero-ai-conversation" aria-live="polite"></div>
       </div>
     </div>
   </div>
@@ -4473,6 +4814,18 @@
 </div>
 
 <div id="eventsView" style="flex: 1;">
+
+<div class="category-chips-row" id="category-chips-row">
+  <button type="button" class="cat-chip cat-chip--active" data-cat="all">All</button>
+  <button type="button" class="cat-chip" data-cat="music">🎵 Music</button>
+  <button type="button" class="cat-chip" data-cat="arts">🎭 Arts</button>
+  <button type="button" class="cat-chip" data-cat="food">🍜 Food</button>
+  <button type="button" class="cat-chip" data-cat="sports">⚽ Sports</button>
+  <button type="button" class="cat-chip" data-cat="comedy">🎪 Comedy</button>
+  <button type="button" class="cat-chip" data-cat="wellness">🌿 Wellness</button>
+  <button type="button" class="cat-chip" data-cat="tech">💻 Tech</button>
+  <button type="button" class="cat-chip" data-cat="family">👨‍👩‍👧 Family</button>
+</div>
 
 <div class="controls">
   <span class="controls-label">Filter</span>
@@ -4619,16 +4972,11 @@
       <p class="eh-muted eh-trip-strip-hint">Flights → Hotels: tap <strong>Add to my itinerary</strong> once each, then <strong>Itinerary</strong>.</p>
     </div>
     <div class="event-hub-main">
-    <div class="event-hub-stepper-wrap">
-      <div class="event-hub-tabs" role="tablist" aria-label="Trip planning steps">
-        <button type="button" class="eh-tab eh-tab--active" id="eh-tab-flights" role="tab" aria-selected="true" aria-controls="eh-panel-flights" data-step-num="1">Flights</button>
-        <button type="button" class="eh-tab" id="eh-tab-hotels" role="tab" aria-selected="false" aria-controls="eh-panel-hotels" data-step-num="2">Hotels</button>
-        <button type="button" class="eh-tab" id="eh-tab-itin" role="tab" aria-selected="false" aria-controls="eh-panel-itin" data-step-num="3">Itinerary</button>
-      </div>
-      <div id="eh-step-announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+    <div class="event-hub-tabs" role="tablist">
+      <button type="button" class="eh-tab eh-tab--active" id="eh-tab-flights" role="tab" aria-selected="true">Flights</button>
+      <button type="button" class="eh-tab" id="eh-tab-hotels" role="tab" aria-selected="false">Hotels</button>
+      <button type="button" class="eh-tab" id="eh-tab-itin" role="tab" aria-selected="false">Itinerary</button>
     </div>
-    <div class="event-hub-body">
-    <div class="event-hub-step-main">
     <div class="event-hub-scroll">
       <div id="eh-panel-flights" class="eh-panel" role="tabpanel">
         <h3>Flights</h3>
@@ -4681,23 +5029,14 @@
       </div>
       <div id="eh-panel-itin" class="eh-panel" role="tabpanel" hidden>
         <h3>Itinerary</h3>
-        <p class="eh-muted">Choose a flight and hotel, then generate your AI itinerary from the booking panel on the right (or below on mobile).</p>
-      </div>
-    </div>
-    </div>
-    <aside class="event-hub-booking-summary" aria-label="Booking summary">
-      <h3 class="eh-booking-summary-title">Your selections</h3>
-      <div class="eh-booking-summary-body">
+        <p class="eh-muted">After one flight and one hotel are added, summaries appear below — then tap Generate.</p>
+        <p id="eh-gen-hint" class="eh-muted" style="margin-top: 10px;"></p>
         <div id="eh-hub-flight-summary" class="eh-hub-flight-summary" hidden></div>
         <div id="eh-hub-hotel-summary" class="eh-hub-flight-summary" hidden style="margin-top: 10px;"></div>
-        <p id="eh-gen-hint" class="eh-muted" style="margin-top: 4px;"></p>
-        <div class="eh-summary-jumps">
-          <button type="button" class="eh-btn eh-btn--ghost eh-summary-jump" data-eh-tab="eh-tab-flights">Edit flight</button>
-          <button type="button" class="eh-btn eh-btn--ghost eh-summary-jump" data-eh-tab="eh-tab-hotels">Edit hotel</button>
+        <div class="event-hub-cta-row" style="margin-top: 18px;">
+          <button type="button" class="eh-btn eh-btn--gold" id="eh-gen-itin" disabled title="Pick a flight and a hotel, then generate">Generate AI itinerary</button>
         </div>
-        <button type="button" class="eh-btn eh-btn--gold" id="eh-gen-itin" disabled title="Pick a flight and a hotel, then generate">Generate AI itinerary</button>
       </div>
-    </aside>
     </div>
     </div>
   </div>
@@ -5126,7 +5465,89 @@
     }, 50);
   }
 
-  const AI_CONVERSATIONS_STORAGE_KEY = 'ticket_scraper_ai_conversations_v2';
+  const AI_CONVERSATIONS_LEGACY_KEY = 'ticket_scraper_ai_conversations_v2';
+  const AI_CONVERSATIONS_STORAGE_PREFIX = 'ticket_scraper_ai_conversations_v2';
+
+  function getAuthUserId() {
+    try {
+      const u = window.__authUser;
+      return u && u.id != null ? String(u.id) : '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function getAiConversationsStorageKey() {
+    const uid = getAuthUserId();
+    return uid ? AI_CONVERSATIONS_STORAGE_PREFIX + ':' + uid : null;
+  }
+
+  function isSignedInForHistory() {
+    return !!getAuthUserId();
+  }
+
+  function migrateLegacyConversationsToUser(userId) {
+    if (!userId) return;
+    const userKey = AI_CONVERSATIONS_STORAGE_PREFIX + ':' + userId;
+    try {
+      const legacy = window.localStorage.getItem(AI_CONVERSATIONS_LEGACY_KEY);
+      if (!legacy) return;
+      if (!window.localStorage.getItem(userKey)) {
+        window.localStorage.setItem(userKey, legacy);
+      }
+      window.localStorage.removeItem(AI_CONVERSATIONS_LEGACY_KEY);
+    } catch (_) {}
+  }
+
+  function normalizeStoredConversations(parsed) {
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map(function (c, idx) {
+        return {
+          id: Number(c.id) || Date.now() + idx,
+          title: String(c.title || 'Chat'),
+          createdAt: String(c.createdAt || new Date().toISOString()),
+          updatedAt: String(c.updatedAt || c.createdAt || new Date().toISOString()),
+          messages: Array.isArray(c.messages)
+            ? c.messages.filter(function (m) {
+                return (
+                  m &&
+                  (m.role === 'user' || m.role === 'assistant') &&
+                  typeof m.content === 'string'
+                );
+              })
+            : [],
+          rounds: Array.isArray(c.rounds)
+            ? c.rounds
+                .map(function (r, ridx) {
+                  return {
+                    id: Number(r.id) || Date.now() + ridx,
+                    userMessage: String(r.userMessage || ''),
+                    events: Array.isArray(r.events) ? r.events : [],
+                  };
+                })
+                .filter(function (r) {
+                  return r.events.length > 0;
+                })
+            : [],
+        };
+      })
+      .filter(function (c) {
+        return c.messages.length > 0 || c.rounds.length > 0;
+      });
+  }
+
+  function readConversationsFromStorage() {
+    const key = getAiConversationsStorageKey();
+    if (!key) return [];
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return [];
+      return normalizeStoredConversations(JSON.parse(raw));
+    } catch (_) {
+      return [];
+    }
+  }
 
   function getFixedHeaderOffset() {
     const header = document.querySelector('header');
@@ -5203,11 +5624,10 @@
 
   function collectQueryHistoryFromStorage() {
     const items = [];
+    if (!isSignedInForHistory()) return items;
     try {
-      const raw = window.localStorage.getItem(AI_CONVERSATIONS_STORAGE_KEY);
-      if (!raw) return items;
-      const convs = JSON.parse(raw);
-      if (!Array.isArray(convs)) return items;
+      const convs = readConversationsFromStorage();
+      if (!convs.length) return items;
       convs.forEach(function (c) {
         const at = c.updatedAt || c.createdAt || '';
         (c.rounds || []).forEach(function (r) {
@@ -5267,7 +5687,27 @@
     let trapHandler = null;
     let historyEntries = [];
 
+    function setHistoryChromeVisible(signedIn) {
+      btn.hidden = !signedIn;
+      if (!signedIn) {
+        btn.setAttribute('hidden', '');
+        if (badge) {
+          badge.hidden = true;
+          badge.setAttribute('hidden', '');
+        }
+        if (overlay.classList.contains('is-open')) closePanel();
+        return;
+      }
+      btn.removeAttribute('hidden');
+    }
+
     function renderBadgeAndList() {
+      if (!isSignedInForHistory()) {
+        setHistoryChromeVisible(false);
+        historyEntries = [];
+        return;
+      }
+      setHistoryChromeVisible(true);
       const entries = collectQueryHistoryFromStorage();
       historyEntries = entries;
       if (badge) {
@@ -5326,6 +5766,7 @@
     }
 
     function openPanel() {
+      if (!isSignedInForHistory()) return;
       renderBadgeAndList();
       lastFocus = document.activeElement;
       overlay.removeAttribute('hidden');
@@ -5383,8 +5824,10 @@
           )
         )
           return;
+        const key = getAiConversationsStorageKey();
+        if (!key) return;
         try {
-          window.localStorage.removeItem(AI_CONVERSATIONS_STORAGE_KEY);
+          window.localStorage.removeItem(key);
         } catch (_) {}
         window.dispatchEvent(new CustomEvent('ticket-scraper:conversations-cleared'));
         renderBadgeAndList();
@@ -5393,10 +5836,16 @@
     }
 
     window.addEventListener('storage', function (e) {
-      if (e.key === AI_CONVERSATIONS_STORAGE_KEY) renderBadgeAndList();
+      const key = getAiConversationsStorageKey();
+      if (key && e.key === key) renderBadgeAndList();
     });
     window.addEventListener('ticket-scraper:conversations-updated', renderBadgeAndList);
     window.addEventListener('ticket-scraper:conversations-cleared', renderBadgeAndList);
+    document.addEventListener('ts-auth-change', function () {
+      const uid = getAuthUserId();
+      if (uid) migrateLegacyConversationsToUser(uid);
+      renderBadgeAndList();
+    });
 
     renderBadgeAndList();
   }
@@ -5539,12 +5988,21 @@
     }, prefersReducedMotion() ? 80 : 420);
   }
 
+  function restoreFullEventListingAfterChat() {
+    if (chatResultsMode) {
+      clearChatFilter();
+    } else {
+      filterEvents();
+    }
+  }
+
   function applyChatEventsToGrid(events, userMessage) {
     const enriched = (Array.isArray(events) ? events : []).map(enrichChatEvent);
     chatResultsMode = true;
     chatResultsPool = enriched;
     lastChatQuery = String(userMessage || '').trim();
     setChatResultsBanner(lastChatQuery, enriched.length);
+    showGridChatLoading();
     if (!enriched.length) {
       renderChatNoResults(lastChatQuery);
       announceEvents(formatResultsAnnouncement(0, lastChatQuery) + ' Try different dates or keywords.');
@@ -5616,6 +6074,7 @@
     `;
   }
 
+
   async function loadEvents() {
     try {
       const res = await fetch('/api/events');
@@ -5623,14 +6082,12 @@
       allEvents = Array.isArray(data) ? data : (data.events || []);
       const counts = countBySource(allEvents);
 
-      document.getElementById('last-updated').textContent =
-        `Eventbrite: ${counts.eventbrite || 0} • Ticket2U: ${counts.ticket2u || 0} • GoLive Asia: ${counts.goliveasia || 0} • Ticketmelon: ${counts.ticketmelon || 0}`;
-
       // Hero stat numbers
       const heroTotal = document.getElementById('hero-total');
       const heroFree  = document.getElementById('hero-free');
       if (heroTotal) heroTotal.textContent = allEvents.length;
       if (heroFree)  heroFree.textContent  = allEvents.filter(e => e.isFree).length;
+
 
       // Source badges
       const badges = document.getElementById('source-badges');
@@ -5656,6 +6113,8 @@
     }
   }
 
+  let activeCat = 'all';
+
   function filterEvents() {
     const search = document.getElementById('search').value.toLowerCase();
     const freeFilter = document.getElementById('filter-free').value;
@@ -5679,7 +6138,13 @@
       const matchSource =
         sourceFilter === 'all' ? true : source === sourceFilter;
 
-      return matchSearch && matchFree && matchSource;
+      const matchCat =
+        activeCat === 'all'
+          ? true
+          : (e.category || '').toLowerCase().includes(activeCat) ||
+            (e.title || '').toLowerCase().includes(activeCat);
+
+      return matchSearch && matchFree && matchSource && matchCat;
     });
 
     if (sort === 'title') {
@@ -5839,7 +6304,6 @@
     const heroAiStatusEl = document.getElementById('hero-ai-status');
     let lastLaunchFromHero = false;
 
-    const AI_CONVERSATIONS_KEY = AI_CONVERSATIONS_STORAGE_KEY;
     const historyBtn = document.getElementById('ai-history-btn');
     const newChatBtn = document.getElementById('ai-new-chat-btn');
     const historyPanel = document.getElementById('ai-history-panel');
@@ -5857,45 +6321,39 @@
     };
     let eventRounds = [];
 
-    try {
-      const raw = window.localStorage.getItem(AI_CONVERSATIONS_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          conversations = parsed
-            .map(function (c, idx) {
-              return {
-                id: Number(c.id) || Date.now() + idx,
-                title: String(c.title || 'Chat'),
-                createdAt: String(c.createdAt || new Date().toISOString()),
-                updatedAt: String(c.updatedAt || c.createdAt || new Date().toISOString()),
-                messages: Array.isArray(c.messages) ? c.messages.filter(function (m) {
-                  return m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string';
-                }) : [],
-                rounds: Array.isArray(c.rounds) ? c.rounds.map(function (r, ridx) {
-                  return {
-                    id: Number(r.id) || Date.now() + ridx,
-                    userMessage: String(r.userMessage || ''),
-                    events: Array.isArray(r.events) ? r.events : [],
-                  };
-                }).filter(function (r) { return r.events.length > 0; }) : [],
-              };
-            })
-            .filter(function (c) {
-              return c.messages.length > 0 || c.rounds.length > 0;
-            });
-        }
-      }
-    } catch (_) {
-      conversations = [];
+    function loadConversationsFromStorage() {
+      conversations = readConversationsFromStorage();
     }
 
     function persistConversations() {
+      const key = getAiConversationsStorageKey();
+      if (!key) return;
       try {
-        window.localStorage.setItem(AI_CONVERSATIONS_KEY, JSON.stringify(conversations.slice(0, 24)));
+        window.localStorage.setItem(key, JSON.stringify(conversations.slice(0, 24)));
         window.dispatchEvent(new CustomEvent('ticket-scraper:conversations-updated'));
       } catch (_) {}
     }
+
+    function resetAssistantSessionUi() {
+      conversations = [];
+      activeConversation = {
+        id: Date.now(),
+        title: 'New chat',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messages: [],
+        rounds: [],
+      };
+      chatHistory.length = 0;
+      heroChatHistory.length = 0;
+      eventRounds = [];
+      logEl.innerHTML = '';
+      errEl.textContent = '';
+      clearEventsZone();
+      renderHistory();
+    }
+
+    loadConversationsFromStorage();
 
     function trimTitle(text) {
       const s = String(text || '').trim();
@@ -5915,6 +6373,7 @@
 
     function toggleHistory(open) {
       if (!historyPanel) return;
+      if (open && !isSignedInForHistory()) return;
       if (open) {
         historyPanel.classList.add('is-open');
         historyPanel.setAttribute('aria-hidden', 'false');
@@ -5967,6 +6426,11 @@
 
     function renderHistory() {
       if (!historyList) return;
+      if (!isSignedInForHistory()) {
+        historyList.innerHTML =
+          '<div class="ai-history-empty">Sign in to see your conversation history.</div>';
+        return;
+      }
       if (!conversations.length) {
         historyList.innerHTML = '<div class="ai-history-empty">No previous conversations yet.<br/>Start a chat and it will appear here.</div>';
         return;
@@ -6034,7 +6498,17 @@
       if (e.key === 'Escape' && aiOverlay.classList.contains('is-open')) closeDrawer();
     });
 
+    function setAiHistoryChromeVisible(signedIn) {
+      if (historyBtn) {
+        historyBtn.hidden = !signedIn;
+        if (!signedIn) historyBtn.setAttribute('hidden', '');
+        else historyBtn.removeAttribute('hidden');
+      }
+      if (!signedIn) toggleHistory(false);
+    }
+
     if (historyBtn) historyBtn.addEventListener('click', function () {
+      if (!isSignedInForHistory()) return;
       renderHistory();
       toggleHistory(!historyPanel.classList.contains('is-open'));
     });
@@ -6141,10 +6615,7 @@
       if (fromHero && heroAiBtnEl) {
         heroAiBtnEl.disabled = true;
         heroAiBtnEl.textContent = 'Thinking...';
-        chatResultsMode = false;
-        chatResultsPool = [];
         clearChatHighlights();
-        showGridChatLoading();
       }
       const historyPrior = (fromHero ? heroChatHistory : chatHistory).map(function (h) {
         return { role: h.role, content: h.content };
@@ -6171,7 +6642,7 @@
           if (fromHero) {
             appendHeroChatTurn(message, errMsg);
             setHeroBannerStatus(errMsg, 'warning');
-            filterEvents();
+            restoreFullEventListingAfterChat();
           } else {
             append('bot', errMsg);
           }
@@ -6204,17 +6675,23 @@
             heroChatHistory.push({ role: 'user', content: message });
             heroChatHistory.push({ role: 'assistant', content: botText });
             while (heroChatHistory.length > 24) heroChatHistory.shift();
-            applyChatEventsToGrid(apiEvents, message);
-            if (apiEvents.length) {
-              setHeroBannerStatus(
-                apiEvents.length +
-                  ' event' +
-                  (apiEvents.length !== 1 ? 's' : '') +
-                  ' matched — scroll down to explore.',
-                '',
-              );
+            const wantsEventResults = data.eventSearch === true;
+            if (wantsEventResults) {
+              applyChatEventsToGrid(apiEvents, message);
+              if (apiEvents.length) {
+                setHeroBannerStatus(
+                  apiEvents.length +
+                    ' event' +
+                    (apiEvents.length !== 1 ? 's' : '') +
+                    ' matched — scroll down to explore.',
+                  'success',
+                );
+              } else {
+                setHeroBannerStatus('No events matched — try different dates or keywords.', 'warning');
+              }
             } else {
-              setHeroBannerStatus('No events matched — try different dates or keywords.', 'warning');
+              restoreFullEventListingAfterChat();
+              setHeroBannerStatus('', '');
             }
           } else {
             clearEventsZone();
@@ -6228,7 +6705,7 @@
         if (fromHero) {
           appendHeroChatTurn(message, netErr);
           setHeroBannerStatus(netErr, 'warning');
-          filterEvents();
+          restoreFullEventListingAfterChat();
         } else {
           append('bot', netErr);
         }
@@ -6299,7 +6776,7 @@
         setHeroBannerStatus('Type what you want, for example: "I am coming from Singapore for a concert weekend."', 'warning');
         return;
       }
-      setHeroBannerStatus('Eventra is scanning Malaysia events and travel signals...', 'thinking');
+      setHeroBannerStatus('Eventra is thinking…', 'thinking');
       lastLaunchFromHero = true;
       messageEl.value = q;
       if (heroAiInputEl) heroAiInputEl.value = '';
@@ -6326,24 +6803,24 @@
       });
     }
 
-    window.addEventListener('ticket-scraper:conversations-cleared', function () {
-      conversations = [];
-      activeConversation = {
-        id: Date.now(),
-        title: 'New chat',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        messages: [],
-        rounds: [],
-      };
-      chatHistory.length = 0;
-      heroChatHistory.length = 0;
-      eventRounds = [];
-      logEl.innerHTML = '';
-      errEl.textContent = '';
-      clearEventsZone();
+    window.addEventListener('ticket-scraper:conversations-cleared', resetAssistantSessionUi);
+
+    document.addEventListener('ts-auth-change', function () {
+      const uid = getAuthUserId();
+      const signedIn = !!uid;
+      setAiHistoryChromeVisible(signedIn);
+      if (signedIn) {
+        migrateLegacyConversationsToUser(uid);
+        loadConversationsFromStorage();
+      } else {
+        resetAssistantSessionUi();
+      }
       renderHistory();
+      window.dispatchEvent(new CustomEvent('ticket-scraper:conversations-updated'));
     });
+
+    setAiHistoryChromeVisible(isSignedInForHistory());
+    renderHistory();
 
     initHeroChatHistory(function (query, entry) {
       if (entry && entry.events && entry.events.length) {
@@ -6367,67 +6844,20 @@
     eventsChatBannerClear.addEventListener('click', clearChatFilter);
   }
 
+  const categoryChipsRow = document.getElementById('category-chips-row');
+  if (categoryChipsRow) {
+    categoryChipsRow.addEventListener('click', function (e) {
+      const chip = e.target.closest('.cat-chip');
+      if (!chip) return;
+      activeCat = chip.getAttribute('data-cat') || 'all';
+      categoryChipsRow.querySelectorAll('.cat-chip').forEach(function (c) {
+        c.classList.toggle('cat-chip--active', c === chip);
+      });
+      filterEvents();
+    });
+  }
+
   loadEvents();
-
-  /* Event hub flow — UI-only: step announcer, focus, summary jump (does not change setTab logic) */
-  (function initEventHubFlowUi() {
-    const ann = document.getElementById('eh-step-announcer');
-    const stepLabels = {
-      'eh-tab-flights': 'Flights step. Search and add a flight to your itinerary.',
-      'eh-tab-hotels': 'Hotels step. Search and add a hotel to your itinerary.',
-      'eh-tab-itin': 'Itinerary step. Generate your trip plan.',
-    };
-    const panelByTab = {
-      'eh-tab-flights': 'eh-panel-flights',
-      'eh-tab-hotels': 'eh-panel-hotels',
-      'eh-tab-itin': 'eh-panel-itin',
-    };
-
-    function syncStepperA11y(activeTabId) {
-      Object.keys(stepLabels).forEach(function (id) {
-        const btn = document.getElementById(id);
-        if (!btn) return;
-        const on = id === activeTabId;
-        btn.setAttribute('aria-current', on ? 'step' : 'false');
-      });
-      if (ann && activeTabId && stepLabels[activeTabId]) {
-        ann.textContent = stepLabels[activeTabId];
-      }
-    }
-
-    function focusActivePanel(activeTabId) {
-      const panelId = panelByTab[activeTabId];
-      if (!panelId) return;
-      const panel = document.getElementById(panelId);
-      if (!panel || panel.hidden) return;
-      const heading = panel.querySelector('h3');
-      if (heading && typeof heading.focus === 'function') {
-        heading.setAttribute('tabindex', '-1');
-        heading.focus();
-      }
-    }
-
-    Object.keys(stepLabels).forEach(function (tabId) {
-      const tab = document.getElementById(tabId);
-      if (!tab) return;
-      tab.addEventListener('click', function () {
-        window.setTimeout(function () {
-          syncStepperA11y(tabId);
-          focusActivePanel(tabId);
-        }, 60);
-      });
-    });
-
-    document.querySelectorAll('.eh-summary-jump').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        const targetId = btn.getAttribute('data-eh-tab');
-        const tab = targetId && document.getElementById(targetId);
-        if (tab) tab.click();
-      });
-    });
-
-    syncStepperA11y('eh-tab-flights');
-  })();
 
 </script>
 

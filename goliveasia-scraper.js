@@ -18,6 +18,7 @@ const {
   fetchGoLiveEventList,
   loadGoLiveImageMap,
   saveGoLiveImageMap,
+  refreshGoLiveImageMapViaDetailPages,
 } = require('./golive-image-helpers');
 
 const OUTPUT = path.join(__dirname, 'data', 'goliveasia-events.json');
@@ -117,33 +118,37 @@ async function scrapeGoLiveAsia() {
   const minExpected = existing.length ? Math.max(3, Math.floor(existing.length * 0.5)) : 3;
   const useFullReplace = rows.length >= minExpected || !existing.length;
 
+  let eventsOut = existing;
+
   if (!useFullReplace) {
     console.warn(
       `   Keeping ${existing.length} saved events (API/DOM only returned ${rows.length}; avoiding data loss).`,
     );
-    await saveGoLiveImageMap(imageMap);
-    console.log(
-      `🖼  Image map updated: ${Object.keys(imageMap).length} URLs → data/goliveasia-image-map.json`,
-    );
-    return existing;
+    eventsOut = existing;
+  } else {
+
+    const byId = new Map();
+    for (const row of rows) {
+      const ev = normalizeEvent(row, imageMap);
+      if (ev) byId.set(ev.id, ev);
+    }
+    eventsOut = Array.from(byId.values());
+    await fs.ensureDir(path.join(__dirname, 'data'));
+    await fs.writeJson(OUTPUT, eventsOut, { spaces: 2 });
   }
 
-  const byId = new Map();
-  for (const row of rows) {
-    const ev = normalizeEvent(row, imageMap);
-    if (ev) byId.set(ev.id, ev);
-  }
+  const finalMap = await refreshGoLiveImageMapViaDetailPages(
+    eventsOut.map((e) => e.id),
+    imageMap,
+  );
+  await saveGoLiveImageMap(finalMap);
 
-  const events = Array.from(byId.values());
-  const withImages = Object.keys(imageMap).length;
-
-  await fs.ensureDir(path.join(__dirname, 'data'));
-  await fs.writeJson(OUTPUT, events, { spaces: 2 });
-  await saveGoLiveImageMap(imageMap);
-
-  console.log(`🖼  Image URLs resolved: ${withImages}/${events.length} → data/goliveasia-image-map.json`);
-  console.log(`💾 Saved ${events.length} events → ${OUTPUT}`);
-  return events;
+  const withImages = eventsOut.filter((e) => finalMap[e.id]).length;
+  console.log(
+    `🖼  Image URLs ready: ${withImages}/${eventsOut.length} → data/goliveasia-image-map.json`,
+  );
+  console.log(`💾 GoLive Asia: ${eventsOut.length} events in ${OUTPUT}`);
+  return eventsOut;
 }
 
 if (require.main === module) {

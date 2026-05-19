@@ -73,9 +73,13 @@ body.theme-eventra header h1 {
   color: transparent !important;
 }
 
-body.theme-eventra #last-updated,
-body.theme-eventra header > span {
-  color: var(--ev-soft) !important;
+body.theme-eventra #last-updated {
+  display: none !important;
+}
+
+body.theme-eventra .header-actions {
+  margin-left: auto !important;
+  justify-content: flex-end !important;
 }
 
 body.theme-eventra .header-auth-link {

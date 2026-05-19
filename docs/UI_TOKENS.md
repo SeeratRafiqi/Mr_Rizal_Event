@@ -44,14 +44,6 @@ Legacy `--pg-*` variables in `viewer.html` remain for inline components not yet 
 | `eventra-ticket-theme.css` | Original Eventra scoped theme |
 | `premium-ui.css` | **Premium polish** (load last) |
 
-## Event hub flow (`event-hub-flow.css`)
-
-Modern **Flights → Hotels → Itinerary** layout: horizontal stepper, ~68% main column + sticky booking summary (~360px). Uses the same tab/panel IDs and `event-hub.js` logic.
-
-| File | Role |
-|------|------|
-| `event-hub-flow.css` | Stepper, grid layout, step animations, premium light surfaces inside the modal |
-
 ## Manual test
 
 1. Open `/events` — serif headlines, gold accents, light grid.

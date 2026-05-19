@@ -894,7 +894,7 @@ async function saveChatHistory(userMessage, botReply) {
 app.post('/api/chat', async (req, res) => {
   const { message, history } = req.body || {};
   if (!message || typeof message !== 'string' || !message.trim()) {
-    return res.status(400).json({ reply: '', error: 'Missing message', events: [] });
+    return res.status(400).json({ reply: '', error: 'Missing message', events: [], eventSearch: false });
   }
 
   const trimmed = message.trim();
@@ -1024,13 +1024,13 @@ app.post('/api/chat', async (req, res) => {
           ? parsed.reply.trim()
           : 'Hey! 👋 When you want event ideas, tell me a day, city, vibe, or budget.';
       await saveChatHistory(trimmed, reply);
-      return res.json({ reply, events: [] });
+      return res.json({ reply, events: [], eventSearch: false });
     } catch (err) {
       console.error('Casual chat error:', err.message);
       const reply =
         'Hey! 👋 When you\'re ready, ask for events — try a date, city, or "something fun this weekend".';
       await saveChatHistory(trimmed, reply);
-      return res.json({ reply, events: [] });
+      return res.json({ reply, events: [], eventSearch: false });
     }
   }
 
@@ -1038,6 +1038,7 @@ app.post('/api/chat', async (req, res) => {
     return res.status(503).json({
       reply: 'Supabase is not configured. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to `.env`.',
       events: [],
+      eventSearch: false,
     });
   }
 
@@ -1045,6 +1046,7 @@ app.post('/api/chat', async (req, res) => {
     return res.status(503).json({
       reply: 'Embeddings are not configured. Add HUGGINGFACE_API_KEY to `.env`.',
       events: [],
+      eventSearch: false,
     });
   }
 
@@ -1270,6 +1272,7 @@ app.post('/api/chat', async (req, res) => {
       return res.json({
         reply: fallback,
         events: selectedEvents.length ? selectedEvents.map(formatEventCard) : [],
+        eventSearch: true,
       });
     }
 
@@ -1288,6 +1291,7 @@ app.post('/api/chat', async (req, res) => {
     return res.json({
       reply,
       events: eventsOut,
+      eventSearch: true,
     });
   } catch (error) {
     console.error('Chat error:', error);
@@ -1295,6 +1299,7 @@ app.post('/api/chat', async (req, res) => {
       reply: 'Something went wrong with the chat request 😵',
       error: error.message || 'Error processing your request',
       events: [],
+      eventSearch: false,
     });
   }
 });
@@ -1325,13 +1330,11 @@ app.get('/api/golive-image/:id', async (req, res) => {
         .send('No image for this event. Re-run: npm run scrape:goliveasia');
     }
 
+    // Presigned S3 URLs only sign `host` — extra API headers break the signature.
     const imgRes = await axios.get(url, {
       responseType: 'stream',
       timeout: 45000,
-      headers: {
-        ...GOLIVE_API_HEADERS,
-        Referer: 'https://www.golive-asia.com/event-detail/' + id,
-      },
+      headers: { 'User-Agent': GOLIVE_API_HEADERS['User-Agent'] || 'Mozilla/5.0' },
       maxRedirects: 5,
       validateStatus: (s) => s >= 200 && s < 400,
     });

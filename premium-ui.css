@@ -92,10 +92,13 @@ body.theme-eventra .header-eyebrow {
   font-size: 0.68rem !important;
 }
 
-body.theme-eventra #last-updated,
-body.theme-eventra header > span {
-  color: rgba(248, 244, 238, 0.55) !important;
-  font-size: 0.8rem !important;
+body.theme-eventra #last-updated {
+  display: none !important;
+}
+
+body.theme-eventra .header-actions {
+  margin-left: auto !important;
+  justify-content: flex-end !important;
 }
 
 body.theme-eventra .header-auth-link {

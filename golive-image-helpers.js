@@ -129,10 +129,10 @@ async function fetchEventListPlaywright() {
     let rows = null;
 
     page.on('response', async (res) => {
-      if (!res.url().includes('/api/event/list') || res.status() !== 200) return;
+      if (!res.url().includes('advisoryapps') || res.status() !== 200) return;
       try {
         const j = await res.json();
-        if (Array.isArray(j?.result?.result) && j.result.result.length) {
+        if (Array.isArray(j?.result?.result) && j.result.result.length > (rows?.length || 0)) {
           rows = j.result.result;
         }
       } catch (_) {}
@@ -208,6 +208,102 @@ async function fetchEventListPlaywright() {
   }
 }
 
+function pickPresignedBannerUrl(url, eventId) {
+  const u = String(url || '');
+  const id = String(eventId || '').trim();
+  if (!u || !id) return '';
+  if (u.includes(`eventBanners/${id}/`) && u.includes('X-Amz-')) return u;
+  return '';
+}
+
+async function captureImageUrlForEventPage(page, eventId) {
+  let imageUrl = '';
+  const handler = async (res) => {
+    if (imageUrl) return;
+    const u = res.url();
+    if (res.status() !== 200) return;
+
+    const fromBanner = pickPresignedBannerUrl(u, eventId);
+    if (fromBanner) {
+      imageUrl = fromBanner;
+      return;
+    }
+
+    if (u.includes('advisoryapps') && u.includes('/api/event')) {
+      try {
+        const j = await res.json();
+        const url = extractGoLiveImageUrl(j?.result || j);
+        if (url) imageUrl = url;
+      } catch (_) {}
+    }
+  };
+
+  page.on('response', handler);
+  try {
+    await page.goto(`${BASE_WEB}/event-detail/${encodeURIComponent(eventId)}`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 90000,
+    });
+    await page.waitForTimeout(8000);
+    if (!imageUrl) {
+      await page.waitForTimeout(5000);
+    }
+  } finally {
+    page.off('response', handler);
+  }
+  return imageUrl;
+}
+
+/**
+ * When the list API fails, each event-detail page still loads banner URLs over the network.
+ */
+async function refreshGoLiveImageMapViaDetailPages(eventIds, imageMap = {}) {
+  const ids = [...new Set((eventIds || []).map((x) => String(x).trim()).filter(Boolean))];
+  const map = { ...(imageMap || {}) };
+  const need = ids.filter((id) => !map[id] || !/^https?:\/\//i.test(map[id]));
+  if (!need.length) return map;
+
+  let chromium;
+  try {
+    ({ chromium } = require('playwright'));
+  } catch {
+    console.warn('GoLive image backfill: Playwright not installed');
+    return map;
+  }
+
+  console.log(`🖼  GoLive: loading images for ${need.length} event(s) from event-detail pages…`);
+
+  const browser = await chromium.launch({
+    headless: true,
+    args: ['--disable-blink-features=AutomationControlled'],
+  });
+
+  try {
+    const context = await browser.newContext({
+      userAgent: UA,
+      locale: 'en-MY',
+      viewport: { width: 1366, height: 900 },
+    });
+    const page = await context.newPage();
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+    });
+
+    for (let i = 0; i < need.length; i++) {
+      const id = need[i];
+      const url = await captureImageUrlForEventPage(page, id);
+      if (url) map[id] = url;
+      if ((i + 1) % 4 === 0 || i === need.length - 1) {
+        console.log(`   … ${i + 1}/${need.length} image URLs captured`);
+      }
+    }
+  } finally {
+    await browser.close();
+  }
+
+  return map;
+}
+
 async function fetchGoLiveEventList() {
   try {
     const rows = await fetchEventListAxios();
@@ -246,10 +342,22 @@ async function resolveGoLiveImageUrl(eventId, liveRows) {
   const map = await loadGoLiveImageMap();
   if (map[id] && /^https?:\/\//i.test(map[id])) return map[id];
 
-  const rows = liveRows || (await fetchGoLiveEventList()).rows;
-  const row = rows.find((r) => String(r.id) === id);
-  const fromRow = extractGoLiveImageUrl(row);
-  if (fromRow) return fromRow;
+  try {
+    const rows = liveRows || (await fetchEventListAxios());
+    const row = rows.find((r) => String(r.id) === id);
+    const fromRow = extractGoLiveImageUrl(row);
+    if (fromRow) {
+      map[id] = fromRow;
+      await saveGoLiveImageMap(map);
+      return fromRow;
+    }
+  } catch (_) {}
+
+  const updated = await refreshGoLiveImageMapViaDetailPages([id], map);
+  if (updated[id]) {
+    await saveGoLiveImageMap(updated);
+    return updated[id];
+  }
 
   return '';
 }
@@ -269,4 +377,5 @@ module.exports = {
   loadGoLiveImageMap,
   saveGoLiveImageMap,
   resolveGoLiveImageUrl,
+  refreshGoLiveImageMapViaDetailPages,
 };
