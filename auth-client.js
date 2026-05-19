@@ -41,6 +41,7 @@
         }
       });
     }
+    // Per-user chat history uses ticket_scraper_ai_conversations_v2:<userId> — keep on sign-out.
     strip(window.localStorage, ['ts_session_backup', 'ticket_scraper_auth', 'ticket_scraper_ai_conversations_v2']);
     strip(window.sessionStorage, ['ts_session_backup', 'ticket_scraper_auth']);
   }

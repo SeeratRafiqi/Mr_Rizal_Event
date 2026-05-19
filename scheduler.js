@@ -51,9 +51,14 @@ async function runPipeline(trigger) {
     }
 
     try {
-      console.log('[scheduler] Running GoLive Asia scraper...');
+      console.log('[scheduler] Running GoLive Asia scraper (events + image map)…');
       const glaEvents = await scrapeGoLiveAsia();
-      console.log(`[scheduler] ✅ GoLive Asia: ${glaEvents.length} events`);
+      const { loadGoLiveImageMap } = require('./golive-image-helpers');
+      const imgMap = await loadGoLiveImageMap();
+      const imgN = glaEvents.filter((e) => imgMap[e.id]).length;
+      console.log(
+        `[scheduler] ✅ GoLive Asia: ${glaEvents.length} events, ${imgN}/${glaEvents.length} with images`,
+      );
     } catch (err) {
       console.error('[scheduler] ❌ GoLive Asia failed:', err.message);
     }

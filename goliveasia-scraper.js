@@ -1,21 +1,25 @@
 'use strict';
 
 /**
- * GoLive Asia events via advisoryapps API.
+ * GoLive Asia events via advisoryapps API (+ Playwright fallback).
  * Output shape matches existing scrapers:
  * id, title, url, date, time, venue, city, image, isFree, price, category, summary
+ *
+ * Images: API returns expiring S3 presigned URLs. We save a fresh map in
+ * data/goliveasia-image-map.json and expose stable paths via /api/golive-image/:id
  */
 
-const axios = require('axios');
 const fs = require('fs-extra');
 const path = require('path');
-
-const BASE_WEB = 'https://www.golive-asia.com';
-const API_URL = 'https://golive-production.advisoryapps.com/api/event/list';
-const REFERER = `${BASE_WEB}/event-list`;
-
-const UA =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+const {
+  BASE_WEB,
+  extractGoLiveImageUrl,
+  proxyImagePathForId,
+  fetchGoLiveEventList,
+  loadGoLiveImageMap,
+  saveGoLiveImageMap,
+  refreshGoLiveImageMapViaDetailPages,
+} = require('./golive-image-helpers');
 
 const OUTPUT = path.join(__dirname, 'data', 'goliveasia-events.json');
 
@@ -43,7 +47,7 @@ function pickCategory(row) {
   return '';
 }
 
-function normalizeEvent(row) {
+function normalizeEvent(row, imageMap) {
   const id = String(row.id || '').trim();
   if (!id) return null;
 
@@ -61,6 +65,9 @@ function normalizeEvent(row) {
       ? `${cheapest.toFixed(2)} MYR`
       : '';
 
+  const directImage = extractGoLiveImageUrl(row);
+  if (directImage) imageMap[id] = directImage;
+
   return {
     id,
     title: row.name || 'Untitled',
@@ -69,8 +76,7 @@ function normalizeEvent(row) {
     time: dateObj && !Number.isNaN(dateObj.valueOf()) ? dateObj.toISOString().slice(11, 16) : '',
     venue: row.Venue?.name || 'TBA',
     city: row.Venue?.city || '',
-    // Presigned S3 URLs from the API expire after a few hours. The app serves fresh URLs via GET /api/golive-image/:id
-    image: id ? `/api/golive-image/${encodeURIComponent(id)}` : '',
+    image: proxyImagePathForId(id),
     isFree,
     price,
     category: pickCategory(row),
@@ -78,39 +84,71 @@ function normalizeEvent(row) {
   };
 }
 
-async function fetchEventList() {
-  const { data } = await axios.get(API_URL, {
-    headers: {
-      'User-Agent': UA,
-      Accept: 'application/json',
-      Referer: REFERER,
-      Origin: BASE_WEB,
-    },
-    timeout: 60000,
-  });
-
-  const rows = data?.result?.result;
-  if (!Array.isArray(rows)) throw new Error('Unexpected GoLive API response format');
-  return rows;
-}
-
 async function scrapeGoLiveAsia() {
-  console.log('📡 GoLive Asia — advisoryapps /api/event/list');
+  console.log('📡 GoLive Asia — loading event list…');
 
-  const rows = await fetchEventList();
-  const byId = new Map();
-
-  for (const row of rows) {
-    const ev = normalizeEvent(row);
-    if (ev) byId.set(ev.id, ev);
+  let existing = [];
+  if (await fs.pathExists(OUTPUT)) {
+    try {
+      existing = await fs.readJson(OUTPUT);
+      if (!Array.isArray(existing)) existing = [];
+    } catch (_) {
+      existing = [];
+    }
   }
 
-  const events = Array.from(byId.values());
-  await fs.ensureDir(path.join(__dirname, 'data'));
-  await fs.writeJson(OUTPUT, events, { spaces: 2 });
+  let rows = [];
+  let source = 'none';
+  try {
+    const loaded = await fetchGoLiveEventList();
+    rows = loaded.rows;
+    source = loaded.source;
+  } catch (err) {
+    console.warn('GoLive list:', err.message);
+  }
 
-  console.log(`💾 Saved ${events.length} events → ${OUTPUT}`);
-  return events;
+  console.log(`   Loaded ${rows.length} rows (${source})`);
+
+  const imageMap = await loadGoLiveImageMap();
+  for (const row of rows) {
+    const direct = extractGoLiveImageUrl(row);
+    if (direct && row.id != null) imageMap[String(row.id)] = direct;
+  }
+
+  const minExpected = existing.length ? Math.max(3, Math.floor(existing.length * 0.5)) : 3;
+  const useFullReplace = rows.length >= minExpected || !existing.length;
+
+  let eventsOut = existing;
+
+  if (!useFullReplace) {
+    console.warn(
+      `   Keeping ${existing.length} saved events (API/DOM only returned ${rows.length}; avoiding data loss).`,
+    );
+    eventsOut = existing;
+  } else {
+
+    const byId = new Map();
+    for (const row of rows) {
+      const ev = normalizeEvent(row, imageMap);
+      if (ev) byId.set(ev.id, ev);
+    }
+    eventsOut = Array.from(byId.values());
+    await fs.ensureDir(path.join(__dirname, 'data'));
+    await fs.writeJson(OUTPUT, eventsOut, { spaces: 2 });
+  }
+
+  const finalMap = await refreshGoLiveImageMapViaDetailPages(
+    eventsOut.map((e) => e.id),
+    imageMap,
+  );
+  await saveGoLiveImageMap(finalMap);
+
+  const withImages = eventsOut.filter((e) => finalMap[e.id]).length;
+  console.log(
+    `🖼  Image URLs ready: ${withImages}/${eventsOut.length} → data/goliveasia-image-map.json`,
+  );
+  console.log(`💾 GoLive Asia: ${eventsOut.length} events in ${OUTPUT}`);
+  return eventsOut;
 }
 
 if (require.main === module) {

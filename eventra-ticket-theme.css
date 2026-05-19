@@ -73,9 +73,13 @@ body.theme-eventra header h1 {
   color: transparent !important;
 }
 
-body.theme-eventra #last-updated,
-body.theme-eventra header > span {
-  color: var(--ev-soft) !important;
+body.theme-eventra #last-updated {
+  display: none !important;
+}
+
+body.theme-eventra .header-actions {
+  margin-left: auto !important;
+  justify-content: flex-end !important;
 }
 
 body.theme-eventra .header-auth-link {
@@ -488,14 +492,19 @@ body.theme-eventra #itin-modal.itin-modal--trip-view .itin-modal-scroll {
   background: linear-gradient(180deg, rgba(5, 11, 18, 0.95), rgba(7, 27, 31, 0.92)) !important;
 }
 
+body.theme-eventra .itin-trip-surface,
+body.theme-eventra .event-hub-panel {
+  --ts-bg: #0a0e0b;
+  --ts-card: #131813;
+  --ts-line: rgba(200, 169, 110, 0.15);
+  --ts-gold: #d4af37;
+  --ts-gold-dim: #b8956f;
+  --ts-ink: #f5f1eb;
+  --ts-muted: #a89968;
+}
+
 body.theme-eventra .itin-trip-surface {
-  --ts-bg: #050b12;
-  --ts-card: rgba(255, 255, 255, 0.06);
-  --ts-line: rgba(101, 228, 255, 0.2);
-  --ts-gold: #65e4ff;
-  --ts-ink: rgba(245, 251, 255, 0.94);
-  --ts-muted: rgba(245, 251, 255, 0.55);
-  border-color: rgba(101, 228, 255, 0.22) !important;
+  border-color: rgba(200, 169, 110, 0.22) !important;
 }
 
 body.theme-eventra .itin-trip-hero {
@@ -564,12 +573,13 @@ body.theme-eventra .hero-banner .ai-command {
   max-width: 100%;
 }
 
-body.theme-eventra .hero-banner .command-question {
-  padding: 7px 12px 11px;
-  color: rgba(245, 251, 255, 0.76);
+body.theme-eventra .hero-banner .ai-command-head .command-question {
+  padding: 7px 8px 11px;
+  color: rgba(245, 251, 255, 0.95);
   font-size: 13px;
   font-weight: 900;
   letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
 }
 
 body.theme-eventra .hero-banner .ai-command-inner {
@@ -584,17 +594,23 @@ body.theme-eventra .hero-banner .ai-command input#hero-ai-input {
   width: 100%;
   border: 0 !important;
   outline: none;
-  background: transparent !important;
-  box-shadow: none !important;
-  color: var(--ev-ink) !important;
+  background: rgba(6, 18, 14, 0.35) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  color: #f5fbff !important;
   padding: 0 16px;
   font-size: 17px;
   text-overflow: ellipsis;
-  border-radius: 0 !important;
+  border-radius: 8px !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 body.theme-eventra .hero-banner .ai-command input#hero-ai-input::placeholder {
-  color: rgba(245, 251, 255, 0.5) !important;
+  color: rgba(245, 251, 255, 0.62) !important;
+}
+
+body.theme-eventra .hero-banner .ai-command input#hero-ai-input:focus-visible {
+  outline: 2px solid rgba(101, 228, 255, 0.75);
+  outline-offset: 2px;
 }
 
 body.theme-eventra .hero-banner .ai-command .primary {
@@ -649,10 +665,11 @@ body.theme-eventra .hero-banner .prompt-chips button:hover {
 body.theme-eventra .hero-banner .hero-ai-status {
   margin: 12px 4px 2px;
   min-height: 18px;
-  color: var(--ev-soft);
+  color: rgba(245, 251, 255, 0.9);
   font-size: 13px;
   font-weight: 800;
   line-height: 1.45;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
 }
 
 body.theme-eventra .hero-banner .hero-ai-status.thinking {
@@ -669,6 +686,11 @@ body.theme-eventra .hero-banner .hero-ai-status.warning {
 
 body.theme-eventra .hero-banner .hero-ai-conversation {
   margin-top: 10px;
+}
+
+body.theme-eventra .hero-banner .hero-ai-conversation .hero-chat-turn {
+  color: #f5fbff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 @media (max-width: 720px) {

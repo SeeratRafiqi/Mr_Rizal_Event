@@ -26,6 +26,12 @@ const axios = require('axios');
 const fs = require('fs-extra');
 const path = require('path');
 const {
+  GOLIVE_API_HEADERS,
+  extractGoLiveImageUrl,
+  fetchEventListAxios,
+  resolveGoLiveImageUrl,
+} = require('./golive-image-helpers');
+const {
   parseUserIntent,
   filterEventsByPreferences,
   buildIntentContext,
@@ -185,6 +191,11 @@ app.get('/eventra-ticket-theme.css', (req, res) => {
   res.sendFile(path.join(__dirname, 'eventra-ticket-theme.css'));
 });
 
+app.get('/premium-ui.css', (req, res) => {
+  res.type('text/css');
+  res.sendFile(path.join(__dirname, 'premium-ui.css'));
+});
+
 app.get('/flight-search.js', (req, res) => {
   res.type('application/javascript');
   res.sendFile(path.join(__dirname, 'flight-search.js'));
@@ -309,18 +320,7 @@ async function fetchGoLiveEventRows() {
   if (now - goliveListCache.at < GOLIVE_CACHE_MS && goliveListCache.rows.length) {
     return goliveListCache.rows;
   }
-  const { data } = await axios.get('https://golive-production.advisoryapps.com/api/event/list', {
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      Accept: 'application/json',
-      Referer: 'https://www.golive-asia.com/event-list',
-      Origin: 'https://www.golive-asia.com',
-    },
-    timeout: 60000,
-  });
-  const rows = data?.result?.result;
-  if (!Array.isArray(rows)) throw new Error('Unexpected GoLive API response');
+  const rows = await fetchEventListAxios();
   goliveListCache = { at: now, rows };
   return rows;
 }
@@ -894,7 +894,7 @@ async function saveChatHistory(userMessage, botReply) {
 app.post('/api/chat', async (req, res) => {
   const { message, history } = req.body || {};
   if (!message || typeof message !== 'string' || !message.trim()) {
-    return res.status(400).json({ reply: '', error: 'Missing message', events: [] });
+    return res.status(400).json({ reply: '', error: 'Missing message', events: [], eventSearch: false });
   }
 
   const trimmed = message.trim();
@@ -1024,13 +1024,13 @@ app.post('/api/chat', async (req, res) => {
           ? parsed.reply.trim()
           : 'Hey! 👋 When you want event ideas, tell me a day, city, vibe, or budget.';
       await saveChatHistory(trimmed, reply);
-      return res.json({ reply, events: [] });
+      return res.json({ reply, events: [], eventSearch: false });
     } catch (err) {
       console.error('Casual chat error:', err.message);
       const reply =
         'Hey! 👋 When you\'re ready, ask for events — try a date, city, or "something fun this weekend".';
       await saveChatHistory(trimmed, reply);
-      return res.json({ reply, events: [] });
+      return res.json({ reply, events: [], eventSearch: false });
     }
   }
 
@@ -1038,6 +1038,7 @@ app.post('/api/chat', async (req, res) => {
     return res.status(503).json({
       reply: 'Supabase is not configured. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to `.env`.',
       events: [],
+      eventSearch: false,
     });
   }
 
@@ -1045,6 +1046,7 @@ app.post('/api/chat', async (req, res) => {
     return res.status(503).json({
       reply: 'Embeddings are not configured. Add HUGGINGFACE_API_KEY to `.env`.',
       events: [],
+      eventSearch: false,
     });
   }
 
@@ -1270,6 +1272,7 @@ app.post('/api/chat', async (req, res) => {
       return res.json({
         reply: fallback,
         events: selectedEvents.length ? selectedEvents.map(formatEventCard) : [],
+        eventSearch: true,
       });
     }
 
@@ -1288,6 +1291,7 @@ app.post('/api/chat', async (req, res) => {
     return res.json({
       reply,
       events: eventsOut,
+      eventSearch: true,
     });
   } catch (error) {
     console.error('Chat error:', error);
@@ -1295,6 +1299,7 @@ app.post('/api/chat', async (req, res) => {
       reply: 'Something went wrong with the chat request 😵',
       error: error.message || 'Error processing your request',
       events: [],
+      eventSearch: false,
     });
   }
 });
@@ -1303,11 +1308,41 @@ app.get('/api/golive-image/:id', async (req, res) => {
   try {
     const id = String(req.params.id || '').trim();
     if (!id) return res.status(400).send('Missing event id');
-    const rows = await fetchGoLiveEventRows();
-    const row = rows.find((r) => String(r.id) === id);
-    const url = Array.isArray(row?.images) && row.images[0] ? row.images[0] : '';
-    if (!url) return res.status(404).send('No image for this event');
-    return res.redirect(302, url);
+
+    let url = '';
+    try {
+      url = await resolveGoLiveImageUrl(id);
+    } catch (_) {
+      url = '';
+    }
+
+    if (!url) {
+      try {
+        const rows = await fetchGoLiveEventRows();
+        const row = rows.find((r) => String(r.id) === id);
+        url = extractGoLiveImageUrl(row);
+      } catch (_) {}
+    }
+
+    if (!url) {
+      return res
+        .status(404)
+        .send('No image for this event. Re-run: npm run scrape:goliveasia');
+    }
+
+    // Presigned S3 URLs only sign `host` — extra API headers break the signature.
+    const imgRes = await axios.get(url, {
+      responseType: 'stream',
+      timeout: 45000,
+      headers: { 'User-Agent': GOLIVE_API_HEADERS['User-Agent'] || 'Mozilla/5.0' },
+      maxRedirects: 5,
+      validateStatus: (s) => s >= 200 && s < 400,
+    });
+
+    const ctype = imgRes.headers['content-type'] || 'image/jpeg';
+    res.set('Content-Type', ctype);
+    res.set('Cache-Control', 'public, max-age=3600');
+    imgRes.data.pipe(res);
   } catch (err) {
     console.error('GoLive image proxy:', err.message);
     return res.status(502).send('Could not refresh GoLive image');

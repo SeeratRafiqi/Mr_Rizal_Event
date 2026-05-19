@@ -6,30 +6,51 @@
   <title>🎟️ Scraped Events Viewer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@400;500;600;700&family=Jost:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
   <style>
     /* ── DESIGN TOKENS ───────────────────────────────── */
     :root {
-      --pg-ivory:   #F8F4EE;
-      --pg-parch:   #EFE8DC;
-      --pg-sand:    #E2D5C3;
-      --pg-rule:    #DCC7AE;
-      --pg-forest:  #1E3A2F;
-      --pg-forest2: #2C5040;
-      --pg-gold:    #C8A96E;
-      --pg-ink:     #1A1A18;
-      --pg-muted:   #7A6F63;
-      --pg-warm:    #A8987E;
+      --premium-bg: #fbfaf8;
+      --premium-surface: #ffffff;
+      --premium-text: #0f1724;
+      --premium-muted: #6b6f76;
+      --premium-accent: #cda34e;
+      --premium-accent-deep: #b8862b;
+      --premium-accent-soft: rgba(205, 163, 78, 0.18);
+      --premium-radius-sm: 8px;
+      --premium-radius-md: 12px;
+      --premium-ease: cubic-bezier(0.2, 0.9, 0.3, 1);
+      --premium-card-elevation: 0 8px 24px rgba(16, 24, 40, 0.08);
+      --premium-font-display: "Playfair Display", "Cormorant Garamond", Georgia, serif;
+      --premium-font-body: "Inter", "Jost", system-ui, sans-serif;
+      --pg-ivory:   var(--premium-bg);
+      --pg-parch:   #f3f0ea;
+      --pg-sand:    #e8e2d8;
+      --pg-rule:    rgba(15, 23, 36, 0.1);
+      --pg-forest:  #1e3a2f;
+      --pg-forest2: #2c5040;
+      --pg-gold:    var(--premium-accent);
+      --pg-ink:     var(--premium-text);
+      --pg-muted:   var(--premium-muted);
+      --pg-warm:    #8a9099;
+      --layout-gutter: clamp(20px, 4vw, 48px);
+      --ts-bg: #0a0e0b;
+      --ts-card: #131813;
+      --ts-line: rgba(200, 169, 110, 0.15);
+      --ts-gold: #d4af37;
+      --ts-gold-dim: #b8956f;
+      --ts-ink: #f5f1eb;
+      --ts-muted: #a89968;
+      --ts-success: #6ba587;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Jost', 'Segoe UI', system-ui, sans-serif;
+      font-family: var(--premium-font-body);
       font-size: 16.5px;
-      background: var(--pg-ivory);
-      color: var(--pg-ink);
+      background: var(--premium-bg);
+      color: var(--premium-text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -38,13 +59,14 @@
     /* ── HEADER ────────────────────────────────────── */
     header {
       background: #0C1510;
-      padding: 0 48px;
-      height: 90px;
+      padding: 0 var(--layout-gutter);
+      height: 70px;
       flex-shrink: 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid rgba(200,169,110,.10);
+      border-bottom: 1px solid rgba(200, 169, 110, 0.15);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
       position: sticky;
       top: 0;
       z-index: 50;
@@ -63,7 +85,7 @@
       color: #fff;
     }
     header h1 {
-      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-family: var(--premium-font-display);
       font-size: 2rem;
       font-weight: 400;
       color: var(--pg-ivory);
@@ -77,20 +99,17 @@
       text-transform: uppercase;
       color: rgba(200,169,110,.65);
     }
-    header > span, #last-updated {
-      font-family: 'Jost', system-ui, sans-serif;
-      font-size: .85rem;
-      letter-spacing: .08em;
-      color: rgba(255,255,255,.32);
-      text-align: right;
-      max-width: 420px;
+    #last-updated {
+      display: none !important;
     }
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 12px;
       flex-wrap: wrap;
       justify-content: flex-end;
+      margin-left: auto;
+      flex-shrink: 0;
     }
     .header-auth {
       display: flex;
@@ -128,13 +147,7 @@
       white-space: nowrap;
     }
     .header-auth-chip {
-      font-size: 0.72rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: rgba(200, 169, 110, 0.85);
-      border: 1px solid rgba(200, 169, 110, 0.35);
-      padding: 5px 10px;
-      border-radius: 999px;
+      display: none !important;
     }
     .header-auth-out {
       font-family: inherit;
@@ -156,7 +169,7 @@
 
     /* ── CONTROLS ──────────────────────────────────── */
     .controls {
-      padding: 14px 48px;
+      padding: 14px var(--layout-gutter);
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
@@ -192,7 +205,7 @@
 
     /* ── STATS BAR ─────────────────────────────────── */
     .stats {
-      padding: 13px 48px;
+      padding: 13px var(--layout-gutter);
       font-size: .92rem;
       font-weight: 500;
       letter-spacing: .08em;
@@ -203,10 +216,65 @@
     }
     .stats span { color: var(--pg-forest); font-weight: 600; }
 
+    /* ── EVENTS SECTION (beams background) ─────────── */
+    .events-view {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .events-beams-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      background: linear-gradient(
+        180deg,
+        var(--pg-parch) 0%,
+        var(--pg-ivory) 28%,
+        var(--pg-ivory) 100%
+      );
+    }
+    #events-beams-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      filter: blur(15px);
+    }
+    .events-beams-shimmer {
+      position: absolute;
+      inset: 0;
+      background: rgba(251, 250, 248, 0.35);
+      backdrop-filter: blur(50px);
+      -webkit-backdrop-filter: blur(50px);
+      animation: eventsBeamsShimmer 10s ease-in-out infinite;
+    }
+    @keyframes eventsBeamsShimmer {
+      0%,
+      100% { opacity: 0.4; }
+      50% { opacity: 0.65; }
+    }
+    .events-view > .category-chips-row,
+    .events-view > .controls,
+    .events-view > .stats,
+    .events-view > .grid-section-head,
+    .events-view > #events-announcer {
+      position: relative;
+      z-index: 1;
+    }
+    .events-view > .grid-frame {
+      position: relative;
+      z-index: 1;
+    }
+
     /* ── EVENTS GRID ───────────────────────────────── */
     .grid-frame {
-      padding: 28px 18px 48px;
-      background: var(--pg-ivory);
+      padding: 28px var(--layout-gutter) 48px;
+      background: transparent;
       flex: 1;
     }
     .grid {
@@ -218,15 +286,15 @@
 
     /* ── EVENT CARD ────────────────────────────────── */
     .card {
-      background: #FFFFFF;
-      border-radius: 10px;
+      background: var(--premium-surface);
+      border-radius: var(--premium-radius-md);
       border: 1px solid var(--pg-rule);
       overflow: hidden;
       position: relative;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 4px 18px rgba(30,58,47,.10), 0 1px 4px rgba(30,58,47,.07);
-      transition: transform .22s ease, box-shadow .22s ease, background .22s;
+      box-shadow: var(--premium-card-elevation);
+      transition: transform 0.28s var(--premium-ease), box-shadow 0.28s var(--premium-ease), background 0.22s;
     }
     .card::after {
       content: '';
@@ -240,9 +308,12 @@
       z-index: 1;
     }
     .card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 16px 48px rgba(30,58,47,.16), 0 6px 16px rgba(30,58,47,.10);
-      background: #FFFDF9;
+      transform: translateY(-6px);
+      box-shadow:
+        0 18px 36px rgba(16, 24, 40, 0.12),
+        0 0 0 1px rgba(200, 169, 110, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      background: #fffefb;
     }
     .card:hover::after { transform: scaleX(1); }
 
@@ -266,8 +337,8 @@
     }
 
     .card-title {
-      font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: 1.2rem;
+      font-family: var(--premium-font-display);
+      font-size: 1.28rem;
       font-weight: 500;
       margin-bottom: 8px;
       color: var(--pg-forest);
@@ -317,11 +388,11 @@
     .card-link {
       display: block;
       margin-top: auto;
-      padding: 11px;
+      padding: 11px 14px;
       text-align: center;
-      background: var(--pg-forest);
-      border-radius: 3px;
-      color: var(--pg-gold);
+      background: linear-gradient(180deg, var(--premium-accent), var(--premium-accent-deep));
+      border-radius: 999px;
+      color: #1a1408;
       text-decoration: none;
       font-family: 'Jost', system-ui, sans-serif;
       font-size: .73rem;
@@ -330,7 +401,7 @@
       text-transform: uppercase;
       transition: background .2s;
     }
-    .card-link:hover { background: var(--pg-forest2); }
+    .card-link:hover { filter: brightness(1.05); }
 
     .empty {
       grid-column: 1/-1;
@@ -353,6 +424,374 @@
       text-transform: uppercase;
       grid-column: 1/-1;
       background: var(--pg-ivory);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .events-chat-banner {
+      display: none;
+      margin: 0 18px 0;
+      padding: 14px 18px;
+      background: rgba(30, 58, 47, 0.06);
+      border: 1px solid var(--pg-rule);
+      border-radius: 8px;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.88rem;
+      color: var(--pg-muted);
+      line-height: 1.5;
+    }
+    .events-chat-banner.is-visible { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+    .events-chat-banner strong { color: var(--pg-forest); font-weight: 600; }
+    .events-chat-banner-clear {
+      margin-left: auto;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--pg-forest);
+      background: transparent;
+      border: 1px solid var(--pg-rule);
+      border-radius: 999px;
+      padding: 8px 14px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .events-chat-banner-clear:hover { border-color: var(--pg-gold); background: var(--pg-parch); }
+
+    .empty--chat .empty--chat-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 1.25rem;
+      color: var(--pg-forest);
+      margin: 0 0 8px;
+    }
+    .empty--chat .empty--chat-sub {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.95rem;
+      font-style: normal;
+      font-weight: 400;
+      margin-top: 10px;
+      color: var(--pg-muted);
+    }
+    .empty--chat .empty--chat-query {
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.82rem;
+      font-style: italic;
+      margin-top: 14px;
+      color: var(--pg-warm);
+    }
+
+    .grid-skeleton {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      grid-column: 1 / -1;
+    }
+    .grid-skeleton-card {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid var(--pg-rule);
+      overflow: hidden;
+    }
+    .grid-skeleton-card .sk-img {
+      height: 160px;
+      background: linear-gradient(90deg, var(--pg-parch) 0%, var(--pg-sand) 50%, var(--pg-parch) 100%);
+      background-size: 200% 100%;
+      animation: grid-sk-shimmer 1.4s ease-in-out infinite;
+    }
+    .grid-skeleton-card .sk-body { padding: 16px 18px 20px; }
+    .grid-skeleton-card .sk-line {
+      height: 12px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, var(--pg-parch) 0%, var(--pg-sand) 50%, var(--pg-parch) 100%);
+      background-size: 200% 100%;
+      animation: grid-sk-shimmer 1.4s ease-in-out infinite;
+    }
+    .grid-skeleton-card .sk-line--short { width: 55%; }
+    .grid-skeleton-card .sk-line--title { height: 18px; width: 85%; margin-bottom: 14px; }
+    @keyframes grid-sk-shimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+
+    :root {
+      --hero-chat-text: #f5fbff;
+      --hero-chat-text-muted: rgba(245, 251, 255, 0.9);
+      --hero-chat-panel-bg: rgba(6, 18, 14, 0.78);
+    }
+
+    mark.chat-highlight {
+      background: var(--premium-accent-soft);
+      color: inherit;
+      padding: 0.05rem 0.18rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .ai-command-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 2px 4px 0;
+    }
+    .ai-command-head .command-question {
+      flex: 1;
+      min-width: 0;
+      padding: 7px 8px 11px 8px;
+    }
+
+    .hero-history-btn {
+      position: relative;
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      margin-top: 4px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 220, 235, 0.14);
+      color: #f5fbff;
+      cursor: pointer;
+      display: inline-grid;
+      place-items: center;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .hero-history-btn:hover {
+      transform: translateY(-2px);
+      border-color: rgba(200, 169, 110, 0.55);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+    }
+    .hero-history-btn:focus-visible {
+      outline: 2px solid var(--pg-gold);
+      outline-offset: 2px;
+    }
+    .hero-history-btn-icon {
+      font-size: 1.05rem;
+      line-height: 1;
+      opacity: 0.95;
+    }
+    .hero-history-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: var(--pg-gold);
+      color: #1a2e26;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.62rem;
+      font-weight: 700;
+      display: inline-grid;
+      place-items: center;
+      line-height: 1;
+    }
+
+    .hero-history-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1200;
+      display: flex;
+      justify-content: flex-end;
+      pointer-events: none;
+    }
+    .hero-history-overlay.is-open {
+      pointer-events: auto;
+    }
+    .hero-history-overlay[hidden] {
+      display: none !important;
+    }
+    .hero-history-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(8, 14, 12, 0.42);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+    .hero-history-overlay.is-open .hero-history-backdrop {
+      opacity: 1;
+    }
+    .hero-history-panel {
+      position: relative;
+      width: min(360px, 100vw);
+      max-width: 100%;
+      height: 100%;
+      background: var(--pg-ivory);
+      border-left: 1px solid var(--pg-rule);
+      box-shadow: -12px 0 40px rgba(12, 21, 16, 0.18);
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.28s ease;
+    }
+    .hero-history-overlay.is-open .hero-history-panel {
+      transform: translateX(0);
+    }
+    .hero-history-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid var(--pg-rule);
+    }
+    .hero-history-panel-head h3 {
+      font-family: var(--premium-font-display);
+      font-size: 1.35rem;
+      font-weight: 500;
+      color: var(--pg-forest);
+      margin: 0;
+    }
+    .hero-history-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--pg-rule);
+      background: #fff;
+      color: var(--pg-forest);
+      cursor: pointer;
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+    .hero-history-close:focus-visible {
+      outline: 2px solid var(--pg-gold);
+      outline-offset: 2px;
+    }
+    .hero-history-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 14px 20px;
+    }
+    .hero-history-item {
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--pg-rule);
+      border-radius: 10px;
+      background: #fff;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.88rem;
+      line-height: 1.45;
+      color: var(--pg-ink);
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+    .hero-history-item:hover {
+      border-color: var(--pg-gold);
+      background: var(--pg-parch);
+    }
+    .hero-history-item:focus-visible {
+      outline: 2px solid var(--pg-gold);
+      outline-offset: 2px;
+    }
+    .hero-history-item-meta {
+      display: block;
+      margin-top: 6px;
+      font-size: 0.68rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--pg-muted);
+    }
+    .hero-history-empty {
+      padding: 24px 8px;
+      text-align: center;
+      color: var(--pg-muted);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+    .hero-history-foot {
+      padding: 12px 14px 18px;
+      border-top: 1px solid var(--pg-rule);
+    }
+    .hero-history-clear {
+      width: 100%;
+      min-height: 44px;
+      border-radius: 999px;
+      border: 1px solid var(--pg-rule);
+      background: transparent;
+      color: var(--pg-forest);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+    .hero-history-clear:hover {
+      border-color: #c45c5c;
+      color: #9a3b3b;
+      background: rgba(196, 92, 92, 0.06);
+    }
+
+    .hero-ai-conversation {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 12px 12px;
+      border-radius: 10px;
+      background: var(--hero-chat-panel-bg);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .hero-ai-conversation:not(:empty) {
+      display: block;
+    }
+    .hero-ai-conversation .hero-chat-turn {
+      margin-top: 10px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.92rem;
+      line-height: 1.55;
+      color: var(--hero-chat-text);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+    }
+    .hero-ai-conversation .hero-chat-turn:first-child {
+      margin-top: 0;
+    }
+    .hero-ai-conversation .hero-chat-turn--user {
+      background: rgba(255, 255, 255, 0.12);
+      color: var(--hero-chat-text);
+    }
+    .hero-ai-conversation .hero-chat-turn--bot {
+      background: rgba(200, 169, 110, 0.22);
+      border: 1px solid rgba(200, 169, 110, 0.38);
+      color: var(--hero-chat-text-muted);
+    }
+
+    @media (max-width: 720px) {
+      .hero-history-overlay.is-open {
+        justify-content: stretch;
+      }
+      .hero-history-panel {
+        width: 100%;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .hero-history-btn,
+      .hero-history-panel,
+      .hero-history-backdrop {
+        transition: none;
+      }
+      .hero-history-btn:hover {
+        transform: none;
+      }
     }
     .no-img {
       width: 100%;
@@ -1094,12 +1533,30 @@
     .itin-trip-panel[hidden] { display: none !important; }
 
     #itin-modal.itin-modal--trip-view .itin-trip-tab-panels {
-      max-height: min(54vh, 640px);
-      overflow-y: auto;
-      overflow-x: hidden;
-      scroll-behavior: smooth;
-      scroll-padding: 10px 0 20px;
-      scrollbar-gutter: stable;
+      overflow: visible;
+      max-height: none;
+    }
+    .itin-modal-scroll-hint {
+      display: none;
+      padding: 8px 16px 12px;
+      text-align: center;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ts-gold-dim);
+      pointer-events: none;
+    }
+    #itin-modal.itin-modal--trip-view .itin-modal-scroll-hint {
+      display: block;
+      background: linear-gradient(180deg, transparent, rgba(10, 14, 11, 0.92));
+      margin-top: -28px;
+      position: relative;
+      z-index: 2;
+    }
+    #itin-modal.itin-modal--trip-view .itin-modal-scroll-hint.is-dismissed {
+      display: none;
     }
 
     .itin-trip-warnings {
@@ -3069,17 +3526,148 @@
     }
     /* ── HERO BANNER ──────────────────────────────────────── */
     .hero-banner {
-      background: var(--pg-forest);
+      background: #0a1210;
       position: relative;
       overflow: hidden;
-      padding: 60px 52px 0;
+      padding: 60px var(--layout-gutter) 0;
       flex-shrink: 0;
+      isolation: isolate;
+    }
+    .hero-geometric-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .hero-geo-blur {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        135deg,
+        rgba(99, 102, 241, 0.06) 0%,
+        transparent 45%,
+        rgba(200, 169, 110, 0.05) 100%
+      );
+      filter: blur(48px);
+    }
+    .hero-geo-shape {
+      position: absolute;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      background: linear-gradient(90deg, var(--geo-from), transparent);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      box-shadow: 0 8px 32px rgba(255, 255, 255, 0.08);
+      opacity: 0;
+      animation:
+        heroGeoEnter 2.4s cubic-bezier(0.23, 0.86, 0.39, 0.96) forwards,
+        heroGeoFloat 12s ease-in-out infinite;
+    }
+    .hero-geo-shape::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: radial-gradient(
+        circle at 50% 50%,
+        rgba(255, 255, 255, 0.18),
+        transparent 70%
+      );
+    }
+    .hero-geo-shape--1 {
+      --geo-from: rgba(99, 102, 241, 0.18);
+      --r: 12deg;
+      width: min(600px, 70vw);
+      height: 140px;
+      left: -10%;
+      top: 18%;
+      animation-delay: 0.3s, 0s;
+    }
+    .hero-geo-shape--2 {
+      --geo-from: rgba(244, 114, 182, 0.16);
+      --r: -15deg;
+      width: min(500px, 58vw);
+      height: 120px;
+      right: -5%;
+      top: 72%;
+      animation-delay: 0.5s, 0.8s;
+    }
+    .hero-geo-shape--3 {
+      --geo-from: rgba(139, 92, 246, 0.14);
+      --r: -8deg;
+      width: min(300px, 38vw);
+      height: 80px;
+      left: 8%;
+      bottom: 8%;
+      animation-delay: 0.4s, 0.4s;
+    }
+    .hero-geo-shape--4 {
+      --geo-from: rgba(200, 169, 110, 0.2);
+      --r: 20deg;
+      width: min(200px, 28vw);
+      height: 60px;
+      right: 18%;
+      top: 12%;
+      animation-delay: 0.6s, 1.2s;
+    }
+    .hero-geo-shape--5 {
+      --geo-from: rgba(34, 211, 238, 0.12);
+      --r: -25deg;
+      width: min(150px, 22vw);
+      height: 40px;
+      left: 24%;
+      top: 8%;
+      animation-delay: 0.7s, 0.2s;
+    }
+    .hero-geo-vignette {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to top,
+        #0a1210 0%,
+        transparent 35%,
+        transparent 65%,
+        rgba(10, 18, 16, 0.75) 100%
+      );
+    }
+    @keyframes heroGeoEnter {
+      from {
+        opacity: 0;
+        transform: translateY(-120px) rotate(calc(var(--r, 0deg) - 15deg));
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) rotate(var(--r, 0deg));
+      }
+    }
+    @keyframes heroGeoFloat {
+      0%,
+      100% {
+        transform: translateY(0) rotate(var(--r, 0deg));
+      }
+      50% {
+        transform: translateY(15px) rotate(var(--r, 0deg));
+      }
+    }
+    .hero-banner::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        ellipse 80% 60% at 30% 50%,
+        rgba(44, 80, 64, 0.35) 0%,
+        transparent 70%
+      );
+      pointer-events: none;
+      z-index: 1;
     }
     .hero-banner-watermark {
       position: absolute;
       right: -40px;
       top: 50%;
       transform: translateY(-52%);
+      z-index: 1;
       font-family: 'Cormorant Garamond', Georgia, serif;
       font-size: clamp(10rem, 22vw, 26rem);
       font-weight: 300;
@@ -3091,50 +3679,33 @@
       user-select: none;
     }
     .hero-banner-inner {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 48px;
-      position: relative;
-      z-index: 1;
-      margin-bottom: 44px;
-    }
-    .hero-banner-content { flex: 1; min-width: 0; }
-
-    /* image mosaic */
-    .hero-img-mosaic {
-      display: flex;
-      gap: 8px;
-      flex-shrink: 0;
-      height: 360px;
-      align-items: stretch;
-      border-radius: 6px;
-      overflow: hidden;
-    }
-    .hero-img {
       display: block;
-      object-fit: cover;
-      filter: sepia(.18) brightness(.78) contrast(1.04);
-      transition: filter .4s ease;
-    }
-    .hero-img-mosaic:hover .hero-img { filter: sepia(.1) brightness(.86) contrast(1.02); }
-    .hero-img-tall {
-      width: 210px;
-      height: 100%;
-      border-radius: 4px 0 0 4px;
-    }
-    .hero-img-stack {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      width: 200px;
-    }
-    .hero-img-stack .hero-img {
-      flex: 1;
+      position: relative;
+      z-index: 2;
+      margin-bottom: 44px;
       width: 100%;
-      border-radius: 0;
+      max-width: 100%;
     }
-    .hero-img-stack .hero-img:last-child { border-radius: 0 4px 4px 0; }
+    .hero-banner-content {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+      margin: 0;
+    }
+    .hero-headline-row {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: nowrap;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+    .hero-headline-sep {
+      flex-shrink: 0;
+      width: 1px;
+      height: 1.35em;
+      background: rgba(200, 169, 110, 0.45);
+      align-self: center;
+    }
     .hero-banner-eyebrow {
       font-family: 'Jost', system-ui, sans-serif;
       font-size: .62rem;
@@ -3155,44 +3726,64 @@
       background: var(--pg-gold);
     }
     .hero-banner-title {
-      font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: clamp(3rem, 5.5vw, 5.2rem);
+      font-family: var(--premium-font-display);
+      font-size: clamp(1.85rem, 3.8vw, 3rem);
       font-weight: 300;
       color: var(--pg-ivory);
-      line-height: .93;
+      line-height: 1.1;
       letter-spacing: -.01em;
-      margin-bottom: 20px;
+      margin: 0;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
-    .hero-banner-title em { font-style: italic; color: var(--pg-gold); }
+    .hero-banner-title em {
+      font-style: italic;
+      color: var(--pg-gold);
+      font-size: 1em;
+      display: inline;
+      margin: 0;
+    }
     .hero-banner-sub {
       font-family: 'Jost', system-ui, sans-serif;
-      font-size: .88rem;
-      color: rgba(255,255,255,.42);
+      font-size: clamp(0.78rem, 1.35vw, 0.92rem);
+      color: rgba(255, 255, 255, 0.48);
       font-weight: 300;
-      line-height: 1.75;
-      max-width: 400px;
+      line-height: 1.4;
+      margin: 0;
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .hero-stats-row {
       display: flex;
-      align-items: stretch;
-      flex-shrink: 0;
-      border: 1px solid rgba(255,255,255,.09);
-      border-radius: 4px;
-      overflow: hidden;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0;
+      margin: 22px 0 28px;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      overflow: visible;
     }
     .hero-stat-box {
-      padding: 20px 30px;
+      padding: 0 22px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 5px;
-      border-right: 1px solid rgba(255,255,255,.08);
-      min-width: 100px;
+      align-items: flex-start;
+      gap: 4px;
+      border-right: 1px solid rgba(255, 255, 255, 0.14);
+      min-width: 0;
     }
-    .hero-stat-box:last-child { border-right: none; }
+    .hero-stat-box:first-child { padding-left: 0; }
+    .hero-stat-box:last-child {
+      border-right: none;
+      padding-right: 0;
+    }
     .hero-stat-num {
       font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: 2.4rem;
+      font-size: 1.8rem;
       font-weight: 400;
       color: var(--pg-ivory);
       line-height: 1;
@@ -3214,6 +3805,55 @@
       border-bottom: 1px solid rgba(200,169,110,.12);
       flex-shrink: 0;
       padding: 9px 0;
+      mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        black 4%,
+        black 96%,
+        transparent 100%
+      );
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        black 4%,
+        black 96%,
+        transparent 100%
+      );
+    }
+
+    .category-chips-row {
+      display: flex;
+      gap: 8px;
+      padding: 14px var(--layout-gutter);
+      overflow-x: auto;
+      background: var(--pg-ivory);
+      border-bottom: 1px solid var(--pg-rule);
+      scrollbar-width: none;
+    }
+    .category-chips-row::-webkit-scrollbar { display: none; }
+    .cat-chip {
+      flex-shrink: 0;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--pg-rule);
+      background: white;
+      color: var(--pg-muted);
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+    .cat-chip:hover {
+      border-color: var(--pg-forest);
+      color: var(--pg-forest);
+      background: var(--pg-parch);
+    }
+    .cat-chip--active {
+      background: var(--pg-forest);
+      color: var(--pg-gold);
+      border-color: var(--pg-forest);
     }
     .ticker-track {
       display: inline-block;
@@ -3241,7 +3881,7 @@
     }
 
     /* ── GRID SECTION HEAD ────────────────────────────────── */
-    .grid-section-head { padding: 28px 34px 0; }
+    .grid-section-head { padding: 28px var(--layout-gutter) 0; }
     .grid-section-head-inner {
       display: flex;
       align-items: flex-end;
@@ -3271,10 +3911,10 @@
       background: var(--pg-gold);
     }
     .grid-sec-title {
-      font-family: 'Cormorant Garamond', Georgia, serif;
-      font-size: 1.9rem;
-      font-weight: 400;
-      color: var(--pg-forest);
+      font-family: var(--premium-font-display);
+      font-size: clamp(1.6rem, 3vw, 2rem);
+      font-weight: 500;
+      color: var(--premium-text);
       line-height: 1.1;
     }
     .grid-sec-title em { font-style: italic; }
@@ -3559,6 +4199,25 @@
     .eh-btn:disabled {
       opacity: 0.45;
       cursor: not-allowed;
+    }
+    .event-hub-tab-panels {
+      padding: 12px 20px 8px;
+      min-height: min(42vh, 420px);
+    }
+    .event-hub-scroll-hint {
+      display: block;
+      padding: 6px 16px 14px;
+      text-align: center;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ts-gold-dim, #b8956f);
+      pointer-events: none;
+    }
+    .event-hub-scroll-hint.is-dismissed {
+      display: none;
     }
     .event-hub-scroll .eh-flight-meta {
       display: flex;
@@ -3970,43 +4629,158 @@
       transition: opacity .5s ease, transform .5s ease;
     }
     .card-enter.card-visible { opacity: 1; transform: translateY(0); }
+
+    body.hero-history-open { overflow: hidden; }
+
+    @media (max-width: 768px) {
+      header {
+        height: auto;
+        min-height: 70px;
+        padding: 12px var(--layout-gutter);
+      }
+      .hero-banner {
+        padding: 40px var(--layout-gutter) 0;
+      }
+      .hero-banner-inner {
+        flex-direction: column;
+        gap: 28px;
+        margin-bottom: 32px;
+      }
+      .hero-banner-content {
+        flex: 1 1 auto;
+        max-width: 100%;
+        width: 100%;
+      }
+      .hero-headline-row {
+        flex-wrap: wrap;
+        gap: 10px 14px;
+      }
+      .hero-headline-sep {
+        display: none;
+      }
+      .hero-banner-title,
+      .hero-banner-sub {
+        white-space: normal;
+      }
+      .hero-banner-sub {
+        flex: 1 1 100%;
+      }
+      .hero-stats-row {
+        margin: 18px 0 22px;
+      }
+      .hero-stat-box {
+        padding: 0 14px;
+      }
+      .category-chips-row {
+        padding: 12px var(--layout-gutter);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .card-enter { transition: none; opacity: 1; transform: none; }
+      .card-enter.card-visible { opacity: 1; transform: none; }
+      .card, .card img, .card::after { transition: none; }
+      .grid-skeleton-card .sk-img,
+      .grid-skeleton-card .sk-line { animation: none; }
+      .hero-geo-shape { animation: none !important; opacity: 0.35; }
+    }
   </style>
   <link rel="stylesheet" href="/eventra-ticket-theme.css" />
+  <link rel="stylesheet" href="/premium-ui.css" />
+  <style id="viewer-layout-overrides">
+    /* Hero chat — lighter search tool (overrides theme sheets) */
+    body.theme-eventra .hero-banner .ai-command {
+      margin-top: 0 !important;
+      padding: 16px 18px !important;
+      border-radius: 12px !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      background: rgba(255, 255, 255, 0.06) !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      max-width: 100%;
+    }
+    body.theme-eventra .hero-banner .ai-command-head .command-question {
+      font-size: 0.9rem !important;
+      font-weight: 500 !important;
+      letter-spacing: normal !important;
+      text-transform: none !important;
+      color: rgba(255, 255, 255, 0.6) !important;
+      padding: 0 !important;
+      text-shadow: none !important;
+    }
+    body.theme-eventra .hero-banner .ai-command input#hero-ai-input {
+      min-height: 48px !important;
+      height: 48px;
+      font-size: 1rem !important;
+    }
+    body.theme-eventra .hero-banner .prompt-chips {
+      gap: 6px !important;
+      margin-top: 10px !important;
+    }
+    body.theme-eventra .hero-banner .prompt-chips button {
+      font-size: 11px !important;
+      padding: 6px 10px !important;
+    }
+    body.theme-eventra .hero-banner .hero-ai-conversation:empty {
+      display: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+    }
+    body.theme-eventra .hero-banner .hero-ai-conversation:not(:empty) {
+      display: block !important;
+    }
+    body.theme-eventra .hero-history-btn {
+      margin-top: 0 !important;
+      width: 36px;
+      height: 36px;
+    }
+    body.theme-eventra .hero-banner-title em {
+      display: inline !important;
+      margin-top: 0 !important;
+    }
+    body.theme-eventra .hero-headline-row .hero-banner-title {
+      font-size: clamp(1.85rem, 3.8vw, 3rem) !important;
+      line-height: 1.1 !important;
+    }
+    body.theme-eventra .hero-banner {
+      padding-left: var(--layout-gutter) !important;
+      padding-right: var(--layout-gutter) !important;
+    }
+  </style>
 </head>
 <body class="theme-eventra">
 
 <header>
   <a href="/events" class="header-brand" aria-label="Event Explorer — home">
-    <span class="header-eyebrow">Malaysia &middot; Live Events &amp; Culture</span>
     <h1>Event Explorer</h1>
   </a>
   <div class="header-actions">
     <div class="header-auth" id="header-auth" aria-live="polite"></div>
-    <span id="last-updated">Loading...</span>
   </div>
 </header>
 
 <!-- HERO BANNER -->
 <section class="hero-banner">
+  <div class="hero-geometric-bg" aria-hidden="true">
+    <div class="hero-geo-blur"></div>
+    <div class="hero-geo-shape hero-geo-shape--1"></div>
+    <div class="hero-geo-shape hero-geo-shape--2"></div>
+    <div class="hero-geo-shape hero-geo-shape--3"></div>
+    <div class="hero-geo-shape hero-geo-shape--4"></div>
+    <div class="hero-geo-shape hero-geo-shape--5"></div>
+    <div class="hero-geo-vignette"></div>
+  </div>
   <div class="hero-banner-watermark">EVENTS</div>
   <div class="hero-banner-inner">
     <div class="hero-banner-content">
       <p class="hero-banner-eyebrow">Discover &middot; Explore &middot; Experience</p>
-      <h2 class="hero-banner-title">What's on<br /><em>in Malaysia</em></h2>
-      <p class="hero-banner-sub">Every event worth attending — music, culture, food, sports and more — scraped fresh from across the web and delivered here.</p>
-      <div class="ai-command">
-        <div class="command-question">What kind of event experience are you looking for in Malaysia?</div>
-        <div class="ai-command-inner">
-          <input id="hero-ai-input" type="search" placeholder="I'm coming from Singapore and want a K-pop concert in KL" autocomplete="off" />
-          <button class="primary" id="hero-ai-btn" type="button">Ask Eventra</button>
-        </div>
-        <div class="prompt-chips">
-          <button type="button" data-prompt="Plan me a 3-day trip around a music festival in Malaysia">3-day music trip</button>
-          <button type="button" data-prompt="Find me a comedy show worth travelling for">Comedy show</button>
-          <button type="button" data-prompt="What event should I travel to Malaysia for next month?">Tourist-worthy event</button>
-        </div>
-        <div class="hero-ai-status" id="hero-ai-status">Try a travel-style question, or just say hello and Eventra will guide you.</div>
-        <div class="hero-ai-conversation" id="hero-ai-conversation" aria-live="polite"></div>
+      <div class="hero-headline-row">
+        <h2 class="hero-banner-title">What's on <em>in Malaysia</em></h2>
+        <span class="hero-headline-sep" aria-hidden="true"></span>
+        <p class="hero-banner-sub">Every event worth attending — music, culture, food, sports and more — scraped fresh from across the web and delivered here.</p>
       </div>
       <div class="hero-stats-row">
         <div class="hero-stat-box">
@@ -4022,18 +4796,25 @@
           <span class="hero-stat-label">Platforms</span>
         </div>
       </div>
-    </div>
-    <div class="hero-img-mosaic">
-      <img class="hero-img hero-img-tall"
-           src="https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=340&h=480&fit=crop&auto=format&q=80"
-           alt="Concert crowd" loading="lazy" />
-      <div class="hero-img-stack">
-        <img class="hero-img"
-             src="https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=260&h=230&fit=crop&auto=format&q=80"
-             alt="Festival stage" loading="lazy" />
-        <img class="hero-img"
-             src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=260&h=230&fit=crop&auto=format&q=80"
-             alt="Event lights" loading="lazy" />
+      <div class="ai-command">
+        <div class="ai-command-head">
+          <div class="command-question">What are you looking for?</div>
+          <button type="button" class="hero-history-btn" id="hero-history-btn" aria-label="Open search history" aria-haspopup="dialog" aria-expanded="false" aria-controls="hero-history-panel">
+            <span class="hero-history-btn-icon" aria-hidden="true">◷</span>
+            <span class="hero-history-badge" id="hero-history-badge" hidden>0</span>
+          </button>
+        </div>
+        <div class="ai-command-inner">
+          <input id="hero-ai-input" type="search" placeholder="Events next month?" autocomplete="off" />
+          <button class="primary" id="hero-ai-btn" type="button">Ask Eventra</button>
+        </div>
+        <div class="prompt-chips">
+          <!-- <button type="button" data-prompt="Plan me a 3-day trip around a music festival in Malaysia">3-day music trip</button>
+          <button type="button" data-prompt="Find me a comedy show worth travelling for">Comedy show</button>
+          <button type="button" data-prompt="What event should I travel to Malaysia for next month?">Tourist-worthy event</button> -->
+        </div>
+        <div class="hero-ai-status" id="hero-ai-status">Try a travel-style question, or just say hello and Eventra will guide you.</div>
+        <div class="hero-ai-conversation" id="hero-ai-conversation" aria-live="polite"></div>
       </div>
     </div>
   </div>
@@ -4079,6 +4860,18 @@
 
 <div id="eventsView" style="flex: 1;">
 
+<div class="category-chips-row" id="category-chips-row">
+  <button type="button" class="cat-chip cat-chip--active" data-cat="all">All</button>
+  <button type="button" class="cat-chip" data-cat="music">🎵 Music</button>
+  <button type="button" class="cat-chip" data-cat="arts">🎭 Arts</button>
+  <button type="button" class="cat-chip" data-cat="food">🍜 Food</button>
+  <button type="button" class="cat-chip" data-cat="sports">⚽ Sports</button>
+  <button type="button" class="cat-chip" data-cat="comedy">🎪 Comedy</button>
+  <button type="button" class="cat-chip" data-cat="wellness">🌿 Wellness</button>
+  <button type="button" class="cat-chip" data-cat="tech">💻 Tech</button>
+  <button type="button" class="cat-chip" data-cat="family">👨‍👩‍👧 Family</button>
+</div>
+
 <div class="controls">
   <span class="controls-label">Filter</span>
   <input type="text" id="search" placeholder="Search events, venues, categories…" />
@@ -4103,23 +4896,43 @@
 
 <div class="stats" id="stats" style="display:none;">Loading events...</div>
 
+<div id="events-announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
 <!-- GRID SECTION HEAD -->
-<div class="grid-section-head">
+<div class="grid-section-head" id="events-section" tabindex="-1">
   <div class="grid-section-head-inner">
     <div>
       <p class="grid-sec-eyebrow">Showing <span id="grid-event-count">—</span> events</p>
-      <h3 class="grid-sec-title">Browse <em>the full listing</em></h3>
+      <h3 class="grid-sec-title" id="grid-sec-title">Browse <em>the full listing</em></h3>
     </div>
     <div class="source-badges" id="source-badges"></div>
   </div>
-</div>
 
+<p id="events-chat-banner" class="events-chat-banner" hidden>
+  <span id="events-chat-banner-text"></span>
+  <button type="button" class="events-chat-banner-clear" id="events-chat-banner-clear">Clear assistant results</button>
+</p>
 <div class="grid-frame">
   <div class="grid" id="grid">
     <div class="loading">Fetching events…</div>
   </div>
 </div>
 
+</div>
+
+
+<div id="hero-history-overlay" class="hero-history-overlay" hidden>
+  <div class="hero-history-backdrop" id="hero-history-backdrop" aria-hidden="true"></div>
+  <aside id="hero-history-panel" class="hero-history-panel" role="dialog" aria-modal="true" aria-labelledby="hero-history-title" tabindex="-1">
+    <div class="hero-history-panel-head">
+      <h3 id="hero-history-title">Past searches</h3>
+      <button type="button" class="hero-history-close" id="hero-history-close" aria-label="Close history">×</button>
+    </div>
+    <div class="hero-history-list" id="hero-history-list" role="list"></div>
+    <div class="hero-history-foot">
+      <button type="button" class="hero-history-clear" id="hero-history-clear">Clear history</button>
+    </div>
+  </aside>
 </div>
 
 <div id="ai-overlay" class="ai-overlay" aria-hidden="true">
@@ -4171,6 +4984,7 @@
     <div class="event-hub-top">
       <button type="button" class="itin-icon-btn" id="eh-modal-close" aria-label="Close event details">×</button>
     </div>
+    <div class="event-hub-scroll" id="event-hub-scroll">
     <div class="event-hub-hero">
       <div class="event-hub-hero-img-wrap">
         <img id="eh-hero-img" alt="" hidden />
@@ -4201,16 +5015,25 @@
         <button type="button" class="eh-btn eh-btn--ghost" id="eh-apply-dates">Update trip</button>
       </div>
       <p id="eh-trip-summary" class="eh-muted"></p>
-      <p class="eh-muted eh-trip-strip-hint">Flights → Hotels: tap <strong>Add to my itinerary</strong> once each, then <strong>Itinerary</strong>.</p>
+      <p class="eh-muted eh-trip-strip-hint">Start on <strong>My Trip</strong>, then add <strong>Flights</strong> and <strong>Hotels</strong> when you are ready to book.</p>
     </div>
-    <div class="event-hub-main">
-    <div class="event-hub-tabs" role="tablist">
-      <button type="button" class="eh-tab eh-tab--active" id="eh-tab-flights" role="tab" aria-selected="true">Flights</button>
-      <button type="button" class="eh-tab" id="eh-tab-hotels" role="tab" aria-selected="false">Hotels</button>
-      <button type="button" class="eh-tab" id="eh-tab-itin" role="tab" aria-selected="false">Itinerary</button>
-    </div>
-    <div class="event-hub-scroll">
-      <div id="eh-panel-flights" class="eh-panel" role="tabpanel">
+    <nav class="event-hub-tabs" role="tablist" aria-label="Trip planner sections">
+      <button type="button" class="eh-tab eh-tab--active" id="eh-tab-itin" role="tab" aria-selected="true" aria-controls="eh-panel-itin">My Trip</button>
+      <button type="button" class="eh-tab" id="eh-tab-flights" role="tab" aria-selected="false" aria-controls="eh-panel-flights">Flights</button>
+      <button type="button" class="eh-tab" id="eh-tab-hotels" role="tab" aria-selected="false" aria-controls="eh-panel-hotels">Hotels</button>
+    </nav>
+    <div class="event-hub-tab-panels">
+      <div id="eh-panel-itin" class="eh-panel" role="tabpanel" aria-labelledby="eh-tab-itin">
+        <h3>My Trip</h3>
+        <p class="eh-muted">Review your trip dates above, then add a flight and hotel on their tabs. Summaries appear here when ready — tap Generate to build your AI itinerary.</p>
+        <p id="eh-gen-hint" class="eh-muted" style="margin-top: 10px;"></p>
+        <div id="eh-hub-flight-summary" class="eh-hub-flight-summary" hidden></div>
+        <div id="eh-hub-hotel-summary" class="eh-hub-flight-summary" hidden style="margin-top: 10px;"></div>
+        <div class="event-hub-cta-row" style="margin-top: 18px;">
+          <button type="button" class="eh-btn eh-btn--gold" id="eh-gen-itin" disabled title="Pick a flight and a hotel, then generate">Generate AI itinerary</button>
+        </div>
+      </div>
+      <div id="eh-panel-flights" class="eh-panel" role="tabpanel" aria-labelledby="eh-tab-flights" hidden>
         <h3>Flights</h3>
         <p class="eh-muted">Uses the <strong>arrival</strong> date from the strip above.</p>
         <div class="eh-route-bar eh-route-bar--stack">
@@ -4236,7 +5059,7 @@
         </div>
         <div id="eh-flights-results"></div>
       </div>
-      <div id="eh-panel-hotels" class="eh-panel" role="tabpanel" hidden>
+      <div id="eh-panel-hotels" class="eh-panel" role="tabpanel" aria-labelledby="eh-tab-hotels" hidden>
         <h3>Hotels</h3>
         <p class="eh-muted"><strong>Pick your stay</strong> — search, then <strong>Add to my itinerary</strong>. Check-in/out follow the trip strip.</p>
         <div class="eh-route-bar eh-route-bar--stack">
@@ -4259,17 +5082,8 @@
         </div>
         <div id="eh-hotels-results"></div>
       </div>
-      <div id="eh-panel-itin" class="eh-panel" role="tabpanel" hidden>
-        <h3>Itinerary</h3>
-        <p class="eh-muted">After one flight and one hotel are added, summaries appear below — then tap Generate.</p>
-        <p id="eh-gen-hint" class="eh-muted" style="margin-top: 10px;"></p>
-        <div id="eh-hub-flight-summary" class="eh-hub-flight-summary" hidden></div>
-        <div id="eh-hub-hotel-summary" class="eh-hub-flight-summary" hidden style="margin-top: 10px;"></div>
-        <div class="event-hub-cta-row" style="margin-top: 18px;">
-          <button type="button" class="eh-btn eh-btn--gold" id="eh-gen-itin" disabled title="Pick a flight and a hotel, then generate">Generate AI itinerary</button>
-        </div>
-      </div>
     </div>
+    <p class="event-hub-scroll-hint" id="event-hub-scroll-hint" aria-hidden="true">Scroll for more ↓</p>
     </div>
   </div>
 </div>
@@ -4378,7 +5192,7 @@
           </div>
 
           <nav class="itin-trip-tabs" role="tablist" aria-label="Trip sections">
-            <button type="button" class="itin-trip-tab itin-trip-tab--active" id="itin-trip-tab-itin" data-trip-tab="itin" role="tab" aria-selected="true">Itinerary</button>
+            <button type="button" class="itin-trip-tab itin-trip-tab--active" id="itin-trip-tab-itin" data-trip-tab="itin" role="tab" aria-selected="true">My Trip</button>
             <button type="button" class="itin-trip-tab" id="itin-trip-tab-flights" data-trip-tab="flights" role="tab" aria-selected="false">Flights</button>
             <button type="button" class="itin-trip-tab" id="itin-trip-tab-hotels" data-trip-tab="hotels" role="tab" aria-selected="false">Hotels</button>
           </nav>
@@ -4425,7 +5239,7 @@
 
             <div id="itin-panel-trip-flights" class="itin-trip-panel eh-panel" role="tabpanel" aria-labelledby="itin-trip-tab-flights" hidden>
               <h3>Flights</h3>
-              <p class="eh-muted">Trip dates follow the <strong>Itinerary</strong> tab (arrive / depart around the event). Outbound search uses the <strong>arrival</strong> date.</p>
+              <p class="eh-muted">Trip dates follow <strong>My Trip</strong> (arrive / depart around the event). Outbound search uses the <strong>arrival</strong> date.</p>
               <div class="eh-route-bar eh-route-bar--stack">
                 <div>
                   <strong class="eh-route-kicker">Trip window</strong>
@@ -4675,6 +5489,600 @@
   let allEvents = [];
   let filterDebounceTimer = null;
   const MAX_CARDS = 120;
+  let chatResultsMode = false;
+  let chatResultsPool = [];
+  let lastChatQuery = '';
+  let heroChatHistory = [];
+
+  function prefersReducedMotion() {
+    try {
+      return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function announceEvents(message) {
+    const el = document.getElementById('events-announcer');
+    if (!el) return;
+    el.textContent = '';
+    window.setTimeout(function () {
+      el.textContent = message;
+    }, 50);
+  }
+
+  const AI_CONVERSATIONS_LEGACY_KEY = 'ticket_scraper_ai_conversations_v2';
+  const AI_CONVERSATIONS_STORAGE_PREFIX = 'ticket_scraper_ai_conversations_v2';
+
+  function getAuthUserId() {
+    try {
+      const u = window.__authUser;
+      return u && u.id != null ? String(u.id) : '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function getAiConversationsStorageKey() {
+    const uid = getAuthUserId();
+    return uid ? AI_CONVERSATIONS_STORAGE_PREFIX + ':' + uid : null;
+  }
+
+  function isSignedInForHistory() {
+    return !!getAuthUserId();
+  }
+
+  function migrateLegacyConversationsToUser(userId) {
+    if (!userId) return;
+    const userKey = AI_CONVERSATIONS_STORAGE_PREFIX + ':' + userId;
+    try {
+      const legacy = window.localStorage.getItem(AI_CONVERSATIONS_LEGACY_KEY);
+      if (!legacy) return;
+      if (!window.localStorage.getItem(userKey)) {
+        window.localStorage.setItem(userKey, legacy);
+      }
+      window.localStorage.removeItem(AI_CONVERSATIONS_LEGACY_KEY);
+    } catch (_) {}
+  }
+
+  function normalizeStoredConversations(parsed) {
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map(function (c, idx) {
+        return {
+          id: Number(c.id) || Date.now() + idx,
+          title: String(c.title || 'Chat'),
+          createdAt: String(c.createdAt || new Date().toISOString()),
+          updatedAt: String(c.updatedAt || c.createdAt || new Date().toISOString()),
+          messages: Array.isArray(c.messages)
+            ? c.messages.filter(function (m) {
+                return (
+                  m &&
+                  (m.role === 'user' || m.role === 'assistant') &&
+                  typeof m.content === 'string'
+                );
+              })
+            : [],
+          rounds: Array.isArray(c.rounds)
+            ? c.rounds
+                .map(function (r, ridx) {
+                  return {
+                    id: Number(r.id) || Date.now() + ridx,
+                    userMessage: String(r.userMessage || ''),
+                    events: Array.isArray(r.events) ? r.events : [],
+                  };
+                })
+                .filter(function (r) {
+                  return r.events.length > 0;
+                })
+            : [],
+        };
+      })
+      .filter(function (c) {
+        return c.messages.length > 0 || c.rounds.length > 0;
+      });
+  }
+
+  function readConversationsFromStorage() {
+    const key = getAiConversationsStorageKey();
+    if (!key) return [];
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (!raw) return [];
+      return normalizeStoredConversations(JSON.parse(raw));
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function getFixedHeaderOffset() {
+    const header = document.querySelector('header');
+    return header ? header.offsetHeight : 0;
+  }
+
+  function formatResultsAnnouncement(count, query) {
+    const q = String(query || '').trim();
+    const label = q ? " for '" + q + "'" : '';
+    if (!count) return 'No results' + label + '.';
+    return 'Showing ' + count + ' result' + (count !== 1 ? 's' : '') + label + '.';
+  }
+
+  function clearChatHighlights() {
+    document.querySelectorAll('#grid mark.chat-highlight').forEach(function (m) {
+      m.replaceWith(document.createTextNode(m.textContent));
+    });
+  }
+
+  function highlightTextNode(textNode, re) {
+    const text = textNode.textContent;
+    const reCopy = new RegExp(re.source, re.flags);
+    if (!reCopy.test(text)) return;
+    reCopy.lastIndex = 0;
+    const frag = document.createDocumentFragment();
+    let last = 0;
+    let m;
+    while ((m = reCopy.exec(text)) !== null) {
+      if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+      const mark = document.createElement('mark');
+      mark.className = 'chat-highlight';
+      mark.textContent = m[0];
+      frag.appendChild(mark);
+      last = m.index + m[0].length;
+    }
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    textNode.parentNode.replaceChild(frag, textNode);
+  }
+
+  function highlightElementText(el, re) {
+    if (!el) return;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(function (tn) {
+      highlightTextNode(tn, re);
+    });
+  }
+
+  function buildHighlightRegex(query) {
+    const q = String(query || '').trim();
+    if (!q) return null;
+    const words = q.split(/\s+/).filter(function (w) {
+      return w.length >= 2;
+    });
+    const parts = (words.length ? words : [q]).map(function (w) {
+      return w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    });
+    if (!parts.length) return null;
+    return new RegExp('(' + parts.join('|') + ')', 'ig');
+  }
+
+  function applyChatHighlightsToGrid(query) {
+    clearChatHighlights();
+    const re = buildHighlightRegex(query);
+    if (!re) return;
+    document
+      .querySelectorAll('#grid .card .card-title, #grid .card .card-meta, #grid .card .card-summary')
+      .forEach(function (el) {
+        highlightElementText(el, re);
+      });
+  }
+
+  function collectQueryHistoryFromStorage() {
+    const items = [];
+    if (!isSignedInForHistory()) return items;
+    try {
+      const convs = readConversationsFromStorage();
+      if (!convs.length) return items;
+      convs.forEach(function (c) {
+        const at = c.updatedAt || c.createdAt || '';
+        (c.rounds || []).forEach(function (r) {
+          if (r && r.userMessage) {
+            const text = String(r.userMessage).trim();
+            if (text) {
+              items.push({
+                text: text,
+                at: at,
+                events: Array.isArray(r.events) ? r.events.slice() : [],
+              });
+            }
+          }
+        });
+        (c.messages || []).forEach(function (m) {
+          if (m && m.role === 'user' && m.content) {
+            const text = String(m.content).trim();
+            if (text) items.push({ text: text, at: at, events: [] });
+          }
+        });
+      });
+    } catch (_) {}
+    const seen = new Map();
+    items.forEach(function (it) {
+      const key = it.text.toLowerCase();
+      const prev = seen.get(key);
+      if (!prev) {
+        seen.set(key, it);
+        return;
+      }
+      const prevEv = (prev.events && prev.events.length) || 0;
+      const nextEv = (it.events && it.events.length) || 0;
+      const prefer =
+        nextEv > prevEv ||
+        (nextEv === prevEv && String(it.at) > String(prev.at));
+      if (prefer) seen.set(key, it);
+    });
+    return Array.from(seen.values())
+      .sort(function (a, b) {
+        return String(b.at).localeCompare(String(a.at));
+      })
+      .slice(0, 40);
+  }
+
+  function initHeroChatHistory(onSelectQuery) {
+    const btn = document.getElementById('hero-history-btn');
+    const overlay = document.getElementById('hero-history-overlay');
+    const panel = document.getElementById('hero-history-panel');
+    const list = document.getElementById('hero-history-list');
+    const badge = document.getElementById('hero-history-badge');
+    const closeBtn = document.getElementById('hero-history-close');
+    const backdrop = document.getElementById('hero-history-backdrop');
+    const clearBtn = document.getElementById('hero-history-clear');
+    if (!btn || !overlay || !panel || !list) return;
+
+    let lastFocus = null;
+    let trapHandler = null;
+    let historyEntries = [];
+
+    function setHistoryChromeVisible(signedIn) {
+      btn.hidden = !signedIn;
+      if (!signedIn) {
+        btn.setAttribute('hidden', '');
+        if (badge) {
+          badge.hidden = true;
+          badge.setAttribute('hidden', '');
+        }
+        if (overlay.classList.contains('is-open')) closePanel();
+        return;
+      }
+      btn.removeAttribute('hidden');
+    }
+
+    function renderBadgeAndList() {
+      if (!isSignedInForHistory()) {
+        setHistoryChromeVisible(false);
+        historyEntries = [];
+        return;
+      }
+      setHistoryChromeVisible(true);
+      const entries = collectQueryHistoryFromStorage();
+      historyEntries = entries;
+      if (badge) {
+        if (entries.length) {
+          badge.hidden = false;
+          badge.removeAttribute('hidden');
+          badge.textContent = entries.length > 9 ? '9+' : String(entries.length);
+        } else {
+          badge.hidden = true;
+          badge.setAttribute('hidden', '');
+        }
+      }
+      if (!entries.length) {
+        list.innerHTML =
+          '<p class="hero-history-empty">No past searches yet.<br/>Ask Eventra a question and it will appear here.</p>';
+        return;
+      }
+      list.innerHTML = entries
+        .map(function (entry, idx) {
+          const dt = entry.at ? new Date(entry.at) : null;
+          const when =
+            dt && !Number.isNaN(dt.getTime())
+              ? dt.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+              : '';
+          return (
+            '<button type="button" class="hero-history-item" role="listitem" data-hero-query-idx="' +
+            idx +
+            '">' +
+            escapeHtml(entry.text.length > 120 ? entry.text.slice(0, 120) + '…' : entry.text) +
+            (when || (entry.events && entry.events.length)
+              ? '<span class="hero-history-item-meta">' +
+                (entry.events && entry.events.length
+                  ? entry.events.length + ' event' + (entry.events.length !== 1 ? 's' : '') + ' · '
+                  : '') +
+                (when ? escapeHtml(when) : '') +
+                '</span>'
+              : '') +
+            '</button>'
+          );
+        })
+        .join('');
+    }
+
+    function closePanel() {
+      overlay.classList.remove('is-open');
+      overlay.setAttribute('hidden', '');
+      overlay.setAttribute('aria-hidden', 'true');
+      btn.setAttribute('aria-expanded', 'false');
+      document.body.classList.remove('hero-history-open');
+      if (trapHandler) {
+        panel.removeEventListener('keydown', trapHandler);
+        trapHandler = null;
+      }
+      if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+      lastFocus = null;
+    }
+
+    function openPanel() {
+      if (!isSignedInForHistory()) return;
+      renderBadgeAndList();
+      lastFocus = document.activeElement;
+      overlay.removeAttribute('hidden');
+      overlay.setAttribute('aria-hidden', 'false');
+      overlay.classList.add('is-open');
+      btn.setAttribute('aria-expanded', 'true');
+      document.body.classList.add('hero-history-open');
+      const first = panel.querySelector('button');
+      if (first) first.focus();
+      trapHandler = function (e) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          closePanel();
+          return;
+        }
+        if (e.key !== 'Tab') return;
+        const focusables = panel.querySelectorAll(
+          'button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        if (!focusables.length) return;
+        const firstEl = focusables[0];
+        const lastEl = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === firstEl) {
+          e.preventDefault();
+          lastEl.focus();
+        } else if (!e.shiftKey && document.activeElement === lastEl) {
+          e.preventDefault();
+          firstEl.focus();
+        }
+      };
+      panel.addEventListener('keydown', trapHandler);
+    }
+
+    btn.addEventListener('click', function () {
+      if (overlay.classList.contains('is-open')) closePanel();
+      else openPanel();
+    });
+    if (closeBtn) closeBtn.addEventListener('click', closePanel);
+    if (backdrop) backdrop.addEventListener('click', closePanel);
+
+    list.addEventListener('click', function (e) {
+      const item = e.target.closest('[data-hero-query-idx]');
+      if (!item) return;
+      const idx = Number(item.getAttribute('data-hero-query-idx'));
+      const entry = historyEntries[idx];
+      closePanel();
+      if (entry && typeof onSelectQuery === 'function') onSelectQuery(entry.text, entry);
+    });
+
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function () {
+        if (
+          !window.confirm(
+            'Clear all chat history? This removes past searches from the hero panel and the assistant drawer.',
+          )
+        )
+          return;
+        const key = getAiConversationsStorageKey();
+        if (!key) return;
+        try {
+          window.localStorage.removeItem(key);
+        } catch (_) {}
+        window.dispatchEvent(new CustomEvent('ticket-scraper:conversations-cleared'));
+        renderBadgeAndList();
+        closePanel();
+      });
+    }
+
+    window.addEventListener('storage', function (e) {
+      const key = getAiConversationsStorageKey();
+      if (key && e.key === key) renderBadgeAndList();
+    });
+    window.addEventListener('ticket-scraper:conversations-updated', renderBadgeAndList);
+    window.addEventListener('ticket-scraper:conversations-cleared', renderBadgeAndList);
+    document.addEventListener('ts-auth-change', function () {
+      const uid = getAuthUserId();
+      if (uid) migrateLegacyConversationsToUser(uid);
+      renderBadgeAndList();
+    });
+
+    renderBadgeAndList();
+  }
+
+  function enrichChatEvent(e) {
+    if (!e || typeof e !== 'object') return e;
+    const id = e.id != null ? String(e.id) : '';
+    const found = id
+      ? allEvents.find(function (x) {
+          return String(x.id) === id;
+        })
+      : null;
+    if (found) return found;
+    const priceStr = String(e.price || '').trim();
+    const isFree = e.isFree === true || /^free$/i.test(priceStr);
+    return {
+      id: e.id || id || ('chat-' + String(e.title || '').slice(0, 24)),
+      title: e.title || 'Untitled Event',
+      image: e.image || '',
+      date: e.date || '',
+      venue: e.venue || '',
+      city: e.city || '',
+      summary: e.summary || '',
+      price: isFree ? 'Free' : priceStr || 'Paid',
+      isFree: isFree,
+      category: e.category || '',
+      url: e.url || '',
+      _source: e._source || e.source || '',
+    };
+  }
+
+  function showGridChatLoading() {
+    const grid = document.getElementById('grid');
+    if (!grid) return;
+    const sk = prefersReducedMotion()
+      ? ''
+      : ' animation: grid-sk-shimmer 1.4s ease-in-out infinite;';
+    const cards = [1, 2, 3, 4, 5, 6, 7, 8]
+      .map(function () {
+        return (
+          '<div class="grid-skeleton-card">' +
+          '<div class="sk-img" style="' + sk + '"></div>' +
+          '<div class="sk-body">' +
+          '<div class="sk-line sk-line--title" style="' + sk + '"></div>' +
+          '<div class="sk-line" style="' + sk + '"></div>' +
+          '<div class="sk-line sk-line--short" style="' + sk + '"></div>' +
+          '</div></div>'
+        );
+      })
+      .join('');
+    grid.innerHTML =
+      '<div class="grid-skeleton" aria-busy="true" aria-label="Searching events">' + cards + '</div>';
+    announceEvents('Searching for events that match your question.');
+  }
+
+  function setChatResultsBanner(query, count) {
+    const banner = document.getElementById('events-chat-banner');
+    const text = document.getElementById('events-chat-banner-text');
+    const title = document.getElementById('grid-sec-title');
+    if (text) {
+      const q = String(query || '').trim();
+      text.innerHTML =
+        count > 0
+          ? '<strong>' +
+            count +
+            '</strong> match' +
+            (count !== 1 ? 'es' : '') +
+            ' for your question' +
+            (q ? ': “' + escapeHtml(q.length > 72 ? q.slice(0, 72) + '…' : q) + '”' : '') +
+            '.'
+          : 'No events matched your question' +
+            (q ? ' (“' + escapeHtml(q.length > 72 ? q.slice(0, 72) + '…' : q) + '”)' : '') +
+            '.';
+    }
+    if (banner) {
+      banner.hidden = false;
+      banner.classList.add('is-visible');
+      banner.removeAttribute('hidden');
+    }
+    if (title) {
+      title.innerHTML = count > 0 ? 'Matches for <em>your search</em>' : 'No <em>matches yet</em>';
+    }
+  }
+
+  function clearChatFilter() {
+    chatResultsMode = false;
+    chatResultsPool = [];
+    lastChatQuery = '';
+    clearChatHighlights();
+    const banner = document.getElementById('events-chat-banner');
+    if (banner) {
+      banner.hidden = true;
+      banner.classList.remove('is-visible');
+      banner.setAttribute('hidden', '');
+    }
+    const title = document.getElementById('grid-sec-title');
+    if (title) title.innerHTML = 'Browse <em>the full listing</em>';
+    const searchInput = document.getElementById('search');
+    if (searchInput) searchInput.value = '';
+    filterEvents();
+    announceEvents('Showing the full event listing again.');
+  }
+
+  function renderChatNoResults(userMessage) {
+    const grid = document.getElementById('grid');
+    if (!grid) return;
+    const q = String(userMessage || '').trim();
+    grid.innerHTML =
+      '<div class="empty empty--chat" role="status">' +
+      '<p class="empty--chat-title">' + escapeHtml(formatResultsAnnouncement(0, userMessage)) + '</p>' +
+      '<p class="empty--chat-sub">Try different dates, a broader location, or another keyword.</p>' +
+      (q ? '<p class="empty--chat-query">Your question: “' + escapeHtml(q) + '”</p>' : '') +
+      '</div>';
+    window.__lastRenderedEventSlice = [];
+    const countEl = document.getElementById('grid-event-count');
+    if (countEl) countEl.textContent = '0';
+    const statsEl = document.getElementById('stats');
+    if (statsEl) {
+      statsEl.style.display = '';
+      statsEl.innerHTML = 'Showing <span>0</span> assistant matches';
+    }
+  }
+
+  function scrollToEventsSection(focusFirst) {
+    const section = document.getElementById('events-section');
+    if (!section) return;
+    const offset = getFixedHeaderOffset() + 12;
+    const top = section.getBoundingClientRect().top + window.scrollY - offset;
+    window.scrollTo({
+      top: Math.max(0, top),
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    });
+    if (!focusFirst) return;
+    window.setTimeout(function () {
+      const grid = document.getElementById('grid');
+      const first =
+        (grid && grid.querySelector('.card[data-ev-idx] a.card-link')) ||
+        (grid && grid.querySelector('.card[data-ev-idx]'));
+      if (first && typeof first.focus === 'function') first.focus();
+    }, prefersReducedMotion() ? 80 : 420);
+  }
+
+  function restoreFullEventListingAfterChat() {
+    if (chatResultsMode) {
+      clearChatFilter();
+    } else {
+      filterEvents();
+    }
+  }
+
+  function applyChatEventsToGrid(events, userMessage) {
+    const enriched = (Array.isArray(events) ? events : []).map(enrichChatEvent);
+    chatResultsMode = true;
+    chatResultsPool = enriched;
+    lastChatQuery = String(userMessage || '').trim();
+    setChatResultsBanner(lastChatQuery, enriched.length);
+    showGridChatLoading();
+    if (!enriched.length) {
+      renderChatNoResults(lastChatQuery);
+      announceEvents(formatResultsAnnouncement(0, lastChatQuery) + ' Try different dates or keywords.');
+      scrollToEventsSection(false);
+      return;
+    }
+    renderCards(enriched);
+    const statsEl = document.getElementById('stats');
+    if (statsEl) {
+      statsEl.style.display = '';
+      statsEl.innerHTML =
+        'Showing <span>' +
+        enriched.length +
+        '</span> match' +
+        (enriched.length !== 1 ? 'es' : '') +
+        ' from your assistant search';
+    }
+    announceEvents(formatResultsAnnouncement(enriched.length, lastChatQuery));
+    scrollToEventsSection(true);
+  }
+
+  function appendHeroChatTurn(userMsg, botReply) {
+    const host = document.getElementById('hero-ai-conversation');
+    if (!host) return;
+    const u = document.createElement('div');
+    u.className = 'hero-chat-turn hero-chat-turn--user';
+    u.textContent = 'You: ' + String(userMsg || '').trim();
+    const b = document.createElement('div');
+    b.className = 'hero-chat-turn hero-chat-turn--bot';
+    b.textContent = 'Eventra: ' + String(botReply || '').trim();
+    host.appendChild(u);
+    host.appendChild(b);
+    host.scrollTop = host.scrollHeight;
+  }
 
   function scheduleFilterEvents() {
     if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
@@ -4712,6 +6120,7 @@
     `;
   }
 
+
   async function loadEvents() {
     try {
       const res = await fetch('/api/events');
@@ -4719,14 +6128,12 @@
       allEvents = Array.isArray(data) ? data : (data.events || []);
       const counts = countBySource(allEvents);
 
-      document.getElementById('last-updated').textContent =
-        `Eventbrite: ${counts.eventbrite || 0} • Ticket2U: ${counts.ticket2u || 0} • GoLive Asia: ${counts.goliveasia || 0} • Ticketmelon: ${counts.ticketmelon || 0}`;
-
       // Hero stat numbers
       const heroTotal = document.getElementById('hero-total');
       const heroFree  = document.getElementById('hero-free');
       if (heroTotal) heroTotal.textContent = allEvents.length;
       if (heroFree)  heroFree.textContent  = allEvents.filter(e => e.isFree).length;
+
 
       // Source badges
       const badges = document.getElementById('source-badges');
@@ -4752,17 +6159,21 @@
     }
   }
 
+  let activeCat = 'all';
+
   function filterEvents() {
     const search = document.getElementById('search').value.toLowerCase();
     const freeFilter = document.getElementById('filter-free').value;
     const sourceFilter = document.getElementById('filter-source').value;
     const sort = document.getElementById('sort').value;
 
-    let filtered = allEvents.filter(e => {
+    const pool = chatResultsMode ? chatResultsPool : allEvents;
+    let filtered = pool.filter(e => {
       const source = getEventSource(e);
       const matchSearch =
         (e.title || '').toLowerCase().includes(search) ||
         (e.venue || '').toLowerCase().includes(search) ||
+        (e.city || '').toLowerCase().includes(search) ||
         (e.summary || '').toLowerCase().includes(search);
 
       const matchFree =
@@ -4773,7 +6184,13 @@
       const matchSource =
         sourceFilter === 'all' ? true : source === sourceFilter;
 
-      return matchSearch && matchFree && matchSource;
+      const matchCat =
+        activeCat === 'all'
+          ? true
+          : (e.category || '').toLowerCase().includes(activeCat) ||
+            (e.title || '').toLowerCase().includes(activeCat);
+
+      return matchSearch && matchFree && matchSource && matchCat;
     });
 
     if (sort === 'title') {
@@ -4782,8 +6199,21 @@
       filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
     }
 
-    document.getElementById('stats').innerHTML =
-      `Showing <span>${filtered.length}</span> of <span>${allEvents.length}</span> events`;
+    const statsEl = document.getElementById('stats');
+    if (statsEl) {
+      statsEl.style.display = '';
+      if (chatResultsMode) {
+        statsEl.innerHTML =
+          'Showing <span>' +
+          filtered.length +
+          '</span> of <span>' +
+          chatResultsPool.length +
+          '</span> assistant matches';
+      } else {
+        statsEl.innerHTML =
+          'Showing <span>' + filtered.length + '</span> of <span>' + allEvents.length + '</span> events';
+      }
+    }
 
     const countEl = document.getElementById('grid-event-count');
     if (countEl) countEl.textContent = filtered.length;
@@ -4843,7 +6273,12 @@
     const grid = document.getElementById('grid');
 
     if (events.length === 0) {
-      grid.innerHTML = '<div class="empty">No events match your search.</div>';
+      if (chatResultsMode) {
+        renderChatNoResults(lastChatQuery);
+      } else {
+        grid.innerHTML = '<div class="empty">No events match your search.</div>';
+      }
+      window.__lastRenderedEventSlice = [];
       return;
     }
 
@@ -4866,6 +6301,7 @@
       grid.appendChild(note);
     }
     setupCardAnimations();
+    if (chatResultsMode && lastChatQuery) applyChatHighlightsToGrid(lastChatQuery);
   }
 
   function escapeHtml(str) {
@@ -4914,7 +6350,6 @@
     const heroAiStatusEl = document.getElementById('hero-ai-status');
     let lastLaunchFromHero = false;
 
-    const AI_CONVERSATIONS_KEY = 'ticket_scraper_ai_conversations_v2';
     const historyBtn = document.getElementById('ai-history-btn');
     const newChatBtn = document.getElementById('ai-new-chat-btn');
     const historyPanel = document.getElementById('ai-history-panel');
@@ -4932,44 +6367,39 @@
     };
     let eventRounds = [];
 
-    try {
-      const raw = window.localStorage.getItem(AI_CONVERSATIONS_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          conversations = parsed
-            .map(function (c, idx) {
-              return {
-                id: Number(c.id) || Date.now() + idx,
-                title: String(c.title || 'Chat'),
-                createdAt: String(c.createdAt || new Date().toISOString()),
-                updatedAt: String(c.updatedAt || c.createdAt || new Date().toISOString()),
-                messages: Array.isArray(c.messages) ? c.messages.filter(function (m) {
-                  return m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string';
-                }) : [],
-                rounds: Array.isArray(c.rounds) ? c.rounds.map(function (r, ridx) {
-                  return {
-                    id: Number(r.id) || Date.now() + ridx,
-                    userMessage: String(r.userMessage || ''),
-                    events: Array.isArray(r.events) ? r.events : [],
-                  };
-                }).filter(function (r) { return r.events.length > 0; }) : [],
-              };
-            })
-            .filter(function (c) {
-              return c.messages.length > 0 || c.rounds.length > 0;
-            });
-        }
-      }
-    } catch (_) {
-      conversations = [];
+    function loadConversationsFromStorage() {
+      conversations = readConversationsFromStorage();
     }
 
     function persistConversations() {
+      const key = getAiConversationsStorageKey();
+      if (!key) return;
       try {
-        window.localStorage.setItem(AI_CONVERSATIONS_KEY, JSON.stringify(conversations.slice(0, 24)));
+        window.localStorage.setItem(key, JSON.stringify(conversations.slice(0, 24)));
+        window.dispatchEvent(new CustomEvent('ticket-scraper:conversations-updated'));
       } catch (_) {}
     }
+
+    function resetAssistantSessionUi() {
+      conversations = [];
+      activeConversation = {
+        id: Date.now(),
+        title: 'New chat',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        messages: [],
+        rounds: [],
+      };
+      chatHistory.length = 0;
+      heroChatHistory.length = 0;
+      eventRounds = [];
+      logEl.innerHTML = '';
+      errEl.textContent = '';
+      clearEventsZone();
+      renderHistory();
+    }
+
+    loadConversationsFromStorage();
 
     function trimTitle(text) {
       const s = String(text || '').trim();
@@ -4989,6 +6419,7 @@
 
     function toggleHistory(open) {
       if (!historyPanel) return;
+      if (open && !isSignedInForHistory()) return;
       if (open) {
         historyPanel.classList.add('is-open');
         historyPanel.setAttribute('aria-hidden', 'false');
@@ -5041,6 +6472,11 @@
 
     function renderHistory() {
       if (!historyList) return;
+      if (!isSignedInForHistory()) {
+        historyList.innerHTML =
+          '<div class="ai-history-empty">Sign in to see your conversation history.</div>';
+        return;
+      }
       if (!conversations.length) {
         historyList.innerHTML = '<div class="ai-history-empty">No previous conversations yet.<br/>Start a chat and it will appear here.</div>';
         return;
@@ -5108,7 +6544,17 @@
       if (e.key === 'Escape' && aiOverlay.classList.contains('is-open')) closeDrawer();
     });
 
+    function setAiHistoryChromeVisible(signedIn) {
+      if (historyBtn) {
+        historyBtn.hidden = !signedIn;
+        if (!signedIn) historyBtn.setAttribute('hidden', '');
+        else historyBtn.removeAttribute('hidden');
+      }
+      if (!signedIn) toggleHistory(false);
+    }
+
     if (historyBtn) historyBtn.addEventListener('click', function () {
+      if (!isSignedInForHistory()) return;
       renderHistory();
       toggleHistory(!historyPanel.classList.contains('is-open'));
     });
@@ -5210,15 +6656,17 @@
     async function sendChat() {
       const message = (messageEl.value || '').trim();
       if (!message) return;
+      const fromHero = lastLaunchFromHero;
       errEl.textContent = '';
-      if (lastLaunchFromHero && heroAiBtnEl) {
+      if (fromHero && heroAiBtnEl) {
         heroAiBtnEl.disabled = true;
         heroAiBtnEl.textContent = 'Thinking...';
+        clearChatHighlights();
       }
-      const historyPrior = chatHistory.map(function (h) {
+      const historyPrior = (fromHero ? heroChatHistory : chatHistory).map(function (h) {
         return { role: h.role, content: h.content };
       });
-      append('user', message);
+      if (!fromHero) append('user', message);
       messageEl.value = '';
       chatHistory.push({ role: 'user', content: message });
       if (!activeConversation.messages.length) activeConversation.title = trimTitle(message);
@@ -5236,35 +6684,77 @@
         });
         const reply = data.reply || '';
         if (!res.ok && !reply) {
-          append('bot', data.error || 'Request failed (' + res.status + ')');
+          const errMsg = data.error || 'Request failed (' + res.status + ')';
+          if (fromHero) {
+            appendHeroChatTurn(message, errMsg);
+            setHeroBannerStatus(errMsg, 'warning');
+            restoreFullEventListingAfterChat();
+          } else {
+            append('bot', errMsg);
+          }
           chatHistory.pop();
           activeConversation.messages.pop();
           upsertActiveConversation();
         } else {
-          append('bot', reply || 'No reply');
-          chatHistory.push({ role: 'assistant', content: reply || 'No reply' });
-          activeConversation.messages.push({ role: 'assistant', content: reply || 'No reply' });
+          const botText = reply || 'No reply';
+          if (fromHero) {
+            appendHeroChatTurn(message, botText);
+            append('user', message);
+            append('bot', botText);
+          } else {
+            append('bot', botText);
+          }
+          chatHistory.push({ role: 'assistant', content: botText });
+          activeConversation.messages.push({ role: 'assistant', content: botText });
           while (chatHistory.length > 24) chatHistory.shift();
-          // Each new chat turn shows only the events for the LATEST question.
-          // Clearing first prevents stale events from previous rounds from
-          // bleeding into the panel and looking like wrong matches for the new query.
-          clearEventsZone();
-          if (Array.isArray(data.events) && data.events.length) {
-            appendEventsInline(data.events, message);
-            eventRounds.unshift({
-              id: Date.now(),
-              userMessage: message,
-              events: data.events.slice(),
-            });
-            while (eventRounds.length > 10) eventRounds.pop();
-            activeConversation.rounds = eventRounds.map(function (r) {
-              return { id: r.id, userMessage: r.userMessage, events: r.events };
-            });
+          const apiEvents = Array.isArray(data.events) ? data.events : [];
+          eventRounds.unshift({
+            id: Date.now(),
+            userMessage: message,
+            events: apiEvents.slice(),
+          });
+          while (eventRounds.length > 10) eventRounds.pop();
+          activeConversation.rounds = eventRounds.map(function (r) {
+            return { id: r.id, userMessage: r.userMessage, events: r.events };
+          });
+          if (fromHero) {
+            heroChatHistory.push({ role: 'user', content: message });
+            heroChatHistory.push({ role: 'assistant', content: botText });
+            while (heroChatHistory.length > 24) heroChatHistory.shift();
+            const wantsEventResults = data.eventSearch === true;
+            if (wantsEventResults) {
+              applyChatEventsToGrid(apiEvents, message);
+              if (apiEvents.length) {
+                setHeroBannerStatus(
+                  apiEvents.length +
+                    ' event' +
+                    (apiEvents.length !== 1 ? 's' : '') +
+                    ' matched — scroll down to explore.',
+                  'success',
+                );
+              } else {
+                setHeroBannerStatus('No events matched — try different dates or keywords.', 'warning');
+              }
+            } else {
+              restoreFullEventListingAfterChat();
+              setHeroBannerStatus('', '');
+            }
+          } else {
+            clearEventsZone();
+            if (apiEvents.length) appendEventsInline(apiEvents, message);
           }
           upsertActiveConversation();
         }
       } catch (e) {
-        append('bot', 'Cannot reach the server. Open via http://localhost (run npm run server), not as a file.');
+        const netErr =
+          'Cannot reach the server. Open via http://localhost (run npm run server), not as a file.';
+        if (fromHero) {
+          appendHeroChatTurn(message, netErr);
+          setHeroBannerStatus(netErr, 'warning');
+          restoreFullEventListingAfterChat();
+        } else {
+          append('bot', netErr);
+        }
         chatHistory.pop();
         activeConversation.messages.pop();
         upsertActiveConversation();
@@ -5298,6 +6788,33 @@
       heroAiStatusEl.className = ('hero-ai-status ' + (tone || '')).trim();
     }
 
+    function applyHeroHistoryEntry(query, events) {
+      const q = String(query || '').trim();
+      if (!q) return;
+      setHeroBannerStatus('Restoring results for your past search…', 'thinking');
+      chatResultsMode = false;
+      chatResultsPool = [];
+      clearChatHighlights();
+      showGridChatLoading();
+      window.setTimeout(
+        function () {
+          applyChatEventsToGrid(events, q);
+          if (events.length) {
+            setHeroBannerStatus(
+              events.length +
+                ' event' +
+                (events.length !== 1 ? 's' : '') +
+                ' from this past search.',
+              'success',
+            );
+          } else {
+            setHeroBannerStatus('No saved events for this search — try asking again.', 'warning');
+          }
+        },
+        prefersReducedMotion() ? 0 : 100,
+      );
+    }
+
     function launchAssistantFromHero() {
       if (sendBtn.disabled) return;
       var q = (heroAiInputEl && heroAiInputEl.value || '').trim();
@@ -5305,9 +6822,8 @@
         setHeroBannerStatus('Type what you want, for example: "I am coming from Singapore for a concert weekend."', 'warning');
         return;
       }
-      setHeroBannerStatus('Eventra is scanning Malaysia events and travel signals...', 'thinking');
+      setHeroBannerStatus('Eventra is thinking…', 'thinking');
       lastLaunchFromHero = true;
-      openDrawer();
       messageEl.value = q;
       if (heroAiInputEl) heroAiInputEl.value = '';
       sendChat();
@@ -5333,12 +6849,59 @@
       });
     }
 
+    window.addEventListener('ticket-scraper:conversations-cleared', resetAssistantSessionUi);
+
+    document.addEventListener('ts-auth-change', function () {
+      const uid = getAuthUserId();
+      const signedIn = !!uid;
+      setAiHistoryChromeVisible(signedIn);
+      if (signedIn) {
+        migrateLegacyConversationsToUser(uid);
+        loadConversationsFromStorage();
+      } else {
+        resetAssistantSessionUi();
+      }
+      renderHistory();
+      window.dispatchEvent(new CustomEvent('ticket-scraper:conversations-updated'));
+    });
+
+    setAiHistoryChromeVisible(isSignedInForHistory());
+    renderHistory();
+
+    initHeroChatHistory(function (query, entry) {
+      if (entry && entry.events && entry.events.length) {
+        if (heroAiInputEl) heroAiInputEl.value = '';
+        applyHeroHistoryEntry(query, entry.events);
+        return;
+      }
+      heroChatHistory.length = 0;
+      if (heroAiInputEl) heroAiInputEl.value = query;
+      launchAssistantFromHero();
+    });
   }
 
   initAiAssistant();
 
   const searchInput = document.getElementById('search');
   if (searchInput) searchInput.addEventListener('input', scheduleFilterEvents);
+
+  const eventsChatBannerClear = document.getElementById('events-chat-banner-clear');
+  if (eventsChatBannerClear) {
+    eventsChatBannerClear.addEventListener('click', clearChatFilter);
+  }
+
+  const categoryChipsRow = document.getElementById('category-chips-row');
+  if (categoryChipsRow) {
+    categoryChipsRow.addEventListener('click', function (e) {
+      const chip = e.target.closest('.cat-chip');
+      if (!chip) return;
+      activeCat = chip.getAttribute('data-cat') || 'all';
+      categoryChipsRow.querySelectorAll('.cat-chip').forEach(function (c) {
+        c.classList.toggle('cat-chip--active', c === chip);
+      });
+      filterEvents();
+    });
+  }
 
   loadEvents();
 
