@@ -90,10 +90,19 @@
   }
 
   function scrollEventHubToTop() {
-    const sc = document.querySelector('.event-hub-scroll');
+    const sc = $('event-hub-scroll') || document.querySelector('.event-hub-scroll');
     if (sc && typeof sc.scrollTo === 'function') {
       sc.scrollTo({ top: 0, behavior: scrollMotionBehavior() });
     }
+  }
+
+  function updateEventHubScrollHint() {
+    const sc = $('event-hub-scroll');
+    const hint = $('event-hub-scroll-hint');
+    if (!sc || !hint) return;
+    const canScroll = sc.scrollHeight > sc.clientHeight + 8;
+    const nearBottom = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 28;
+    hint.classList.toggle('is-dismissed', !canScroll || nearBottom || sc.scrollTop > 20);
   }
 
   let hubState = {
@@ -236,6 +245,7 @@
     });
     updateGenButtonStateHub();
     scrollEventHubToTop();
+    requestAnimationFrame(updateEventHubScrollHint);
   }
 
   function updateHubFlightSummaryUI() {
@@ -430,14 +440,12 @@
     updateHubFlightSummaryUI();
     updateHubHotelSummaryUI();
     updateGenButtonStateHub();
-    setTab('flights');
+    setTab('itin');
 
     m.classList.add('is-open');
     m.setAttribute('aria-hidden', 'false');
     document.body.classList.add('event-hub-open');
-    setTimeout(function () {
-      void searchGoogleFlights();
-    }, 80);
+    requestAnimationFrame(updateEventHubScrollHint);
   }
 
   async function generateItineraryFromHub() {
@@ -635,6 +643,11 @@
 
     $('eh-modal-close')?.addEventListener('click', closeHub);
     $('eh-modal-backdrop')?.addEventListener('click', closeHub);
+    const ehScroll = $('event-hub-scroll');
+    if (ehScroll) {
+      ehScroll.addEventListener('scroll', updateEventHubScrollHint, { passive: true });
+    }
+    window.addEventListener('resize', updateEventHubScrollHint, { passive: true });
 
     $('eh-tab-itin')?.addEventListener('click', function () {
       setTab('itin');
@@ -662,8 +675,7 @@
       updateRouteLine();
       updateHotelRouteBar();
       syncFlightTabInputsFromHub();
-      setTab('flights');
-      void searchGoogleFlights();
+      setTab('itin');
     });
 
     $('eh-gen-itin')?.addEventListener('click', function () {

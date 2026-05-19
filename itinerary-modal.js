@@ -79,13 +79,15 @@
     }
   }
 
-  function scrollTripTabPanelsToTop() {
+  function updateItinModalScrollHint() {
     const modal = $('itin-modal');
-    if (!modal) return;
-    const panels = modal.querySelector('.itin-trip-tab-panels');
-    if (panels && typeof panels.scrollTo === 'function') {
-      panels.scrollTo({ top: 0, behavior: scrollMotionBehavior() });
-    }
+    if (!modal || !modal.classList.contains('itin-modal--trip-view')) return;
+    const sc = modal.querySelector('.itin-modal-scroll');
+    const hint = $('itin-modal-scroll-hint');
+    if (!sc || !hint) return;
+    const canScroll = sc.scrollHeight > sc.clientHeight + 8;
+    const nearBottom = sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 28;
+    hint.classList.toggle('is-dismissed', !canScroll || nearBottom || sc.scrollTop > 20);
   }
 
   function getActiveVariant() {
@@ -231,7 +233,8 @@
         }
       }
     });
-    scrollTripTabPanelsToTop();
+    scrollItinModalMainToTop();
+    requestAnimationFrame(updateItinModalScrollHint);
   }
 
   function populateTripHero(act) {
@@ -1298,7 +1301,7 @@
     m.setAttribute('aria-hidden', 'false');
     document.body.classList.add('itin-modal-open');
     scrollItinModalMainToTop();
-    scrollTripTabPanelsToTop();
+    requestAnimationFrame(updateItinModalScrollHint);
     refreshHeaderBack();
     refreshPlannerPreflightVisibility();
   }
@@ -1723,6 +1726,7 @@
     updateTripHotelPanel();
     setTripTab('itin');
     scrollItinModalMainToTop();
+    requestAnimationFrame(updateItinModalScrollHint);
     void refreshTripWeather();
   }
 
@@ -2313,6 +2317,11 @@
     if (mClose) mClose.addEventListener('click', closeTripModal);
     const mBd = $('itin-modal-backdrop');
     if (mBd) mBd.addEventListener('click', closeTripModal);
+    const itinScroll = modal && modal.querySelector('.itin-modal-scroll');
+    if (itinScroll) {
+      itinScroll.addEventListener('scroll', updateItinModalScrollHint, { passive: true });
+    }
+    window.addEventListener('resize', updateItinModalScrollHint, { passive: true });
 
     const pClose = $('itin-place-close');
     if (pClose) pClose.addEventListener('click', closePlaceOverlay);

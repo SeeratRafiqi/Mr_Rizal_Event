@@ -34,6 +34,14 @@
       --pg-muted:   var(--premium-muted);
       --pg-warm:    #8a9099;
       --layout-gutter: clamp(20px, 4vw, 48px);
+      --ts-bg: #0a0e0b;
+      --ts-card: #131813;
+      --ts-line: rgba(200, 169, 110, 0.15);
+      --ts-gold: #d4af37;
+      --ts-gold-dim: #b8956f;
+      --ts-ink: #f5f1eb;
+      --ts-muted: #a89968;
+      --ts-success: #6ba587;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1525,12 +1533,30 @@
     .itin-trip-panel[hidden] { display: none !important; }
 
     #itin-modal.itin-modal--trip-view .itin-trip-tab-panels {
-      max-height: min(54vh, 640px);
-      overflow-y: auto;
-      overflow-x: hidden;
-      scroll-behavior: smooth;
-      scroll-padding: 10px 0 20px;
-      scrollbar-gutter: stable;
+      overflow: visible;
+      max-height: none;
+    }
+    .itin-modal-scroll-hint {
+      display: none;
+      padding: 8px 16px 12px;
+      text-align: center;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ts-gold-dim);
+      pointer-events: none;
+    }
+    #itin-modal.itin-modal--trip-view .itin-modal-scroll-hint {
+      display: block;
+      background: linear-gradient(180deg, transparent, rgba(10, 14, 11, 0.92));
+      margin-top: -28px;
+      position: relative;
+      z-index: 2;
+    }
+    #itin-modal.itin-modal--trip-view .itin-modal-scroll-hint.is-dismissed {
+      display: none;
     }
 
     .itin-trip-warnings {
@@ -4174,6 +4200,25 @@
       opacity: 0.45;
       cursor: not-allowed;
     }
+    .event-hub-tab-panels {
+      padding: 12px 20px 8px;
+      min-height: min(42vh, 420px);
+    }
+    .event-hub-scroll-hint {
+      display: block;
+      padding: 6px 16px 14px;
+      text-align: center;
+      font-family: 'Jost', system-ui, sans-serif;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ts-gold-dim, #b8956f);
+      pointer-events: none;
+    }
+    .event-hub-scroll-hint.is-dismissed {
+      display: none;
+    }
     .event-hub-scroll .eh-flight-meta {
       display: flex;
       flex-direction: row;
@@ -4939,6 +4984,7 @@
     <div class="event-hub-top">
       <button type="button" class="itin-icon-btn" id="eh-modal-close" aria-label="Close event details">×</button>
     </div>
+    <div class="event-hub-scroll" id="event-hub-scroll">
     <div class="event-hub-hero">
       <div class="event-hub-hero-img-wrap">
         <img id="eh-hero-img" alt="" hidden />
@@ -4969,16 +5015,25 @@
         <button type="button" class="eh-btn eh-btn--ghost" id="eh-apply-dates">Update trip</button>
       </div>
       <p id="eh-trip-summary" class="eh-muted"></p>
-      <p class="eh-muted eh-trip-strip-hint">Flights → Hotels: tap <strong>Add to my itinerary</strong> once each, then <strong>Itinerary</strong>.</p>
+      <p class="eh-muted eh-trip-strip-hint">Start on <strong>My Trip</strong>, then add <strong>Flights</strong> and <strong>Hotels</strong> when you are ready to book.</p>
     </div>
-    <div class="event-hub-main">
-    <div class="event-hub-tabs" role="tablist">
-      <button type="button" class="eh-tab eh-tab--active" id="eh-tab-flights" role="tab" aria-selected="true">Flights</button>
-      <button type="button" class="eh-tab" id="eh-tab-hotels" role="tab" aria-selected="false">Hotels</button>
-      <button type="button" class="eh-tab" id="eh-tab-itin" role="tab" aria-selected="false">Itinerary</button>
-    </div>
-    <div class="event-hub-scroll">
-      <div id="eh-panel-flights" class="eh-panel" role="tabpanel">
+    <nav class="event-hub-tabs" role="tablist" aria-label="Trip planner sections">
+      <button type="button" class="eh-tab eh-tab--active" id="eh-tab-itin" role="tab" aria-selected="true" aria-controls="eh-panel-itin">My Trip</button>
+      <button type="button" class="eh-tab" id="eh-tab-flights" role="tab" aria-selected="false" aria-controls="eh-panel-flights">Flights</button>
+      <button type="button" class="eh-tab" id="eh-tab-hotels" role="tab" aria-selected="false" aria-controls="eh-panel-hotels">Hotels</button>
+    </nav>
+    <div class="event-hub-tab-panels">
+      <div id="eh-panel-itin" class="eh-panel" role="tabpanel" aria-labelledby="eh-tab-itin">
+        <h3>My Trip</h3>
+        <p class="eh-muted">Review your trip dates above, then add a flight and hotel on their tabs. Summaries appear here when ready — tap Generate to build your AI itinerary.</p>
+        <p id="eh-gen-hint" class="eh-muted" style="margin-top: 10px;"></p>
+        <div id="eh-hub-flight-summary" class="eh-hub-flight-summary" hidden></div>
+        <div id="eh-hub-hotel-summary" class="eh-hub-flight-summary" hidden style="margin-top: 10px;"></div>
+        <div class="event-hub-cta-row" style="margin-top: 18px;">
+          <button type="button" class="eh-btn eh-btn--gold" id="eh-gen-itin" disabled title="Pick a flight and a hotel, then generate">Generate AI itinerary</button>
+        </div>
+      </div>
+      <div id="eh-panel-flights" class="eh-panel" role="tabpanel" aria-labelledby="eh-tab-flights" hidden>
         <h3>Flights</h3>
         <p class="eh-muted">Uses the <strong>arrival</strong> date from the strip above.</p>
         <div class="eh-route-bar eh-route-bar--stack">
@@ -5004,7 +5059,7 @@
         </div>
         <div id="eh-flights-results"></div>
       </div>
-      <div id="eh-panel-hotels" class="eh-panel" role="tabpanel" hidden>
+      <div id="eh-panel-hotels" class="eh-panel" role="tabpanel" aria-labelledby="eh-tab-hotels" hidden>
         <h3>Hotels</h3>
         <p class="eh-muted"><strong>Pick your stay</strong> — search, then <strong>Add to my itinerary</strong>. Check-in/out follow the trip strip.</p>
         <div class="eh-route-bar eh-route-bar--stack">
@@ -5027,17 +5082,8 @@
         </div>
         <div id="eh-hotels-results"></div>
       </div>
-      <div id="eh-panel-itin" class="eh-panel" role="tabpanel" hidden>
-        <h3>Itinerary</h3>
-        <p class="eh-muted">After one flight and one hotel are added, summaries appear below — then tap Generate.</p>
-        <p id="eh-gen-hint" class="eh-muted" style="margin-top: 10px;"></p>
-        <div id="eh-hub-flight-summary" class="eh-hub-flight-summary" hidden></div>
-        <div id="eh-hub-hotel-summary" class="eh-hub-flight-summary" hidden style="margin-top: 10px;"></div>
-        <div class="event-hub-cta-row" style="margin-top: 18px;">
-          <button type="button" class="eh-btn eh-btn--gold" id="eh-gen-itin" disabled title="Pick a flight and a hotel, then generate">Generate AI itinerary</button>
-        </div>
-      </div>
     </div>
+    <p class="event-hub-scroll-hint" id="event-hub-scroll-hint" aria-hidden="true">Scroll for more ↓</p>
     </div>
   </div>
 </div>
@@ -5146,7 +5192,7 @@
           </div>
 
           <nav class="itin-trip-tabs" role="tablist" aria-label="Trip sections">
-            <button type="button" class="itin-trip-tab itin-trip-tab--active" id="itin-trip-tab-itin" data-trip-tab="itin" role="tab" aria-selected="true">Itinerary</button>
+            <button type="button" class="itin-trip-tab itin-trip-tab--active" id="itin-trip-tab-itin" data-trip-tab="itin" role="tab" aria-selected="true">My Trip</button>
             <button type="button" class="itin-trip-tab" id="itin-trip-tab-flights" data-trip-tab="flights" role="tab" aria-selected="false">Flights</button>
             <button type="button" class="itin-trip-tab" id="itin-trip-tab-hotels" data-trip-tab="hotels" role="tab" aria-selected="false">Hotels</button>
           </nav>
@@ -5193,7 +5239,7 @@
 
             <div id="itin-panel-trip-flights" class="itin-trip-panel eh-panel" role="tabpanel" aria-labelledby="itin-trip-tab-flights" hidden>
               <h3>Flights</h3>
-              <p class="eh-muted">Trip dates follow the <strong>Itinerary</strong> tab (arrive / depart around the event). Outbound search uses the <strong>arrival</strong> date.</p>
+              <p class="eh-muted">Trip dates follow <strong>My Trip</strong> (arrive / depart around the event). Outbound search uses the <strong>arrival</strong> date.</p>
               <div class="eh-route-bar eh-route-bar--stack">
                 <div>
                   <strong class="eh-route-kicker">Trip window</strong>
